@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback } from 'react'
 import { Upload, X, Loader2, Check } from 'lucide-react'
 import { api } from '../lib/trpc/client'
+import { RecordScopeField } from './record-scope'
+import type { RecordScope } from '../lib/record-scope'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 
@@ -16,18 +18,14 @@ interface FileUploaderProps {
 
 type UploadState = 'idle' | 'uploading' | 'error' | 'done'
 
-export function FileUploader({
-  resourceType,
-  resourceId,
-  onUploadComplete,
-  maxSize = MAX_FILE_SIZE,
-}: FileUploaderProps) {
+export function FileUploader({ resourceType, resourceId, onUploadComplete, maxSize = MAX_FILE_SIZE }: FileUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploadState, setUploadState] = useState<UploadState>('idle')
   const [progress, setProgress] = useState(0)
   const [fileName, setFileName] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [scope, setScope] = useState<RecordScope>('PERSONAL')
 
   const createUploadUrl = api.storage.createUploadUrl.useMutation()
   const confirmUpload = api.storage.confirm.useMutation()
@@ -84,6 +82,7 @@ export function FileUploader({
           mimeType: file.type || 'application/octet-stream',
           resourceType,
           resourceId: resourceId || undefined,
+          scope,
         })
 
         setUploadState('done')
@@ -95,12 +94,12 @@ export function FileUploader({
           setProgress(0)
           setFileName('')
         }, 2000)
-      } catch (err: any) {
-        setErrorMsg(err?.message ?? 'Upload failed')
+      } catch (error: unknown) {
+        setErrorMsg(error instanceof Error ? error.message : 'Upload failed')
         setUploadState('error')
       }
     },
-    [resourceType, resourceId, maxSize, createUploadUrl, confirmUpload, onUploadComplete],
+    [resourceType, resourceId, maxSize, createUploadUrl, confirmUpload, onUploadComplete, scope],
   )
 
   const handleFile = (file: File | undefined) => {
@@ -118,32 +117,27 @@ export function FileUploader({
 
   return (
     <div className="space-y-2">
+      <RecordScopeField value={scope} onChange={setScope} disabled={active} label="File visibility" />
       {/* Drop zone */}
       {uploadState === 'idle' || uploadState === 'error' ? (
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
           className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors ${
-            dragOver
-              ? 'border-accent-400 bg-accent-50/50'
-              : 'border-border-subtle hover:border-border-subtle hover:bg-card/50'
+            dragOver ? 'border-accent-400 bg-accent-50/50' : 'border-border-subtle hover:border-border-subtle hover:bg-card/50'
           }`}
         >
           <Upload className="mb-2 h-6 w-6 text-text-muted" />
           <p className="text-xs text-text-tertiary">
             <span className="font-medium text-text-secondary">Click to upload</span> or drag and drop a file
           </p>
-          <p className="mt-0.5 text-[10px] text-text-tertiary">
-            Up to {maxSize / 1024 / 1024} MB
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
+          <p className="mt-0.5 text-[10px] text-text-tertiary">Up to {maxSize / 1024 / 1024} MB</p>
+          <input ref={inputRef} type="file" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
         </div>
       ) : null}
 
@@ -156,10 +150,7 @@ export function FileUploader({
             <span>{progress}%</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-card/[0.05]">
-            <div
-              className="h-full rounded-full bg-accent-500 transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full rounded-full bg-accent-500 transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         </div>
       )}
@@ -177,11 +168,7 @@ export function FileUploader({
         <div className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
           <X className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{errorMsg}</span>
-          <button
-            autoFocus
-            onClick={() => setUploadState('idle')}
-            className="font-medium text-red-600 hover:text-red-700"
-          >
+          <button autoFocus onClick={() => setUploadState('idle')} className="font-medium text-red-600 hover:text-red-700">
             Dismiss
           </button>
         </div>

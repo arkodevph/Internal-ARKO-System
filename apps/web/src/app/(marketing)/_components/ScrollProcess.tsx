@@ -4,45 +4,17 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useRef } from 'react'
+import type { LandingContent } from '../../../lib/landing/content'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
-const STEPS = [
-  {
-    n: '01',
-    title: 'Discovery',
-    body: 'We learn how your team works today and map the fastest path to something real. You leave with a plan, a scope and a fixed idea of what ships first.',
-    detail:
-      'A two-week sprint where we interview stakeholders, audit your existing stack, review analytics, and map user flows. You get a technical brief, a sitemap, a UI audit, and a prioritized backlog — no billable hours wasted on discovery theatre.',
-    icon: '→',
-  },
-  {
-    n: '02',
-    title: 'Design & build',
-    body: 'Design and engineering happen in the same room. You see working software every week, not slide decks, so you can steer while it is cheap to change.',
-    detail:
-      'We work in one-week cycles. Monday: scope the week. Wednesday: first working build. Friday: demo and feedback. No handoffs, no Figma-to-code gap — the designer writes CSS and the engineer thinks about margins.',
-    icon: '◆',
-  },
-  {
-    n: '03',
-    title: 'Automation & AI',
-    body: 'Once the core works, we wire in the automation and AI that remove the busywork, so the product does more of the running on its own.',
-    detail:
-      'This is where we add the force multiplier — background jobs, webhook integrations, vector search, LLM agents, scheduled tasks. Whatever lets your team wake up to work already done instead of a queue of manual steps.',
-    icon: '⚡',
-  },
-  {
-    n: '04',
-    title: 'Handover & support',
-    body: 'You get clean code, docs and the keys. We stay on for as much or as little support as you want, no lock-in and no mystery.',
-    detail:
-      'Full handover includes: private npm packages or monorepo access, architecture decision records (ADRs), CI/CD pipelines, runbooks, and a 30-min walkthrough. After that, we offer retainer support in 10-hour blocks — cancel anytime.',
-    icon: '◈',
-  },
-]
-
-export default function ScrollProcess() {
+export default function ScrollProcess({
+  eyebrow,
+  heading,
+  subtitle,
+  ctaLabel,
+  steps: STEPS,
+}: LandingContent['process']) {
   const sectionRef = useRef<HTMLElement>(null)
   const lineRef = useRef<HTMLDivElement>(null)
   const stepRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -89,11 +61,11 @@ export default function ScrollProcess() {
       <div className="mx-auto max-w-6xl">
         {/* header */}
         <div className="mb-20">
-          <p className="mono text-sm font-semibold tracking-[0.2em] text-ink/40">our process</p>
+          <p className="mono text-sm font-semibold tracking-[0.2em] text-ink/40">{eyebrow}</p>
           <h2 className="display mt-2 text-[clamp(2.5rem,9vw,7rem)] leading-none">
-            How we work
+            {heading}
           </h2>
-          <p className="mono mt-4 text-sm text-ink/50">Four steps. One direction. Ship.</p>
+          <p className="mono mt-4 text-sm text-ink/50">{subtitle}</p>
         </div>
 
         {/* timeline */}
@@ -160,7 +132,7 @@ export default function ScrollProcess() {
         <div className="mono mt-20 flex items-center gap-4 text-sm font-semibold tracking-wider text-ink/40">
           <span className="h-[2px] flex-1 bg-ink/10" />
           <a href="#contact" className="hover:text-ink transition-colors">
-            Ready to start? →
+            {ctaLabel}
           </a>
           <span className="h-[2px] flex-1 bg-ink/10" />
         </div>

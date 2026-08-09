@@ -4,13 +4,18 @@ import { useState } from 'react'
 import { Card, CardContent, Button } from '@arko/ui'
 import { BookOpen, Plus, Trash2, Pencil, Loader2 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
+import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
+import type { RecordScope } from '../../../lib/record-scope'
+import { useSession } from 'next-auth/react'
 
 export default function JournalPage() {
+  const { data: session } = useSession()
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | undefined>()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [mood, setMood] = useState('')
+  const [scope, setScope] = useState<RecordScope>('PERSONAL')
 
   const { data: entries, isLoading } = api.journal.list.useQuery()
   const utils = api.useUtils()
@@ -35,7 +40,9 @@ export default function JournalPage() {
       utils.journal.list.invalidate()
     },
   })
-  const del = api.journal.delete.useMutation({ onSuccess: () => utils.journal.list.invalidate() })
+  const del = api.journal.delete.useMutation({
+    onSuccess: () => utils.journal.list.invalidate(),
+  })
 
   const isSaving = create.isPending || update.isPending
 
@@ -46,8 +53,20 @@ export default function JournalPage() {
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">Journal</h1>
           <p className="mt-1 text-sm text-text-tertiary">Reflect on your days</p>
         </div>
-        <Button size="sm" onClick={() => { setEditId(undefined); setShowForm(!showForm) }}>
-          {showForm && !editId ? 'Cancel' : <><Plus className="h-4 w-4" /> New</>}
+        <Button
+          size="sm"
+          onClick={() => {
+            setEditId(undefined)
+            setShowForm(!showForm)
+          }}
+        >
+          {showForm && !editId ? (
+            'Cancel'
+          ) : (
+            <>
+              <Plus className="h-4 w-4" /> New
+            </>
+          )}
         </Button>
       </div>
 
@@ -60,9 +79,20 @@ export default function JournalPage() {
                 e.preventDefault()
                 if (!title.trim()) return
                 if (editId) {
-                  update.mutate({ id: editId, title: title.trim(), content: content || undefined, mood: mood || undefined })
+                  update.mutate({
+                    id: editId,
+                    title: title.trim(),
+                    content: content || undefined,
+                    mood: mood || undefined,
+                    scope,
+                  })
                 } else {
-                  create.mutate({ title: title.trim(), content, mood: mood || undefined })
+                  create.mutate({
+                    title: title.trim(),
+                    content,
+                    mood: mood || undefined,
+                    scope,
+                  })
                 }
               }}
               className="space-y-3"
@@ -88,12 +118,24 @@ export default function JournalPage() {
                 rows={5}
                 className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               />
+              <RecordScopeField value={scope} onChange={setScope} />
               <div className="flex items-center gap-2">
                 <Button type="submit" size="sm" disabled={isSaving}>
                   {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : editId ? 'Save Changes' : 'Save'}
                 </Button>
                 {editId && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setEditId(undefined); setTitle(''); setContent(''); setMood(''); setShowForm(false) }}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditId(undefined)
+                      setTitle('')
+                      setContent('')
+                      setMood('')
+                      setShowForm(false)
+                    }}
+                  >
                     Cancel
                   </Button>
                 )}
@@ -125,37 +167,41 @@ export default function JournalPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-medium text-text-primary">{e.title}</p>
-                    {e.mood && (
-                      <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">
-                        {e.mood}
-                      </span>
-                    )}
+                    {e.mood && <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">{e.mood}</span>}
+                    <RecordScopeBadge scope={e.scope} />
                   </div>
                   {e.content && <p className="mt-1 line-clamp-2 text-xs text-text-tertiary">{e.content}</p>}
                   <p className="mt-1 text-[10px] text-text-tertiary">
-                    {new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(e.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
                   </p>
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <button
-                    onClick={() => {
-                      setEditId(e.id)
-                      setTitle(e.title)
-                      setMood(e.mood ?? '')
-                      setContent(e.content ?? '')
-                      setShowForm(true)
-                    }}
-                    className="rounded-lg p-1.5 text-text-muted hover:bg-card/[0.04] hover:text-text-secondary transition-colors"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => confirm('Delete this entry?') && del.mutate({ id: e.id })}
-                    className="rounded-lg p-1.5 text-text-muted hover:bg-neg-bg hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                {(e.userId === session?.user?.id || session?.user?.role === 'ADMIN') && (
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        setEditId(e.id)
+                        setTitle(e.title)
+                        setMood(e.mood ?? '')
+                        setContent(e.content ?? '')
+                        setScope(e.scope)
+                        setShowForm(true)
+                      }}
+                      className="rounded-lg p-1.5 text-text-muted hover:bg-card/[0.04] hover:text-text-secondary transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => confirm('Delete this entry?') && del.mutate({ id: e.id })}
+                      className="rounded-lg p-1.5 text-text-muted hover:bg-neg-bg hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

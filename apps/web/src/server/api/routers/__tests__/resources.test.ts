@@ -9,12 +9,34 @@ const ctx = (over: any = {}) => {
     userRole: 'USER',
     prisma: {
       resource: {
-        findMany: jest.fn().mockImplementation(({ where }: any) =>
-          Promise.resolve(resources.filter((r: any) => where?.userId ? r.userId === where.userId : true)),
-        ),
+        findMany: jest.fn().mockImplementation(({ where }: any) => {
+          let res = resources
+          if (where?.AND) {
+            for (const cond of where.AND) {
+              if (cond.OR) {
+                res = res.filter((r: any) =>
+                  cond.OR.some((o: any) =>
+                    (o.isPublic !== undefined && r.isPublic === o.isPublic) ||
+                    (o.userId !== undefined && r.userId === o.userId)
+                  )
+                )
+              }
+            }
+          }
+          return Promise.resolve(res)
+        }),
         findUnique: jest.fn().mockImplementation(({ where }: any) =>
           Promise.resolve(resources.find((r: any) => r.id === where.id) ?? null),
         ),
+        count: jest.fn().mockImplementation(({ where }: any) => {
+          let filtered = resources
+          if (where?.AND) {
+            for (const cond of where.AND) {
+              if (cond.userId) filtered = filtered.filter((r: any) => r.userId === cond.userId)
+            }
+          }
+          return Promise.resolve(filtered.length)
+        }),
         create: jest.fn().mockImplementation(({ data }: any) => {
           const row = { id: 'res-new', ...data, createdAt: new Date(), updatedAt: new Date() }
           resources.push(row)
@@ -46,20 +68,20 @@ describe('resources router', () => {
         { id: 'r2', userId: 'u1', title: 'B', updatedAt: new Date('2026-07-22') },
       ]})
       const res = await resourcesRouter.createCaller(c).list()
-      expect(res).toHaveLength(2)
+      expect(res.items).toHaveLength(2)
       expect(c.prisma.resource.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { userId: 'u1' }, orderBy: { updatedAt: 'desc' } }),
+        expect.objectContaining({ orderBy: { updatedAt: 'desc' } }),
       )
     })
 
     it('excludes other users resources', async () => {
       const c = ctx({ _resources: [
-        { id: 'r1', userId: 'u1', title: 'Mine' },
-        { id: 'r2', userId: 'u2', title: 'Not mine' },
+        { id: 'r1', userId: 'u1', title: 'Mine', isPublic: false },
+        { id: 'r2', userId: 'u2', title: 'Not mine', isPublic: false },
       ]})
       const res = await resourcesRouter.createCaller(c).list()
-      expect(res).toHaveLength(1)
-      expect(res[0].title).toBe('Mine')
+      expect(res.items).toHaveLength(1)
+      expect(res.items[0].title).toBe('Mine')
     })
   })
 
@@ -141,7 +163,7 @@ describe('resources router', () => {
       const c = ctx()
       await expect(
         resourcesRouter.createCaller(c).update({ id: 'ghost', title: 'Nope' }),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' })
     })
   })
 
@@ -169,7 +191,7 @@ describe('resources router', () => {
       const c = ctx()
       await expect(
         resourcesRouter.createCaller(c).delete({ id: 'ghost' }),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' })
     })
   })
 })

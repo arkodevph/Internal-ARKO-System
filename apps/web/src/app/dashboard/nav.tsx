@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { NavItem } from '@arko/ui'
 import { api } from '../../lib/trpc/client'
 import {
@@ -15,17 +16,20 @@ import {
   Bell,
   BellRing,
   FileText,
+  FileCheck,
   GitCommit,
   Users,
   Lightbulb,
   BookOpen,
   Link2,
   Calendar,
+  Palette,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
   { href: '/dashboard/finance', label: 'Finance', icon: <Wallet className="h-5 w-5" /> },
+  { href: '/dashboard/documents', label: 'Documents', icon: <FileCheck className="h-5 w-5" /> },
   { href: '/dashboard/workflows', label: 'Workflows', icon: <Workflow className="h-5 w-5" /> },
   { href: '/dashboard/tasks', label: 'Tasks', icon: <CheckSquare className="h-5 w-5" /> },
   { href: '/dashboard/events', label: 'Events', icon: <Calendar className="h-5 w-5" /> },
@@ -41,9 +45,18 @@ const navItems = [
   { href: '/dashboard/settings', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
 ]
 
+// Landing CMS is admin-only; appended to the nav for ADMIN users.
+const adminNavItems = [
+  { href: '/dashboard/landing', label: 'Landing', icon: <Palette className="h-5 w-5" /> },
+]
+
 export function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const { data: session } = useSession()
+
+  const items =
+    session?.user?.role === 'ADMIN' ? [...navItems, ...adminNavItems] : navItems
 
   // Poll unread messages for the sidebar badge.
   const { data: unread } = api.messages.unreadCount.useQuery(undefined, {
@@ -54,14 +67,14 @@ export function DashboardNav() {
 
   // Prefetch all nav routes so they compile in the background
   useEffect(() => {
-    navItems.forEach((item) => {
+    items.forEach((item) => {
       router.prefetch(item.href)
     })
-  }, [router])
+  }, [router, items])
 
   return (
     <div className="space-y-1">
-      {navItems.map((item) => (
+      {items.map((item) => (
         <NavItem
           key={item.href}
           href={item.href}

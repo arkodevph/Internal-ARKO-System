@@ -2,22 +2,19 @@
 
 import { useState } from 'react'
 import { Card, CardContent, Button } from '@arko/ui'
-import {
-  Bell,
-  Plus,
-  Check,
-  Trash2,
-  Loader2,
-  Clock,
-  AlertCircle,
-} from 'lucide-react'
+import { Bell, Plus, Check, Trash2, Loader2, Clock, AlertCircle } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
+import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
+import type { RecordScope } from '../../../lib/record-scope'
+import { useSession } from 'next-auth/react'
 
 export default function RemindersPage() {
+  const { data: session } = useSession()
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [scope, setScope] = useState<RecordScope>('PERSONAL')
 
   const { data: reminders, isLoading, error } = api.reminders.list.useQuery()
   const utils = api.useUtils()
@@ -36,9 +33,7 @@ export default function RemindersPage() {
     onMutate: async ({ id, isDone }) => {
       await utils.reminders.list.cancel()
       const prev = utils.reminders.list.getData()
-      utils.reminders.list.setData(undefined, (old) =>
-        old?.map((r) => (r.id === id ? { ...r, isDone } : r))
-      )
+      utils.reminders.list.setData(undefined, (old) => old?.map((r) => (r.id === id ? { ...r, isDone } : r)))
       return { prev }
     },
     onError: (_err, _vars, ctx) => {
@@ -58,6 +53,7 @@ export default function RemindersPage() {
       title: title.trim(),
       note: note.trim() || undefined,
       dueAt: new Date(dueDate).toISOString(),
+      scope,
     })
   }
 
@@ -67,12 +63,8 @@ export default function RemindersPage() {
   const tomorrowEnd = new Date(todayEnd.getTime() + 86400000)
 
   const overdue = (reminders ?? []).filter((r) => !r.isDone && new Date(r.dueAt) < now)
-  const today = (reminders ?? []).filter(
-    (r) => !r.isDone && new Date(r.dueAt) >= now && new Date(r.dueAt) <= todayEnd,
-  )
-  const upcoming = (reminders ?? []).filter(
-    (r) => !r.isDone && new Date(r.dueAt) > todayEnd,
-  )
+  const today = (reminders ?? []).filter((r) => !r.isDone && new Date(r.dueAt) >= now && new Date(r.dueAt) <= todayEnd)
+  const upcoming = (reminders ?? []).filter((r) => !r.isDone && new Date(r.dueAt) > todayEnd)
   const done = (reminders ?? []).filter((r) => r.isDone)
 
   function formatDate(date: Date) {
@@ -88,17 +80,7 @@ export default function RemindersPage() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  function GroupSection({
-    title,
-    items,
-    emptyMsg,
-    color,
-  }: {
-    title: string
-    items: any[]
-    emptyMsg: string
-    color: string
-  }) {
+  function GroupSection({ title, items, emptyMsg, color }: { title: string; items: NonNullable<typeof reminders>; emptyMsg: string; color: string }) {
     if (items.length === 0) return null
     return (
       <div className="space-y-2">
@@ -110,32 +92,36 @@ export default function RemindersPage() {
             <CardContent className="flex items-start gap-4 p-4">
               <button
                 onClick={() => toggleDone.mutate({ id: r.id, isDone: !r.isDone })}
+                disabled={r.userId !== session?.user?.id && session?.user?.role !== 'ADMIN'}
                 className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-150 ${
-                  r.isDone
-                    ? 'border-primary-500 bg-primary-500 text-white'
-                    : 'border-border-subtle hover:border-primary-400'
+                  r.isDone ? 'border-primary-500 bg-primary-500 text-white' : 'border-border-subtle hover:border-primary-400'
                 }`}
               >
                 {r.isDone && <Check className="h-3 w-3" />}
               </button>
               <div className="min-w-0 flex-1">
-                <p className={`text-sm font-medium ${r.isDone ? 'text-text-tertiary line-through' : 'text-text-primary'}`}>
-                  {r.title}
-                </p>
-                {r.note && (
-                  <p className="mt-1 text-xs text-text-tertiary">{r.note}</p>
-                )}
+                <p className={`text-sm font-medium ${r.isDone ? 'text-text-tertiary line-through' : 'text-text-primary'}`}>{r.title}</p>
+                {r.note && <p className="mt-1 text-xs text-text-tertiary">{r.note}</p>}
                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-text-tertiary">
                   <Clock className="h-3 w-3" />
-                  {formatDate(new Date(r.dueAt))} {new Date(r.dueAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatDate(new Date(r.dueAt))}{' '}
+                  {new Date(r.dueAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </p>
+                <div className="mt-1.5">
+                  <RecordScopeBadge scope={r.scope} />
+                </div>
               </div>
-              <button
-                onClick={() => deleteReminder.mutate({ id: r.id })}
-                className="shrink-0 rounded-lg p-1.5 text-text-tertiary opacity-0 transition-all duration-150 hover:bg-neg-bg hover:text-red-500 group-hover:opacity-100"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              {(r.userId === session?.user?.id || session?.user?.role === 'ADMIN') && (
+                <button
+                  onClick={() => deleteReminder.mutate({ id: r.id })}
+                  className="shrink-0 rounded-lg p-1.5 text-text-tertiary opacity-0 transition-all duration-150 hover:bg-neg-bg hover:text-red-500 group-hover:opacity-100"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -172,6 +158,7 @@ export default function RemindersPage() {
                   className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
+              <RecordScopeField value={scope} onChange={setScope} />
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary">Note (optional)</label>
                 <textarea

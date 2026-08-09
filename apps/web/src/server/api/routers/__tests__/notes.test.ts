@@ -9,14 +9,17 @@ const ctx = (over: any = {}) => {
     userRole: 'USER',
     prisma: {
       note: {
-        findMany: jest.fn().mockImplementation(({ where }: any) =>
-          Promise.resolve(notes.filter((n: any) => where?.userId ? n.userId === where.userId : true)),
-        ),
-        findUnique: jest.fn().mockImplementation(({ where }: any) =>
-          Promise.resolve(notes.find((n: any) => n.id === where.id) ?? null),
-        ),
+        findMany: jest
+          .fn()
+          .mockImplementation(({ where }: any) => Promise.resolve(notes.filter((n: any) => (where?.userId ? n.userId === where.userId : true)))),
+        findUnique: jest.fn().mockImplementation(({ where }: any) => Promise.resolve(notes.find((n: any) => n.id === where.id) ?? null)),
         create: jest.fn().mockImplementation(({ data }: any) => {
-          const row = { id: 'n-new', ...data, createdAt: new Date(), updatedAt: new Date() }
+          const row = {
+            id: 'n-new',
+            ...data,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
           notes.push(row)
           return Promise.resolve(row)
         }),
@@ -41,14 +44,28 @@ const ctx = (over: any = {}) => {
 describe('notes router', () => {
   describe('list', () => {
     it('returns notes for the current user ordered by updatedAt desc', async () => {
-      const c = ctx({ _notes: [
-        { id: 'n1', userId: 'u1', title: 'A', updatedAt: new Date('2026-07-20') },
-        { id: 'n2', userId: 'u1', title: 'B', updatedAt: new Date('2026-07-22') },
-      ]})
+      const c = ctx({
+        _notes: [
+          {
+            id: 'n1',
+            userId: 'u1',
+            title: 'A',
+            updatedAt: new Date('2026-07-20'),
+          },
+          {
+            id: 'n2',
+            userId: 'u1',
+            title: 'B',
+            updatedAt: new Date('2026-07-22'),
+          },
+        ],
+      })
       const res = await notesRouter.createCaller(c).list()
       expect(res).toHaveLength(2)
       expect(c.prisma.note.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { userId: 'u1' } }),
+        expect.objectContaining({
+          where: { OR: [{ userId: 'u1' }, { scope: 'COMPANY' }] },
+        }),
       )
     })
 
@@ -61,7 +78,9 @@ describe('notes router', () => {
 
   describe('get', () => {
     it('returns a full note by id', async () => {
-      const c = ctx({ _notes: [{ id: 'n1', userId: 'u1', title: 'Secret', content: 'stuff' }] })
+      const c = ctx({
+        _notes: [{ id: 'n1', userId: 'u1', title: 'Secret', content: 'stuff' }],
+      })
       const res = await notesRouter.createCaller(c).get({ id: 'n1' })
       expect(res.title).toBe('Secret')
       expect(res.content).toBe('stuff')
@@ -69,15 +88,26 @@ describe('notes router', () => {
 
     it('rejects access to another user note', async () => {
       const c = ctx({ _notes: [{ id: 'n1', userId: 'u2', title: 'Private' }] })
-      await expect(
-        notesRouter.createCaller(c).get({ id: 'n1' }),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+      await expect(notesRouter.createCaller(c).get({ id: 'n1' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    })
+
+    it('allows an internal user to read a company note', async () => {
+      const c = ctx({
+        _notes: [
+          {
+            id: 'n1',
+            userId: 'u2',
+            title: 'Shared',
+            content: 'team',
+            scope: 'COMPANY',
+          },
+        ],
+      })
+      await expect(notesRouter.createCaller(c).get({ id: 'n1' })).resolves.toMatchObject({ title: 'Shared' })
     })
 
     it('returns NOT_FOUND for missing note', async () => {
-      await expect(
-        notesRouter.createCaller(ctx()).get({ id: 'ghost' }),
-      ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+      await expect(notesRouter.createCaller(ctx()).get({ id: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })
     })
   })
 
@@ -87,7 +117,11 @@ describe('notes router', () => {
       const res = await notesRouter.createCaller(c).create({ title: 'New note', content: 'Hello' })
       expect(c.prisma.note.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ userId: 'u1', title: 'New note', content: 'Hello' }),
+          data: expect.objectContaining({
+            userId: 'u1',
+            title: 'New note',
+            content: 'Hello',
+          }),
         }),
       )
     })
@@ -105,33 +139,31 @@ describe('notes router', () => {
 
   describe('update', () => {
     it('updates own note title and content', async () => {
-      const c = ctx({ _notes: [{ id: 'n1', userId: 'u1', title: 'Old', content: '' }] })
+      const c = ctx({
+        _notes: [{ id: 'n1', userId: 'u1', title: 'Old', content: '' }],
+      })
       const res = await notesRouter.createCaller(c).update({ id: 'n1', title: 'New', content: 'Updated' })
       expect(res.title).toBe('New')
     })
 
     it('rejects updating another user note', async () => {
       const c = ctx({ _notes: [{ id: 'n1', userId: 'u2', title: 'Private' }] })
-      await expect(
-        notesRouter.createCaller(c).update({ id: 'n1', title: 'Hacked' }),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+      await expect(notesRouter.createCaller(c).update({ id: 'n1', title: 'Hacked' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     })
   })
 
   describe('delete', () => {
     it('deletes own note', async () => {
-      const c = ctx({ _notes: [{ id: 'n1', userId: 'u1', title: 'Delete me' }] })
+      const c = ctx({
+        _notes: [{ id: 'n1', userId: 'u1', title: 'Delete me' }],
+      })
       await notesRouter.createCaller(c).delete({ id: 'n1' })
-      expect(c.prisma.note.delete).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'n1' } }),
-      )
+      expect(c.prisma.note.delete).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'n1' } }))
     })
 
     it('rejects deleting another user note', async () => {
       const c = ctx({ _notes: [{ id: 'n1', userId: 'u2', title: 'Not mine' }] })
-      await expect(
-        notesRouter.createCaller(c).delete({ id: 'n1' }),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+      await expect(notesRouter.createCaller(c).delete({ id: 'n1' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     })
   })
 })

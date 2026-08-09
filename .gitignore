@@ -34,3 +34,4 @@ supabase/
 
 # Committed-by-mistake local Postgres data dir
 packages/db/pgdata/
+.gstack/

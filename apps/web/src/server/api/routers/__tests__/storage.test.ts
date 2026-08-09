@@ -16,11 +16,15 @@ const ctx = (over: any = {}) => {
       findUnique: jest.fn().mockResolvedValue(null),
       findMany: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'f1', ...data })),
+      update: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'f1', ...data })),
       delete: jest.fn().mockResolvedValue({ id: 'f1' }),
       ...(over.fileAttachment ?? {}),
     },
     task: {
-      findUnique: jest.fn().mockResolvedValue({ assigneeId: over.userId ?? 'u1' }),
+      findUnique: jest.fn().mockResolvedValue({
+        assigneeId: over.userId ?? 'u1',
+        scope: 'PERSONAL',
+      }),
       ...(over.task ?? {}),
     },
     resource: {
@@ -31,12 +35,17 @@ const ctx = (over: any = {}) => {
   return {
     user: { id: over.userId ?? 'u1' },
     session: { user: { id: over.userId ?? 'u1' } },
-    userRole: 'USER',
+    userRole: over.userRole ?? 'USER',
     prisma,
   } as any
 }
 
 describe('storage router', () => {
+  it('rejects anonymous callers', async () => {
+    const anonymous = { ...ctx(), session: null, user: undefined }
+    await expect(storageRouter.createCaller(anonymous).listFor({ resourceType: 'TASK', resourceId: 'task-1' })).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+  })
+
   describe('createUploadUrl', () => {
     it('returns a fileKey scoped under the user id', async () => {
       const res = await storageRouter.createCaller(ctx()).createUploadUrl({
@@ -93,7 +102,29 @@ describe('storage router', () => {
       })
       expect(create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ userId: 'u1', fileSize: 1024 }),
+          data: expect.objectContaining({
+            userId: 'u1',
+            fileSize: 1024,
+            scope: 'PERSONAL',
+          }),
+        }),
+      )
+    })
+
+    it('persists company visibility when selected', async () => {
+      const create = jest.fn().mockResolvedValue({ id: 'f1' })
+      const c = ctx({ fileAttachment: { create } })
+      await storageRouter.createCaller(c).confirm({
+        fileKey: 'u1/company.pdf',
+        fileName: 'company.pdf',
+        fileSize: 100,
+        mimeType: 'application/pdf',
+        resourceType: 'TASK',
+        scope: 'COMPANY',
+      })
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ scope: 'COMPANY' }),
         }),
       )
     })
@@ -146,7 +177,11 @@ describe('storage router', () => {
       expect(res).toEqual(files)
       expect(c.prisma.fileAttachment.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { resourceType: 'TASK', resourceId: 'task-1' },
+          where: expect.objectContaining({
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+            OR: [{ userId: 'u1' }, { scope: 'COMPANY' }],
+          }),
         }),
       )
     })
@@ -167,6 +202,9 @@ describe('storage router', () => {
             id: 'f1',
             userId: 'u1',
             fileKey: 'u1/doc.pdf',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+            scope: 'PERSONAL',
           }),
         },
       })
@@ -181,6 +219,84 @@ describe('storage router', () => {
             id: 'f1',
             userId: 'u2',
             fileKey: 'u2/doc.pdf',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+            scope: 'PERSONAL',
+          }),
+        },
+      })
+      await expect(storageRouter.createCaller(c).getDownloadUrl({ id: 'f1' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    })
+
+    it('allows an internal parent viewer to download a company file', async () => {
+      const c = ctx({
+        task: {
+          findUnique: jest.fn().mockResolvedValue({ assigneeId: 'u2', scope: 'COMPANY' }),
+        },
+        fileAttachment: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'f1',
+            userId: 'u2',
+            fileKey: 'u2/doc.pdf',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+            scope: 'COMPANY',
+          }),
+        },
+      })
+      await expect(storageRouter.createCaller(c).getDownloadUrl({ id: 'f1' })).resolves.toEqual({ url: 'https://s3.example/signed' })
+    })
+
+    it('allows an administrator to download a personal file', async () => {
+      const c = ctx({
+        userRole: 'ADMIN',
+        fileAttachment: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'f1',
+            userId: 'u2',
+            fileKey: 'u2/doc.pdf',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+            scope: 'PERSONAL',
+          }),
+        },
+      })
+      await expect(storageRouter.createCaller(c).getDownloadUrl({ id: 'f1' })).resolves.toEqual({ url: 'https://s3.example/signed' })
+    })
+
+    it('does not let company visibility bypass an inaccessible parent', async () => {
+      const c = ctx({
+        task: {
+          findUnique: jest.fn().mockResolvedValue({ assigneeId: 'u2', scope: 'PERSONAL' }),
+        },
+        fileAttachment: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'f1',
+            userId: 'u2',
+            fileKey: 'u2/doc.pdf',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+            scope: 'COMPANY',
+          }),
+        },
+      })
+      await expect(storageRouter.createCaller(c).getDownloadUrl({ id: 'f1' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    })
+
+    it('blocks client accounts from company files', async () => {
+      const c = ctx({
+        userRole: 'CLIENT',
+        task: {
+          findUnique: jest.fn().mockResolvedValue({ assigneeId: 'u2', scope: 'COMPANY' }),
+        },
+        fileAttachment: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'f1',
+            userId: 'u2',
+            fileKey: 'u2/doc.pdf',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+            scope: 'COMPANY',
           }),
         },
       })
@@ -224,6 +340,77 @@ describe('storage router', () => {
         },
       })
       await expect(storageRouter.createCaller(c).delete({ id: 'f1' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    })
+  })
+
+  describe('updateScope', () => {
+    it('lets the uploader change visibility', async () => {
+      const update = jest.fn().mockResolvedValue({ id: 'f1', scope: 'COMPANY' })
+      const c = ctx({
+        fileAttachment: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'f1',
+            userId: 'u1',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+          }),
+          update,
+        },
+      })
+      await storageRouter.createCaller(c).updateScope({ id: 'f1', scope: 'COMPANY' })
+      expect(update).toHaveBeenCalledWith({
+        where: { id: 'f1' },
+        data: { scope: 'COMPANY' },
+      })
+    })
+
+    it('rejects visibility changes by another parent viewer', async () => {
+      const c = ctx({
+        task: {
+          findUnique: jest.fn().mockResolvedValue({ assigneeId: 'u1', scope: 'COMPANY' }),
+        },
+        fileAttachment: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'f1',
+            userId: 'u2',
+            resourceType: 'TASK',
+            resourceId: 'task-1',
+          }),
+        },
+      })
+      await expect(storageRouter.createCaller(c).updateScope({ id: 'f1', scope: 'PERSONAL' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    })
+
+    it('blocks new viewer download URLs after company becomes personal', async () => {
+      const file = {
+        id: 'f1',
+        userId: 'u1',
+        fileKey: 'u1/doc.pdf',
+        resourceType: 'TASK',
+        resourceId: 'task-1',
+        scope: 'COMPANY' as const,
+      }
+      const owner = ctx({
+        fileAttachment: {
+          findUnique: jest.fn().mockImplementation(() => Promise.resolve(file)),
+          update: jest.fn().mockImplementation(({ data }: any) => {
+            Object.assign(file, data)
+            return Promise.resolve(file)
+          }),
+        },
+      })
+      await storageRouter.createCaller(owner).updateScope({ id: 'f1', scope: 'PERSONAL' })
+
+      const viewer = ctx({
+        userId: 'u2',
+        task: {
+          findUnique: jest.fn().mockResolvedValue({ assigneeId: 'u1', scope: 'COMPANY' }),
+        },
+        fileAttachment: {
+          findUnique: jest.fn().mockImplementation(() => Promise.resolve(file)),
+        },
+      })
+      await expect(storageRouter.createCaller(viewer).getDownloadUrl({ id: 'f1' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     })
   })
 

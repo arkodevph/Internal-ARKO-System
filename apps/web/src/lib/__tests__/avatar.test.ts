@@ -17,8 +17,8 @@ describe('generateAvatarSeed', () => {
     expect(config.body.options).toHaveProperty('skinColor')
     expect(config.body.options).toHaveProperty('blazerColor')
     expect(config.body.options).toHaveProperty('outlineColor')
-    expect(config.head.options).toHaveProperty('color')
-    expect(config.face.options).toHaveProperty('skinColor')
+    expect(config.head.options).toHaveProperty('outlineColor')
+    expect(config.face.options).toHaveProperty('outlineColor')
   })
 
   it('is deterministic: same userId always produces the same config', () => {
@@ -60,7 +60,7 @@ describe('generateAvatarSeed', () => {
   it('uses valid color hex strings for skin, hair, and clothing', () => {
     const config = generateAvatarSeed('color-test')
     expect(config.body.options.skinColor).toMatch(/^#[0-9A-Fa-f]{6}$/)
-    expect(config.head.options.color).toMatch(/^#[0-9A-Fa-f]{6}$/)
+    expect(config.head.options.outlineColor).toMatch(/^#[0-9A-Fa-f]{6}$/)
     expect(config.body.options.blazerColor).toMatch(/^#[0-9A-Fa-f]{6}$/)
   })
 })
@@ -73,7 +73,7 @@ describe('avatarConfigToJson', () => {
     expect(json.head).toBe(config.head.type)
     expect(json.face).toBe(config.face.type)
     expect(json.skinColor).toBe(config.body.options.skinColor)
-    expect(json.hairColor).toBe(config.head.options.color)
+    expect(json.hairColor).toBe(config.head.options.outlineColor)
     expect(json.clothingColor).toBe(config.body.options.blazerColor)
   })
 
@@ -133,7 +133,7 @@ describe('avatarConfigFromJson', () => {
     }
     const config = avatarConfigFromJson(minimal)
     expect(config.body.options.skinColor).toBe('#D08B5B')
-    expect(config.head.options.color).toBe('#1C1C1C')
+    expect(config.head.options.outlineColor).toBe('#1C1C1C')
     expect(config.body.options.blazerColor).toBe('#8FA7DF')
     expect(config.beard).toBeUndefined()
     expect(config.accessory).toBeUndefined()

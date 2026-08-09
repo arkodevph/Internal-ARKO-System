@@ -53,6 +53,9 @@ model User {
   managedClientProjects ClientProject[] @relation("ManagedClientProjects")
   clientUpdates     ClientUpdate[]
   clientRequests    ClientRequest[]
+  docsCreated       Document[]     @relation("CreatedDocs")
+  clientDocs        Document[]     @relation("DocClient")
+  landingEdits      LandingContent[] @relation("LandingEditor")
 }
 
 model Account {
@@ -221,12 +224,15 @@ model Workflow {
   definition  String // JSON/YAML workflow definition
   status      WorkflowStatus @default(ACTIVE)
   userId      String
+  scope       TransactionScope @default(PERSONAL)
   workspaceId String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   user       User                @relation(fields: [userId], references: [id])
   executions WorkflowExecution[]
+
+  @@index([userId, scope])
 }
 
 enum WorkflowStatus {
@@ -284,6 +290,7 @@ model Task {
   status      TaskStatus @default(TODO)
   priority    Priority   @default(MEDIUM)
   assigneeId  String?
+  scope       TransactionScope @default(PERSONAL)
   workspaceId String?
   projectId   String?
   dueDate     DateTime?
@@ -305,6 +312,7 @@ model Task {
   clientRequest ClientRequest?
 
   @@index([assigneeId, position])
+  @@index([assigneeId, scope])
   @@index([projectId])
   @@index([parentId])
 }
@@ -405,11 +413,13 @@ model Reminder {
   dueAt     DateTime
   isDone    Boolean  @default(false)
   userId    String
+  scope     TransactionScope @default(PERSONAL)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, dueAt])
+  @@index([userId, scope])
 }
 
 // ===== NOTE MODELS =====
@@ -419,12 +429,14 @@ model Note {
   title     String
   content   String
   userId    String
+  scope     TransactionScope @default(PERSONAL)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, updatedAt])
+  @@index([userId, scope])
 }
 
 // ===== EVENTS / SPRINTS =====
@@ -439,12 +451,14 @@ model Event {
   endTime     String
   color       String    @default("#2D6A4F")
   userId      String
+  scope       TransactionScope @default(PERSONAL)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+  @@index([userId, scope, date])
 }
 
 model Sprint {
@@ -456,12 +470,14 @@ model Sprint {
   color     String   @default("#2D6A4F")
   isActive  Boolean  @default(true)
   userId    String
+  scope     TransactionScope @default(PERSONAL)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startDate])
+  @@index([userId, scope, startDate])
 }
 
 // ===== IDEAS =====
@@ -474,12 +490,14 @@ model Idea {
   tags          String[] @default([])
   spawnedTaskId String?
   userId        String
+  scope         TransactionScope @default(PERSONAL)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([userId, scope, createdAt])
 }
 
 // ===== JOURNAL =====
@@ -491,12 +509,14 @@ model JournalEntry {
   mood      String?
   date      DateTime @default(now())
   userId    String
+  scope     TransactionScope @default(PERSONAL)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+  @@index([userId, scope, date])
 }
 
 // ===== NOTIFICATIONS =====
@@ -560,6 +580,7 @@ model Resource {
 model FileAttachment {
   id           String   @id @default(cuid())
   userId       String
+  scope        TransactionScope @default(PERSONAL)
   resourceType String
   resourceId   String?
   fileKey      String
@@ -571,6 +592,7 @@ model FileAttachment {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([resourceType, resourceId])
+  @@index([userId, scope])
 }
 
 // ===== CLIENT PORTAL =====
@@ -596,6 +618,7 @@ model ClientProject {
   deliverables ProjectDeliverable[]
   activities ProjectActivity[]
   tasks      Task[]
+  documents  Document[]
 
   @@index([clientId])
   @@index([ownerId])
@@ -722,4 +745,70 @@ model RecurringTransaction {
 
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   category AccountCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+}
+
+// ===== DOCUMENTS & INVOICES =====
+
+enum DocumentType {
+  INVOICE
+  AGREEMENT
+  PROPOSAL
+  TIMELINE
+}
+
+enum DocumentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Document {
+  id            String         @id @default(cuid())
+  type          DocumentType
+  title         String
+  status        DocumentStatus @default(DRAFT)
+  invoiceNumber String?        @unique
+  projectId     String?
+  clientId      String?
+  content       Json           @default("{}")
+  issueDate     DateTime?
+  dueDate       DateTime?
+  shareToken    String?        @unique
+  publishedAt   DateTime?
+  createdById   String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  project   ClientProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  client    User?              @relation("DocClient", fields: [clientId], references: [id], onDelete: SetNull)
+  createdBy User               @relation("CreatedDocs", fields: [createdById], references: [id], onDelete: Restrict)
+  lineItems DocumentLineItem[]
+
+  @@index([createdById, status])
+  @@index([projectId])
+}
+
+model DocumentLineItem {
+  id          String   @id @default(cuid())
+  documentId  String
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0)
+  sortOrder   Int      @default(0)
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+// ===== LANDING PAGE CMS =====
+// Singleton row holding the editable content of the public marketing landing page.
+// `singleton` is unique so upserts always target the single row.
+model LandingContent {
+  id          String   @id @default(cuid())
+  singleton   Boolean  @unique @default(true)
+  content     Json     @default("{}")
+  updatedById String?
+  updatedBy   User?    @relation("LandingEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

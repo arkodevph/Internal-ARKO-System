@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Bell,
   FileText,
+  FileCheck,
   Search,
   LogOut,
   Settings,
@@ -44,6 +45,7 @@ type NavCategory = {
 const ALL_CATEGORIES: NavCategory[] = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/dashboard/finance', icon: TrendingUp, label: 'Analytics' },
+  { to: '/dashboard/documents', icon: FileCheck, label: 'Documents' },
   { to: '/dashboard/events', icon: CalendarDays, label: 'Calendar' },
   { to: '/dashboard/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/dashboard/notes', icon: FileText, label: 'Notes' },

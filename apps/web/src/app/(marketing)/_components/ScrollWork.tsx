@@ -4,41 +4,17 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef } from "react";
+import type { LandingContent } from "../../../lib/landing/content";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-const WORK = [
-  {
-    kind: "web",
-    title: "Product websites",
-    copy: "Landing pages and marketing sites that load fast and convert.",
-    tags: ["Next.js", "Tailwind", "Framer"],
-    icon: "◇",
-  },
-  {
-    kind: "mobile",
-    title: "Cross-platform apps",
-    copy: "One codebase shipped to iOS and Android, store to home screen.",
-    tags: ["React Native", "Expo", "Gesture"],
-    icon: "◎",
-  },
-  {
-    kind: "automation",
-    title: "Automation pipelines",
-    copy: "Quiet systems that move data and trigger work while you sleep.",
-    tags: ["n8n", "Cron", "Webhooks"],
-    icon: "⚡",
-  },
-  {
-    kind: "ai",
-    title: "AI features",
-    copy: "Chat, retrieval and agents built into products people already use.",
-    tags: ["LLMs", "RAG", "Agents"],
-    icon: "◆",
-  },
-];
-
-export default function ScrollWork() {
+export default function ScrollWork({
+  eyebrow,
+  heading,
+  subtitle,
+  ctaLabel,
+  cards: WORK,
+}: LandingContent["work"]) {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cornerRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -92,13 +68,13 @@ export default function ScrollWork() {
         {/* header */}
         <div className="mb-16 md:mb-20">
           <p className="mono text-sm font-semibold tracking-[0.2em] text-acid/50">
-            what we build
+            {eyebrow}
           </p>
           <h2 className="display mt-2 text-[clamp(3rem,12vw,10rem)] leading-none text-acid">
-            Work
+            {heading}
           </h2>
           <p className="mono mt-4 text-sm text-white/40">
-            The kind of thing we make
+            {subtitle}
           </p>
         </div>
 
@@ -171,7 +147,7 @@ export default function ScrollWork() {
         <div className="mono mt-16 flex items-center gap-4 text-sm font-semibold tracking-wider text-white/30">
           <span className="h-[2px] flex-1 bg-white/10" />
           <a href="#contact" className="transition-colors hover:text-acid">
-            See what fits your project →
+            {ctaLabel}
           </a>
           <span className="h-[2px] flex-1 bg-white/10" />
         </div>

@@ -3,26 +3,18 @@
 import { useState, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, Button, DetailPanel } from '@arko/ui'
-import {
-  Plus,
-  Trash2,
-  Loader2,
-  Clock,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  CalendarDays,
-  Pencil,
-  Flag,
-  CalendarClock,
-  ChevronDown,
-} from 'lucide-react'
+import { Plus, Trash2, Loader2, Clock, AlertCircle, ChevronLeft, ChevronRight, CalendarDays, Pencil, Flag, CalendarClock, ChevronDown } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { api } from '../../../lib/trpc/client'
 import { SprintDialog } from './sprint-dialog'
+import { RecordScopeField, RecordScopeBadge } from '../../../components/record-scope'
+import type { RecordScope } from '../../../lib/record-scope'
 
-const OpenPeepsAvatar = dynamic(() =>
-  import('../../../components/open-peeps-avatar').then((m) => ({ default: m.OpenPeepsAvatar })),
+const OpenPeepsAvatar = dynamic(
+  () =>
+    import('../../../components/open-peeps-avatar').then((m) => ({
+      default: m.OpenPeepsAvatar,
+    })),
   { ssr: false },
 )
 
@@ -36,12 +28,7 @@ type CalendarUser = {
 function ProfileAvatar({ user, size }: { user?: CalendarUser | null; size: number }) {
   return (
     <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
-      <OpenPeepsAvatar
-        userId={user?.id}
-        userName={user?.name ?? undefined}
-        avatarJson={user?.avatar ? JSON.stringify(user.avatar) : undefined}
-        size={size}
-      />
+      <OpenPeepsAvatar userId={user?.id} userName={user?.name ?? undefined} avatarJson={user?.avatar ? JSON.stringify(user.avatar) : undefined} size={size} />
       {user?.image && (
         <img
           src={user.image}
@@ -69,7 +56,12 @@ function fmtTime(t: string) {
 }
 
 function fmtDateTime(d: Date) {
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 function sameDay(a: Date, b: Date) {
@@ -92,6 +84,7 @@ export default function EventsPage() {
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('10:00')
   const [error, setError] = useState('')
+  const [scope, setScope] = useState<RecordScope>('PERSONAL')
   const [sprintDialogOpen, setSprintDialogOpen] = useState(false)
   const [editSprintId, setEditSprintId] = useState<string | undefined>()
   const [viewDate, setViewDate] = useState(() => new Date())
@@ -157,18 +150,13 @@ export default function EventsPage() {
     return map
   }, [events])
 
-  const dayEvents = useMemo(
-    () => (eventsByDay[viewDate.toDateString()] ?? []) as NonNullable<typeof events>,
-    [eventsByDay, viewDate],
-  )
+  const dayEvents = useMemo(() => (eventsByDay[viewDate.toDateString()] ?? []) as NonNullable<typeof events>, [eventsByDay, viewDate])
 
   const selected = events?.find((e) => e.id === selectedId) ?? null
   const today = new Date()
 
-  const shiftDay = (n: number) =>
-    setViewDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n))
-  const shiftMonth = (n: number) =>
-    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + n, 1))
+  const shiftDay = (n: number) => setViewDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n))
+  const shiftMonth = (n: number) => setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + n, 1))
 
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
   const monthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0)
@@ -192,19 +180,24 @@ export default function EventsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg border border-border-subtle bg-card">
-            <span className="text-[9px] font-bold uppercase leading-none text-primary-400">
-              {today.toLocaleDateString('en-US', { month: 'short' })}
-            </span>
+            <span className="text-[9px] font-bold uppercase leading-none text-primary-400">{today.toLocaleDateString('en-US', { month: 'short' })}</span>
             <span className="text-sm font-bold leading-tight text-text-primary">{today.getDate()}</span>
           </div>
           <div>
             <h2 className="text-lg font-semibold leading-tight text-text-primary">
-              {viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              {viewDate.toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
+              })}
             </h2>
             <p className="text-xs text-text-tertiary">
               {view === 'month'
                 ? `${monthStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${monthEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                : viewDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                : viewDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
             </p>
           </div>
         </div>
@@ -282,6 +275,7 @@ export default function EventsPage() {
                     date: new Date(date),
                     startTime,
                     endTime,
+                    scope,
                   })
               }}
               className="space-y-3"
@@ -322,6 +316,7 @@ export default function EventsPage() {
                   className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
+              <RecordScopeField value={scope} onChange={setScope} />
               {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-neg-bg px-3 py-2">
                   <AlertCircle className="h-3.5 w-3.5 text-neg shrink-0" />
@@ -345,10 +340,7 @@ export default function EventsPage() {
               <div className="overflow-hidden rounded-xl border border-border-subtle">
                 <div className="grid grid-cols-7 border-b border-border-subtle bg-white/[0.02]">
                   {MONTH_HEADS.map((d) => (
-                    <div
-                      key={d}
-                      className="px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-text-tertiary"
-                    >
+                    <div key={d} className="px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
                       {d}
                     </div>
                   ))}
@@ -371,11 +363,7 @@ export default function EventsPage() {
                         <div className="mb-1 flex items-center justify-center">
                           <span
                             className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                              isToday
-                                ? 'bg-primary-500 text-white'
-                                : inMonth
-                                  ? 'text-text-secondary'
-                                  : 'text-text-tertiary/50'
+                              isToday ? 'bg-primary-500 text-white' : inMonth ? 'text-text-secondary' : 'text-text-tertiary/50'
                             }`}
                           >
                             {d.getDate()}
@@ -393,16 +381,9 @@ export default function EventsPage() {
                                 ev.id === selectedId ? 'bg-primary-500/15' : 'hover:bg-white/[0.06]'
                               }`}
                             >
-                              <span
-                                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                                style={{ backgroundColor: ev.color }}
-                              />
-                              <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-text-primary">
-                                {ev.title}
-                              </span>
-                              <span className="hidden shrink-0 text-[10px] text-text-tertiary sm:inline">
-                                {fmtTime(ev.startTime)}
-                              </span>
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: ev.color }} />
+                              <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-text-primary">{ev.title}</span>
+                              <span className="hidden shrink-0 text-[10px] text-text-tertiary sm:inline">{fmtTime(ev.startTime)}</span>
                             </button>
                           ))}
                           {extra > 0 && (
@@ -428,7 +409,11 @@ export default function EventsPage() {
               <>
                 <div className="mb-3 flex items-center justify-center">
                   <h3 className="text-base font-semibold text-text-primary">
-                    {viewDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {viewDate.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
                   </h3>
                 </div>
 
@@ -449,12 +434,8 @@ export default function EventsPage() {
                         }`}
                       >
                         <span className="text-[10px] font-medium uppercase">{WEEKDAY[d.getDay()]}</span>
-                        <span className={`text-sm font-semibold ${isToday && !active ? 'text-primary-400' : ''}`}>
-                          {d.getDate()}
-                        </span>
-                        <span
-                          className={`h-1 w-1 rounded-full ${count > 0 ? (active ? 'bg-primary-400' : 'bg-primary-500') : 'bg-transparent'}`}
-                        />
+                        <span className={`text-sm font-semibold ${isToday && !active ? 'text-primary-400' : ''}`}>{d.getDate()}</span>
+                        <span className={`h-1 w-1 rounded-full ${count > 0 ? (active ? 'bg-primary-400' : 'bg-primary-500') : 'bg-transparent'}`} />
                       </button>
                     )
                   })}
@@ -481,9 +462,7 @@ export default function EventsPage() {
                           key={ev.id}
                           onClick={() => setSelectedId(ev.id)}
                           className={`flex w-full items-stretch gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
-                            isSel
-                              ? 'border-primary-500/50 bg-primary-500/10'
-                              : 'border-border-subtle bg-white/[0.02] hover:bg-white/[0.04]'
+                            isSel ? 'border-primary-500/50 bg-primary-500/10' : 'border-border-subtle bg-white/[0.02] hover:bg-white/[0.04]'
                           }`}
                         >
                           <div className="w-16 shrink-0 text-right">
@@ -493,9 +472,10 @@ export default function EventsPage() {
                           <span className="w-1 shrink-0 rounded-full" style={{ backgroundColor: ev.color }} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-text-primary">{ev.title}</p>
-                            {ev.description && (
-                              <p className="mt-0.5 truncate text-xs text-text-tertiary">{ev.description}</p>
-                            )}
+                            {ev.description && <p className="mt-0.5 truncate text-xs text-text-tertiary">{ev.description}</p>}
+                            <div className="mt-1">
+                              <RecordScopeBadge scope={ev.scope} />
+                            </div>
                           </div>
                           <ProfileAvatar user={user} size={28} />
                         </button>
@@ -509,32 +489,35 @@ export default function EventsPage() {
         </Card>
 
         {/* Right — in-page detail panel */}
-        <DetailPanel
-          open={!!selected}
-          onClose={() => setSelectedId(null)}
-          eyebrow="Event"
-          title={selected?.title}
-        >
+        <DetailPanel open={!!selected} onClose={() => setSelectedId(null)} eyebrow="Event" title={selected?.title}>
           {selected && (
             <>
               <span
                 className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold"
-                style={{ backgroundColor: `${selected.color}22`, color: selected.color }}
+                style={{
+                  backgroundColor: `${selected.color}22`,
+                  color: selected.color,
+                }}
               >
                 <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selected.color }} />
                 Event
               </span>
+              <div className="mt-2">
+                <RecordScopeBadge scope={selected.scope} />
+              </div>
 
               <p className="mt-3 flex items-center gap-1.5 text-xs text-text-tertiary">
                 <Clock className="h-3.5 w-3.5" />
-                {new Date(selected.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {new Date(selected.date).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                })}
                 {' · '}
                 {fmtTime(selected.startTime)} – {fmtTime(selected.endTime)}
               </p>
 
-              <p className="mt-3 text-sm text-text-secondary">
-                {selected.description || 'No description for this event.'}
-              </p>
+              <p className="mt-3 text-sm text-text-secondary">{selected.description || 'No description for this event.'}</p>
 
               {/* Activity summary */}
               <div className="mt-4 border-t border-border-subtle pt-3">
@@ -562,12 +545,14 @@ export default function EventsPage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => confirm('Delete this event?') && del.mutate({ id: selected.id })}
-                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border-subtle py-2 text-xs font-medium text-neg hover:bg-neg-bg transition-colors cursor-pointer"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Delete event
-              </button>
+              {(selected.userId === session?.user?.id || session?.user?.role === 'ADMIN') && (
+                <button
+                  onClick={() => confirm('Delete this event?') && del.mutate({ id: selected.id })}
+                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border-subtle py-2 text-xs font-medium text-neg hover:bg-neg-bg transition-colors cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete event
+                </button>
+              )}
             </>
           )}
         </DetailPanel>
@@ -582,7 +567,13 @@ export default function EventsPage() {
           <h2 className="text-lg font-semibold tracking-tight text-text-primary">Sprints</h2>
           <p className="mt-0.5 text-xs text-text-tertiary">Plan and track your development sprints</p>
         </div>
-        <Button size="sm" onClick={() => { setEditSprintId(undefined); setSprintDialogOpen(true) }}>
+        <Button
+          size="sm"
+          onClick={() => {
+            setEditSprintId(undefined)
+            setSprintDialogOpen(true)
+          }}
+        >
           <Plus className="h-4 w-4" /> New Sprint
         </Button>
       </div>
@@ -606,30 +597,42 @@ export default function EventsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-medium text-text-primary">{s.name}</p>
-                    {s.isActive && (
-                      <span className="rounded-full bg-primary-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-primary-400">
-                        Active
-                      </span>
-                    )}
+                    {s.isActive && <span className="rounded-full bg-primary-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-primary-400">Active</span>}
+                    <RecordScopeBadge scope={s.scope} />
                   </div>
                   <p className="mt-0.5 text-xs text-text-tertiary">
-                    {new Date(s.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} –{' '}
-                    {new Date(s.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(s.startDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}{' '}
+                    –{' '}
+                    {new Date(s.endDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
                     {s.goal && <span> · {s.goal}</span>}
                   </p>
                 </div>
-                <button
-                  onClick={() => { setEditSprintId(s.id); setSprintDialogOpen(true) }}
-                  className="shrink-0 rounded-lg p-1.5 text-text-tertiary hover:bg-white/[0.05] hover:text-text-secondary transition-colors cursor-pointer"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => confirm('Delete this sprint?') && deleteSprintMut.mutate({ id: s.id })}
-                  className="shrink-0 rounded-lg p-1.5 text-text-tertiary hover:bg-neg-bg hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {(s.userId === session?.user?.id || session?.user?.role === 'ADMIN') && (
+                  <button
+                    onClick={() => {
+                      setEditSprintId(s.id)
+                      setSprintDialogOpen(true)
+                    }}
+                    className="shrink-0 rounded-lg p-1.5 text-text-tertiary hover:bg-white/[0.05] hover:text-text-secondary transition-colors cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {(s.userId === session?.user?.id || session?.user?.role === 'ADMIN') && (
+                  <button
+                    onClick={() => confirm('Delete this sprint?') && deleteSprintMut.mutate({ id: s.id })}
+                    className="shrink-0 rounded-lg p-1.5 text-text-tertiary hover:bg-neg-bg hover:text-red-500 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </CardContent>
             </Card>
           ))}

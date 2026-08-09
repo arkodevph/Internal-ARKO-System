@@ -1,19 +1,20 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { router, protectedProcedure } from '../trpc'
+import { canManageOwnedRecord, ownedOrCompany, recordScopeSchema } from '../../../lib/record-scope'
 
 const STATUS = ['IDEA', 'EXPLORING', 'VALIDATED', 'ARCHIVED'] as const
 
 async function ownIdea(ctx: any, id: string) {
   const row = await ctx.prisma.idea.findUnique({ where: { id } })
-  if (!row || row.userId !== ctx.user.id!) throw new TRPCError({ code: 'FORBIDDEN' })
+  if (!row || !canManageOwnedRecord(row.userId, ctx.user.id!, ctx.userRole)) throw new TRPCError({ code: 'FORBIDDEN' })
   return row
 }
 
 export const ideasRouter = router({
   list: protectedProcedure.query(({ ctx }) =>
     ctx.prisma.idea.findMany({
-      where: { userId: ctx.user.id! },
+      where: ownedOrCompany(ctx.user.id!, ctx.userRole),
       orderBy: { updatedAt: 'desc' },
     }),
   ),
@@ -25,11 +26,10 @@ export const ideasRouter = router({
         description: z.string().optional(),
         status: z.enum(STATUS).default('IDEA'),
         tags: z.array(z.string()).default([]),
+        scope: recordScopeSchema.default('PERSONAL'),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      ctx.prisma.idea.create({ data: { ...input, userId: ctx.user.id! } }),
-    ),
+    .mutation(({ ctx, input }) => ctx.prisma.idea.create({ data: { ...input, userId: ctx.user.id! } })),
 
   update: protectedProcedure
     .input(
@@ -39,6 +39,7 @@ export const ideasRouter = router({
         description: z.string().optional(),
         status: z.enum(STATUS).optional(),
         tags: z.array(z.string()).optional(),
+        scope: recordScopeSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -47,28 +48,25 @@ export const ideasRouter = router({
       return ctx.prisma.idea.update({ where: { id }, data })
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await ownIdea(ctx, input.id)
-      return ctx.prisma.idea.delete({ where: { id: input.id } })
-    }),
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    await ownIdea(ctx, input.id)
+    return ctx.prisma.idea.delete({ where: { id: input.id } })
+  }),
 
-  spawnTask: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const idea = await ownIdea(ctx, input.id)
-      const task = await ctx.prisma.task.create({
-        data: {
-          title: idea.title,
-          description: idea.description ?? undefined,
-          assigneeId: ctx.user.id!,
-        },
-      })
-      await ctx.prisma.idea.update({
-        where: { id: idea.id },
-        data: { spawnedTaskId: task.id },
-      })
-      return task
-    }),
+  spawnTask: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const idea = await ownIdea(ctx, input.id)
+    const task = await ctx.prisma.task.create({
+      data: {
+        title: idea.title,
+        description: idea.description ?? undefined,
+        assigneeId: ctx.user.id!,
+        scope: idea.scope,
+      },
+    })
+    await ctx.prisma.idea.update({
+      where: { id: idea.id },
+      data: { spawnedTaskId: task.id },
+    })
+    return task
+  }),
 })

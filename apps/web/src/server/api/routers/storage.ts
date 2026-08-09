@@ -5,7 +5,15 @@ import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sd
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { router, protectedProcedure } from '../trpc'
 import { s3, S3_BUCKET } from '../../../lib/s3'
+import { canManageOwnedRecord, recordScopeSchema, userCanSeeCompanyRecords } from '../../../lib/record-scope'
+import type { TRPCContext } from '../../../lib/trpc/context'
 
+type AuthenticatedContext = TRPCContext & {
+  user: NonNullable<TRPCContext['user']>
+}
+
+// Visibility changes block new URLs immediately. URLs already issued remain valid
+// for this short lifetime because S3 presigned URLs cannot be revoked individually.
 const EXPIRES = 900 // 15 minutes
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 
@@ -30,16 +38,25 @@ const ALLOWED_MIME_TYPES = new Set([
 // Resource types that support file attachments
 const ALLOWED_RESOURCE_TYPES = new Set(['TASK', 'RESOURCE', 'USER'])
 
-async function assertResourceAccess(ctx: any, resourceType: string, resourceId: string | undefined) {
+function assertSupportedResourceType(resourceType: string) {
+  if (!ALLOWED_RESOURCE_TYPES.has(resourceType)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `File attachments are not supported for resource type "${resourceType}"`,
+    })
+  }
+}
+
+async function assertResourceAccess(ctx: AuthenticatedContext, resourceType: string, resourceId: string | undefined) {
   if (!resourceId) return
   if (ctx.userRole === 'ADMIN') return
 
   if (resourceType === 'TASK') {
     const task = await ctx.prisma.task.findUnique({
       where: { id: resourceId },
-      select: { assigneeId: true },
+      select: { assigneeId: true, scope: true },
     })
-    if (task?.assigneeId === ctx.user.id) return
+    if (task && (task.assigneeId === ctx.user.id || (task.scope === 'COMPANY' && userCanSeeCompanyRecords(ctx.userRole)))) return
   }
 
   if (resourceType === 'RESOURCE') {
@@ -55,6 +72,10 @@ async function assertResourceAccess(ctx: any, resourceType: string, resourceId: 
   throw new TRPCError({ code: 'FORBIDDEN' })
 }
 
+function canViewAttachment(ctx: AuthenticatedContext, file: { userId: string; scope: 'PERSONAL' | 'COMPANY' }) {
+  return ctx.userRole === 'ADMIN' || file.userId === ctx.user.id || (file.scope === 'COMPANY' && userCanSeeCompanyRecords(ctx.userRole))
+}
+
 export const storageRouter = router({
   createUploadUrl: protectedProcedure
     .input(
@@ -66,12 +87,7 @@ export const storageRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ALLOWED_RESOURCE_TYPES.has(input.resourceType)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `File attachments are not supported for resource type "${input.resourceType}"`,
-        })
-      }
+      assertSupportedResourceType(input.resourceType)
       if (!ALLOWED_MIME_TYPES.has(input.mimeType)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -102,15 +118,11 @@ export const storageRouter = router({
         mimeType: z.string().default('application/octet-stream'),
         resourceType: z.string(),
         resourceId: z.string().optional(),
+        scope: recordScopeSchema.default('PERSONAL'),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ALLOWED_RESOURCE_TYPES.has(input.resourceType)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `File attachments are not supported for resource type "${input.resourceType}"`,
-        })
-      }
+      assertSupportedResourceType(input.resourceType)
       if (!ALLOWED_MIME_TYPES.has(input.mimeType)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -136,11 +148,17 @@ export const storageRouter = router({
     }),
 
   listFor: protectedProcedure.input(z.object({ resourceType: z.string(), resourceId: z.string() })).query(async ({ ctx, input }) => {
+    assertSupportedResourceType(input.resourceType)
     await assertResourceAccess(ctx, input.resourceType, input.resourceId)
     return ctx.prisma.fileAttachment.findMany({
       where: {
         resourceType: input.resourceType,
         resourceId: input.resourceId,
+        ...(ctx.userRole === 'ADMIN'
+          ? {}
+          : userCanSeeCompanyRecords(ctx.userRole)
+            ? { OR: [{ userId: ctx.user.id! }, { scope: 'COMPANY' }] }
+            : { userId: ctx.user.id! }),
       },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -152,6 +170,7 @@ export const storageRouter = router({
         fileSize: true,
         mimeType: true,
         createdAt: true,
+        scope: true,
       },
     })
   }),
@@ -161,7 +180,9 @@ export const storageRouter = router({
       where: { id: input.id },
     })
     if (!file) throw new TRPCError({ code: 'NOT_FOUND' })
+    assertSupportedResourceType(file.resourceType)
     await assertResourceAccess(ctx, file.resourceType, file.resourceId ?? undefined)
+    if (!canViewAttachment(ctx, file)) throw new TRPCError({ code: 'FORBIDDEN' })
     if (!file.resourceId && file.userId !== ctx.user.id) {
       throw new TRPCError({ code: 'FORBIDDEN' })
     }
@@ -173,8 +194,24 @@ export const storageRouter = router({
     const file = await ctx.prisma.fileAttachment.findUnique({
       where: { id: input.id },
     })
-    if (!file || file.userId !== ctx.user.id!) throw new TRPCError({ code: 'FORBIDDEN' })
+    if (!file || !canManageOwnedRecord(file.userId, ctx.user.id!, ctx.userRole)) throw new TRPCError({ code: 'FORBIDDEN' })
     await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: file.fileKey }))
     return ctx.prisma.fileAttachment.delete({ where: { id: input.id } })
+  }),
+
+  updateScope: protectedProcedure.input(z.object({ id: z.string(), scope: recordScopeSchema })).mutation(async ({ ctx, input }) => {
+    const file = await ctx.prisma.fileAttachment.findUnique({
+      where: { id: input.id },
+    })
+    if (!file) throw new TRPCError({ code: 'NOT_FOUND' })
+    assertSupportedResourceType(file.resourceType)
+    if (!canManageOwnedRecord(file.userId, ctx.user.id!, ctx.userRole)) {
+      throw new TRPCError({ code: 'FORBIDDEN' })
+    }
+    await assertResourceAccess(ctx, file.resourceType, file.resourceId ?? undefined)
+    return ctx.prisma.fileAttachment.update({
+      where: { id: input.id },
+      data: { scope: input.scope },
+    })
   }),
 })

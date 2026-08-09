@@ -21,9 +21,15 @@ describe('resources router', () => {
       user: { id: 'u1' },
       session: { user: { id: 'u1' } },
       userRole: 'USER',
-      prisma: { resource: { findMany: jest.fn().mockResolvedValue([{ id: 'r1' }]) } },
+      prisma: {
+        resource: {
+          findMany: jest.fn().mockResolvedValue([{ id: 'r1' }]),
+          count: jest.fn().mockResolvedValue(1),
+        },
+      },
     } as any
-    expect(await resourcesRouter.createCaller(ctx).list()).toHaveLength(1)
+    const res = await resourcesRouter.createCaller(ctx).list()
+    expect(res.items).toHaveLength(1)
   })
 })
 

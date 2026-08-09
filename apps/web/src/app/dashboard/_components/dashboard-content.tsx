@@ -13,6 +13,7 @@ import {
   ExternalLink,
   GitCommit,
   Plus,
+  FileCheck,
   Target,
   Users,
   Wallet,
@@ -102,6 +103,10 @@ export default function DashboardContent() {
               </button>
             ))}
           </div>
+          <Link href="/dashboard/documents" className="dashboard-outline-button">
+            <FileCheck className="h-4 w-4" />
+            Documents & Invoices
+          </Link>
           <Link href="/dashboard/finance" className="dashboard-outline-button">
             <Plus className="h-4 w-4" />
             New transaction

@@ -1,0 +1,282 @@
+import { z } from 'zod'
+
+/**
+ * Landing page CMS content shape.
+ *
+ * This is the single source of truth for the editable public landing page.
+ * `DEFAULT_LANDING_CONTENT` mirrors the values that used to be hardcoded in
+ * `app/(marketing)/page.tsx` and its `_components/*`, so rendering with the
+ * defaults produces byte-identical output to the pre-CMS landing page.
+ */
+
+const statSchema = z.object({
+  to: z.number(),
+  suffix: z.string().default(''),
+  label: z.string(),
+  // When present (even empty string), the raw text is shown instead of the CountUp animation.
+  displayText: z.string().optional(),
+})
+
+const serviceSlideSchema = z.object({
+  lead: z.string(),
+  accent: z.string(),
+  resolve: z.boolean().optional(),
+})
+
+const workCardSchema = z.object({
+  kind: z.string(),
+  title: z.string(),
+  copy: z.string(),
+  tags: z.array(z.string()),
+  icon: z.string(),
+})
+
+const processStepSchema = z.object({
+  n: z.string(),
+  title: z.string(),
+  body: z.string(),
+  detail: z.string(),
+  icon: z.string(),
+})
+
+const footerLinkSchema = z.object({ label: z.string(), href: z.string() })
+
+export const landingContentSchema = z.object({
+  // Per-section visibility toggles (hero + footer are structural and always render).
+  sections: z.object({
+    marquee: z.boolean(),
+    stats: z.boolean(),
+    intro: z.boolean(),
+    services: z.boolean(),
+    work: z.boolean(),
+    process: z.boolean(),
+    contact: z.boolean(),
+  }),
+  hero: z.object({
+    eyebrow: z.string(),
+    headingLead: z.string(),
+    roles: z.array(z.string()),
+    paragraph: z.string(),
+  }),
+  marquee: z.object({ words: z.string() }),
+  stats: z.array(statSchema),
+  intro: z.object({
+    heading: z.string(),
+    eyebrowNote: z.string(),
+    bodyBefore: z.string(),
+    bodyHighlight: z.string(),
+    bodyAfter: z.string(),
+  }),
+  services: z.object({
+    label: z.string(),
+    videoSrc: z.string(),
+    poster: z.string(),
+    ctaLabel: z.string(),
+    slides: z.array(serviceSlideSchema),
+  }),
+  work: z.object({
+    eyebrow: z.string(),
+    heading: z.string(),
+    subtitle: z.string(),
+    ctaLabel: z.string(),
+    cards: z.array(workCardSchema),
+  }),
+  process: z.object({
+    eyebrow: z.string(),
+    heading: z.string(),
+    subtitle: z.string(),
+    ctaLabel: z.string(),
+    steps: z.array(processStepSchema),
+  }),
+  contact: z.object({
+    headingLine1: z.string(),
+    headingLine2: z.string(),
+    paragraph: z.string(),
+    email: z.string(),
+  }),
+  footer: z.object({
+    brandBlurb: z.string(),
+    email: z.string(),
+    githubUrl: z.string(),
+    whatWeDo: z.array(footerLinkSchema),
+    ctaLine1: z.string(),
+    ctaLine2: z.string(),
+    ctaLine3: z.string(),
+    location: z.string(),
+  }),
+})
+
+export type LandingContent = z.infer<typeof landingContentSchema>
+
+export const DEFAULT_LANDING_CONTENT: LandingContent = {
+  sections: {
+    marquee: true,
+    stats: true,
+    intro: true,
+    services: true,
+    work: true,
+    process: true,
+    contact: true,
+  },
+  hero: {
+    eyebrow: 'Arkō — software studio',
+    headingLead: 'We build',
+    roles: ['websites', 'mobile apps', 'automation', 'ai tools'],
+    paragraph:
+      'You bring the idea. We design it, build it across web and mobile, then wire in the automation and AI that make it run on its own.',
+  },
+  marquee: { words: 'SITES · APPS · SYSTEMS · TOOLS · CODE · SHIP · ' },
+  stats: [
+    { to: 4, suffix: '', label: 'disciplines under one roof' },
+    { to: 2, suffix: '', label: 'platforms from one codebase' },
+    { to: 0, suffix: '', label: 'your product, our focus', displayText: '' },
+    { to: 0, suffix: '', label: 'middlemen between you and the code' },
+  ],
+  intro: {
+    heading: 'Ship.',
+    eyebrowNote: '*We handle the hard parts.',
+    bodyBefore:
+      'Most good ideas die in the gap between design and done. We live in that gap, so your product ',
+    bodyHighlight: 'actually gets built',
+    bodyAfter:
+      ' and reaches real people, without you managing five contractors to get there.',
+  },
+  services: {
+    label: 'What we build',
+    videoSrc: '/services.mp4',
+    poster: '/services-poster.jpg',
+    ctaLabel: 'Start a project →',
+    slides: [
+      { lead: 'Looking for', accent: 'frontend development?' },
+      { lead: 'Backend', accent: 'systems?' },
+      { lead: 'Cross-platform', accent: 'mobile apps?' },
+      { lead: 'Workflows on', accent: 'automation?' },
+      { lead: 'Products with', accent: 'AI that ships?' },
+      { lead: 'Whatever you need,', accent: 'we build it.', resolve: true },
+    ],
+  },
+  work: {
+    eyebrow: 'what we build',
+    heading: 'Work',
+    subtitle: 'The kind of thing we make',
+    ctaLabel: 'See what fits your project →',
+    cards: [
+      {
+        kind: 'web',
+        title: 'Product websites',
+        copy: 'Landing pages and marketing sites that load fast and convert.',
+        tags: ['Next.js', 'Tailwind', 'Framer'],
+        icon: '◇',
+      },
+      {
+        kind: 'mobile',
+        title: 'Cross-platform apps',
+        copy: 'One codebase shipped to iOS and Android, store to home screen.',
+        tags: ['React Native', 'Expo', 'Gesture'],
+        icon: '◎',
+      },
+      {
+        kind: 'automation',
+        title: 'Automation pipelines',
+        copy: 'Quiet systems that move data and trigger work while you sleep.',
+        tags: ['n8n', 'Cron', 'Webhooks'],
+        icon: '⚡',
+      },
+      {
+        kind: 'ai',
+        title: 'AI features',
+        copy: 'Chat, retrieval and agents built into products people already use.',
+        tags: ['LLMs', 'RAG', 'Agents'],
+        icon: '◆',
+      },
+    ],
+  },
+  process: {
+    eyebrow: 'our process',
+    heading: 'How we work',
+    subtitle: 'Four steps. One direction. Ship.',
+    ctaLabel: 'Ready to start? →',
+    steps: [
+      {
+        n: '01',
+        title: 'Discovery',
+        body: 'We learn how your team works today and map the fastest path to something real. You leave with a plan, a scope and a fixed idea of what ships first.',
+        detail:
+          'A two-week sprint where we interview stakeholders, audit your existing stack, review analytics, and map user flows. You get a technical brief, a sitemap, a UI audit, and a prioritized backlog — no billable hours wasted on discovery theatre.',
+        icon: '→',
+      },
+      {
+        n: '02',
+        title: 'Design & build',
+        body: 'Design and engineering happen in the same room. You see working software every week, not slide decks, so you can steer while it is cheap to change.',
+        detail:
+          'We work in one-week cycles. Monday: scope the week. Wednesday: first working build. Friday: demo and feedback. No handoffs, no Figma-to-code gap — the designer writes CSS and the engineer thinks about margins.',
+        icon: '◆',
+      },
+      {
+        n: '03',
+        title: 'Automation & AI',
+        body: 'Once the core works, we wire in the automation and AI that remove the busywork, so the product does more of the running on its own.',
+        detail:
+          'This is where we add the force multiplier — background jobs, webhook integrations, vector search, LLM agents, scheduled tasks. Whatever lets your team wake up to work already done instead of a queue of manual steps.',
+        icon: '⚡',
+      },
+      {
+        n: '04',
+        title: 'Handover & support',
+        body: 'You get clean code, docs and the keys. We stay on for as much or as little support as you want, no lock-in and no mystery.',
+        detail:
+          'Full handover includes: private npm packages or monorepo access, architecture decision records (ADRs), CI/CD pipelines, runbooks, and a 30-min walkthrough. After that, we offer retainer support in 10-hour blocks — cancel anytime.',
+        icon: '◈',
+      },
+    ],
+  },
+  contact: {
+    headingLine1: "Let's",
+    headingLine2: 'build',
+    paragraph:
+      'Tell us what you are trying to make. We will tell you the fastest honest way to get it shipped.',
+    email: 'arkodevph@gmail.com',
+  },
+  footer: {
+    brandBlurb:
+      'A software studio that designs, builds and ships web and mobile products — without the overhead.',
+    email: 'arkodevph@gmail.com',
+    githubUrl: 'https://github.com/justrhey',
+    whatWeDo: [
+      { label: 'Product websites', href: '#work' },
+      { label: 'Cross-platform apps', href: '#work' },
+      { label: 'Automation pipelines', href: '#work' },
+      { label: 'AI features & agents', href: '#work' },
+      { label: 'Design & prototyping', href: '#work' },
+      { label: 'Performance audits', href: '#work' },
+    ],
+    ctaLine1: "Let's",
+    ctaLine2: 'make it',
+    ctaLine3: 'real.',
+    location: 'Philippines',
+  },
+}
+
+/**
+ * Merge stored (possibly partial / older-schema) content over the defaults so a
+ * freshly-added field never renders as `undefined`. Arrays are replaced wholesale
+ * (the admin form always saves complete arrays); objects merge per-section.
+ */
+export function mergeLandingContent(stored: unknown): LandingContent {
+  const d = DEFAULT_LANDING_CONTENT
+  if (!stored || typeof stored !== 'object') return d
+  const s = stored as Partial<LandingContent>
+  return {
+    sections: { ...d.sections, ...s.sections },
+    hero: { ...d.hero, ...s.hero },
+    marquee: { ...d.marquee, ...s.marquee },
+    stats: s.stats ?? d.stats,
+    intro: { ...d.intro, ...s.intro },
+    services: { ...d.services, ...s.services },
+    work: { ...d.work, ...s.work },
+    process: { ...d.process, ...s.process },
+    contact: { ...d.contact, ...s.contact },
+    footer: { ...d.footer, ...s.footer },
+  }
+}

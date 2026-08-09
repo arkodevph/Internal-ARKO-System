@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { router, protectedProcedure } from '../trpc'
+import { assignedOrCompany, recordScopeSchema } from '../../../lib/record-scope'
 
 const assigneeInclude = {
   assignee: { select: { id: true, name: true, email: true, image: true } },
@@ -26,7 +27,10 @@ async function assertTaskAccess(ctx: any, taskId: string) {
       select: { role: true },
     })
     if (user?.role !== 'ADMIN') {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only update your own tasks' })
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'You can only update your own tasks',
+      })
     }
   }
   return task
@@ -67,22 +71,22 @@ export const tasksRouter = router({
     }),
   ),
 
-  list: protectedProcedure
-    .input(z.object({ status: z.string().optional() }).optional())
-    .query(async ({ ctx }) => {
-      const userId = ctx.user.id!
-      return ctx.prisma.task.findMany({
-        where: { assigneeId: userId },
-        orderBy: { position: 'asc' },
-        include: {
-          ...assigneeInclude,
-          subtasks: { select: { id: true, title: true, status: true } },
-          blockedBy: {
-            select: { blocking: { select: { id: true, title: true, status: true } } },
+  list: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const userId = ctx.user.id!
+    return ctx.prisma.task.findMany({
+      where: assignedOrCompany(userId, ctx.userRole),
+      orderBy: { position: 'asc' },
+      include: {
+        ...assigneeInclude,
+        subtasks: { select: { id: true, title: true, status: true } },
+        blockedBy: {
+          select: {
+            blocking: { select: { id: true, title: true, status: true } },
           },
         },
-      })
-    }),
+      },
+    })
+  }),
 
   create: protectedProcedure
     .input(
@@ -94,6 +98,7 @@ export const tasksRouter = router({
         assigneeId: z.string().optional(),
         parentId: z.string().optional(),
         projectId: z.string().optional(),
+        scope: recordScopeSchema.default('PERSONAL'),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -109,15 +114,23 @@ export const tasksRouter = router({
           select: { id: true },
         })
         if (!project) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Project not found',
+          })
         }
       }
 
       // If assigning to someone else, verify user exists
       if (input.assigneeId && input.assigneeId !== userId) {
-        const target = await ctx.prisma.user.findUnique({ where: { id: input.assigneeId } })
+        const target = await ctx.prisma.user.findUnique({
+          where: { id: input.assigneeId },
+        })
         if (!target) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Assigned user not found' })
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Assigned user not found',
+          })
         }
       }
 
@@ -148,6 +161,7 @@ export const tasksRouter = router({
           parentId: input.parentId,
           projectId: input.projectId,
           position: (maxPos?.position ?? -1) + 1,
+          scope: input.scope,
         },
         include: assigneeInclude,
       })
@@ -161,6 +175,7 @@ export const tasksRouter = router({
         description: z.string().optional(),
         priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
         status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE']).optional(),
+        scope: recordScopeSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -175,27 +190,28 @@ export const tasksRouter = router({
         where: { id: input.id },
         data: {
           ...(input.title !== undefined && { title: input.title }),
-          ...(input.description !== undefined && { description: input.description }),
+          ...(input.description !== undefined && {
+            description: input.description,
+          }),
           ...(input.priority !== undefined && { priority: input.priority }),
           ...(input.status !== undefined && { status: input.status }),
+          ...(input.scope !== undefined && { scope: input.scope }),
         },
         include: assigneeInclude,
       })
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await assertTaskAccess(ctx, input.id)
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    await assertTaskAccess(ctx, input.id)
 
-      // Promote any subtasks to top-level rather than cascade-deleting them
-      await ctx.prisma.task.updateMany({
-        where: { parentId: input.id },
-        data: { parentId: null },
-      })
+    // Promote any subtasks to top-level rather than cascade-deleting them
+    await ctx.prisma.task.updateMany({
+      where: { parentId: input.id },
+      data: { parentId: null },
+    })
 
-      return ctx.prisma.task.delete({ where: { id: input.id } })
-    }),
+    return ctx.prisma.task.delete({ where: { id: input.id } })
+  }),
 
   assignTask: protectedProcedure
     .input(
@@ -230,7 +246,9 @@ export const tasksRouter = router({
       }
 
       // Verify target user exists
-      const target = await ctx.prisma.user.findUnique({ where: { id: input.assigneeId } })
+      const target = await ctx.prisma.user.findUnique({
+        where: { id: input.assigneeId },
+      })
       if (!target) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' })
       }
@@ -264,43 +282,45 @@ export const tasksRouter = router({
       })
     }),
 
-  addDependency: protectedProcedure
-    .input(z.object({ taskId: z.string(), blockerId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      if (input.taskId === input.blockerId) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'A task cannot depend on itself' })
-      }
-      // Ownership is enforced on the task being blocked
-      await assertTaskAccess(ctx, input.taskId)
-
-      const blocker = await ctx.prisma.task.findUnique({
-        where: { id: input.blockerId },
-        select: { id: true },
+  addDependency: protectedProcedure.input(z.object({ taskId: z.string(), blockerId: z.string() })).mutation(async ({ ctx, input }) => {
+    if (input.taskId === input.blockerId) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'A task cannot depend on itself',
       })
-      if (!blocker) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Blocking task not found' })
-      }
+    }
+    // Ownership is enforced on the task being blocked
+    await assertTaskAccess(ctx, input.taskId)
 
-      if (await wouldCreateCycle(ctx, input.taskId, input.blockerId)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'That dependency would create a cycle',
-        })
-      }
-
-      return ctx.prisma.taskDependency.create({
-        data: { blockingId: input.blockerId, blockedId: input.taskId },
+    const blocker = await ctx.prisma.task.findUnique({
+      where: { id: input.blockerId },
+      select: { id: true },
+    })
+    if (!blocker) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Blocking task not found',
       })
-    }),
+    }
 
-  removeDependency: protectedProcedure
-    .input(z.object({ taskId: z.string(), blockerId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await assertTaskAccess(ctx, input.taskId)
-      return ctx.prisma.taskDependency.deleteMany({
-        where: { blockingId: input.blockerId, blockedId: input.taskId },
+    if (await wouldCreateCycle(ctx, input.taskId, input.blockerId)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'That dependency would create a cycle',
       })
-    }),
+    }
+
+    return ctx.prisma.taskDependency.create({
+      data: { blockingId: input.blockerId, blockedId: input.taskId },
+    })
+  }),
+
+  removeDependency: protectedProcedure.input(z.object({ taskId: z.string(), blockerId: z.string() })).mutation(async ({ ctx, input }) => {
+    await assertTaskAccess(ctx, input.taskId)
+    return ctx.prisma.taskDependency.deleteMany({
+      where: { blockingId: input.blockerId, blockedId: input.taskId },
+    })
+  }),
 })
 
 /**

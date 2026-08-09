@@ -9,12 +9,10 @@ const ctx = (over: any = {}) => {
     userRole: 'USER',
     prisma: {
       reminder: {
-        findMany: jest.fn().mockImplementation(({ where }: any) =>
-          Promise.resolve(reminders.filter((r: any) => where?.userId ? r.userId === where.userId : true)),
-        ),
-        findUnique: jest.fn().mockImplementation(({ where }: any) =>
-          Promise.resolve(reminders.find((r: any) => r.id === where.id) ?? null),
-        ),
+        findMany: jest
+          .fn()
+          .mockImplementation(({ where }: any) => Promise.resolve(reminders.filter((r: any) => (where?.userId ? r.userId === where.userId : true)))),
+        findUnique: jest.fn().mockImplementation(({ where }: any) => Promise.resolve(reminders.find((r: any) => r.id === where.id) ?? null)),
         create: jest.fn().mockImplementation(({ data }: any) => {
           const row = { id: 'r-new', ...data, createdAt: new Date() }
           reminders.push(row)
@@ -41,14 +39,19 @@ const ctx = (over: any = {}) => {
 describe('reminders router', () => {
   describe('list', () => {
     it('returns reminders for the current user ordered by dueAt asc', async () => {
-      const c = ctx({ _reminders: [
-        { id: 'r1', userId: 'u1', title: 'A', dueAt: new Date('2026-07-25') },
-        { id: 'r2', userId: 'u1', title: 'B', dueAt: new Date('2026-07-24') },
-      ]})
+      const c = ctx({
+        _reminders: [
+          { id: 'r1', userId: 'u1', title: 'A', dueAt: new Date('2026-07-25') },
+          { id: 'r2', userId: 'u1', title: 'B', dueAt: new Date('2026-07-24') },
+        ],
+      })
       const res = await remindersRouter.createCaller(c).list()
       expect(res).toHaveLength(2)
       expect(c.prisma.reminder.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { userId: 'u1' }, orderBy: { dueAt: 'asc' } }),
+        expect.objectContaining({
+          where: { OR: [{ userId: 'u1' }, { scope: 'COMPANY' }] },
+          orderBy: { dueAt: 'asc' },
+        }),
       )
     })
   })
@@ -60,7 +63,11 @@ describe('reminders router', () => {
       await remindersRouter.createCaller(c).create({ title: 'Meeting', dueAt })
       expect(c.prisma.reminder.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ userId: 'u1', title: 'Meeting', dueAt }),
+          data: expect.objectContaining({
+            userId: 'u1',
+            title: 'Meeting',
+            dueAt,
+          }),
         }),
       )
     })
@@ -77,7 +84,11 @@ describe('reminders router', () => {
 
     it('includes optional note', async () => {
       const c = ctx()
-      await remindersRouter.createCaller(c).create({ title: 'With note', note: 'Remember this', dueAt: new Date() })
+      await remindersRouter.createCaller(c).create({
+        title: 'With note',
+        note: 'Remember this',
+        dueAt: new Date(),
+      })
       expect(c.prisma.reminder.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ note: 'Remember this' }),
@@ -88,37 +99,39 @@ describe('reminders router', () => {
 
   describe('toggleDone', () => {
     it('marks an owned reminder as done', async () => {
-      const c = ctx({ _reminders: [{ id: 'r1', userId: 'u1', title: 'Task', isDone: false }] })
+      const c = ctx({
+        _reminders: [{ id: 'r1', userId: 'u1', title: 'Task', isDone: false }],
+      })
       const res = await remindersRouter.createCaller(c).toggleDone({ id: 'r1', isDone: true })
       expect(res.isDone).toBe(true)
     })
 
     it('rejects toggling another user reminder', async () => {
-      const c = ctx({ _reminders: [{ id: 'r1', userId: 'u2', title: 'Not mine', isDone: false }] })
-      await expect(
-        remindersRouter.createCaller(c).toggleDone({ id: 'r1', isDone: true }),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+      const c = ctx({
+        _reminders: [{ id: 'r1', userId: 'u2', title: 'Not mine', isDone: false }],
+      })
+      await expect(remindersRouter.createCaller(c).toggleDone({ id: 'r1', isDone: true })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     })
 
     it('returns NOT_FOUND for missing reminder', async () => {
-      await expect(
-        remindersRouter.createCaller(ctx()).toggleDone({ id: 'ghost', isDone: true }),
-      ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+      await expect(remindersRouter.createCaller(ctx()).toggleDone({ id: 'ghost', isDone: true })).rejects.toMatchObject({ code: 'NOT_FOUND' })
     })
   })
 
   describe('delete', () => {
     it('deletes an owned reminder', async () => {
-      const c = ctx({ _reminders: [{ id: 'r1', userId: 'u1', title: 'Delete me' }] })
+      const c = ctx({
+        _reminders: [{ id: 'r1', userId: 'u1', title: 'Delete me' }],
+      })
       await remindersRouter.createCaller(c).delete({ id: 'r1' })
       expect(c.prisma.reminder.delete).toHaveBeenCalled()
     })
 
     it('rejects deleting another user reminder', async () => {
-      const c = ctx({ _reminders: [{ id: 'r1', userId: 'u2', title: 'Not mine' }] })
-      await expect(
-        remindersRouter.createCaller(c).delete({ id: 'r1' }),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+      const c = ctx({
+        _reminders: [{ id: 'r1', userId: 'u2', title: 'Not mine' }],
+      })
+      await expect(remindersRouter.createCaller(c).delete({ id: 'r1' })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     })
   })
 })

@@ -4,6 +4,11 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@arko/ui'
 import { Plus, Workflow, AlertCircle, Play, History, Loader2, X, Pencil, Trash2 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
+import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
+import type { RecordScope } from '../../../lib/record-scope'
+import { useSession } from 'next-auth/react'
+import type { inferRouterOutputs } from '@trpc/server'
+import type { AppRouter } from '../../../server/api/root'
 
 const SAMPLE_DEFINITION = JSON.stringify(
   {
@@ -25,7 +30,10 @@ const statusColor: Record<string, string> = {
   CANCELLED: 'bg-card text-text-tertiary',
 }
 
+type WorkflowItem = inferRouterOutputs<AppRouter>['workflows']['list'][number]
+
 export default function WorkflowsPage() {
+  const { data: session } = useSession()
   const { data: workflows, isLoading, error } = api.workflows.list.useQuery()
   const utils = api.useUtils()
 
@@ -34,6 +42,7 @@ export default function WorkflowsPage() {
   const [description, setDescription] = useState('')
   const [definition, setDefinition] = useState(SAMPLE_DEFINITION)
   const [notice, setNotice] = useState<string | null>(null)
+  const [scope, setScope] = useState<RecordScope>('PERSONAL')
 
   const createWf = api.workflows.create.useMutation({
     onError: (e) => setNotice(e.message),
@@ -49,7 +58,12 @@ export default function WorkflowsPage() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    createWf.mutate({ name: name.trim(), description: description.trim() || undefined, definition })
+    createWf.mutate({
+      name: name.trim(),
+      description: description.trim() || undefined,
+      definition,
+      scope,
+    })
   }
 
   return (
@@ -94,6 +108,7 @@ export default function WorkflowsPage() {
                   className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
+              <RecordScopeField value={scope} onChange={setScope} />
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary">Description</label>
                 <input
@@ -154,7 +169,7 @@ export default function WorkflowsPage() {
       ) : workflows && workflows.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-3">
           {workflows.map((wf) => (
-            <WorkflowCard key={wf.id} wf={wf} onError={setNotice} />
+            <WorkflowCard key={wf.id} wf={wf} onError={setNotice} canManage={wf.userId === session?.user?.id || session?.user?.role === 'ADMIN'} />
           ))}
         </div>
       ) : (
@@ -163,10 +178,7 @@ export default function WorkflowsPage() {
             <div className="flex flex-col items-center py-12 text-text-tertiary">
               <Workflow className="mb-2 h-8 w-8" />
               <p className="text-sm">No workflows yet</p>
-              <button
-                onClick={() => setShowNew(true)}
-                className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700"
-              >
+              <button onClick={() => setShowNew(true)} className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700">
                 Create your first workflow
               </button>
             </div>
@@ -177,7 +189,7 @@ export default function WorkflowsPage() {
   )
 }
 
-function WorkflowCard({ wf, onError }: { wf: any; onError: (m: string) => void }) {
+function WorkflowCard({ wf, onError, canManage }: { wf: WorkflowItem; onError: (m: string) => void; canManage: boolean }) {
   const utils = api.useUtils()
   const [showHistory, setShowHistory] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -185,6 +197,7 @@ function WorkflowCard({ wf, onError }: { wf: any; onError: (m: string) => void }
   const [name, setName] = useState(wf.name)
   const [description, setDescription] = useState(wf.description ?? '')
   const [definition, setDefinition] = useState(wf.definition)
+  const [scope, setScope] = useState<RecordScope>(wf.scope)
 
   const runWf = api.workflows.execute.useMutation({
     onError: (e) => onError(e.message),
@@ -227,10 +240,17 @@ function WorkflowCard({ wf, onError }: { wf: any; onError: (m: string) => void }
             spellCheck={false}
             className="block w-full rounded-lg border border-border-subtle px-3 py-2 font-mono text-xs focus:border-primary-500 focus:outline-none"
           />
+          <RecordScopeField value={scope} onChange={setScope} />
           <div className="flex gap-2">
             <Button
               onClick={() =>
-                updateWf.mutate({ id: wf.id, name: name.trim() || wf.name, description, definition })
+                updateWf.mutate({
+                  id: wf.id,
+                  name: name.trim() || wf.name,
+                  description,
+                  definition,
+                  scope,
+                })
               }
               disabled={updateWf.isPending}
             >
@@ -252,34 +272,33 @@ function WorkflowCard({ wf, onError }: { wf: any; onError: (m: string) => void }
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-workflow-50">
             <Workflow className="h-5 w-5 text-workflow-600" />
           </div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setEditing(true)}
-              className="rounded p-1 text-text-tertiary hover:bg-card hover:text-text-secondary"
-              aria-label="Edit workflow"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="rounded p-1 text-text-tertiary hover:bg-card hover:text-red-600"
-              aria-label="Delete workflow"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+          {canManage && (
+            <div className="flex gap-1">
+              <button
+                onClick={() => setEditing(true)}
+                className="rounded p-1 text-text-tertiary hover:bg-card hover:text-text-secondary"
+                aria-label="Edit workflow"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="rounded p-1 text-text-tertiary hover:bg-card hover:text-red-600"
+                aria-label="Delete workflow"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
         <CardTitle className="text-base mt-2">{wf.name}</CardTitle>
+        <RecordScopeBadge scope={wf.scope} />
       </CardHeader>
       <CardContent>
         {wf.description && <p className="text-sm text-text-tertiary">{wf.description}</p>}
         <span
           className={`mt-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            wf.status === 'ACTIVE'
-              ? 'bg-green-50 text-green-700'
-              : wf.status === 'PAUSED'
-                ? 'bg-workflow-50 text-workflow-700'
-                : 'bg-card text-text-secondary'
+            wf.status === 'ACTIVE' ? 'bg-green-50 text-green-700' : wf.status === 'PAUSED' ? 'bg-workflow-50 text-workflow-700' : 'bg-card text-text-secondary'
           }`}
         >
           {wf.status}
@@ -301,14 +320,12 @@ function WorkflowCard({ wf, onError }: { wf: any; onError: (m: string) => void }
           </div>
         ) : (
           <div className="mt-4 flex items-center gap-2">
-            <Button onClick={() => runWf.mutate({ workflowId: wf.id })} disabled={runWf.isPending}>
-              {runWf.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-              Run
-            </Button>
+            {canManage && (
+              <Button onClick={() => runWf.mutate({ workflowId: wf.id })} disabled={runWf.isPending}>
+                {runWf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                Run
+              </Button>
+            )}
             <button
               onClick={() => setShowHistory((s) => !s)}
               className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-text-tertiary hover:bg-card/[0.04]"
@@ -326,7 +343,9 @@ function WorkflowCard({ wf, onError }: { wf: any; onError: (m: string) => void }
 }
 
 function ExecutionHistory({ workflowId }: { workflowId: string }) {
-  const { data: runs, isLoading } = api.workflows.listExecutions.useQuery({ workflowId })
+  const { data: runs, isLoading } = api.workflows.listExecutions.useQuery({
+    workflowId,
+  })
   const [openId, setOpenId] = useState<string | null>(null)
 
   if (isLoading) {
@@ -338,15 +357,13 @@ function ExecutionHistory({ workflowId }: { workflowId: string }) {
 
   return (
     <div className="mt-3 space-y-1.5 border-t border-border-subtle pt-3">
-      {runs.map((run: any) => (
+      {runs.map((run) => (
         <div key={run.id}>
           <button
             onClick={() => setOpenId(openId === run.id ? null : run.id)}
             className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-xs hover:bg-card/[0.04]"
           >
-            <span className="text-text-tertiary">
-              {new Date(run.createdAt).toLocaleString()}
-            </span>
+            <span className="text-text-tertiary">{new Date(run.createdAt).toLocaleString()}</span>
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 statusColor[run.status] ?? 'bg-card text-text-secondary'
@@ -369,15 +386,9 @@ function ExecutionLogs({ id }: { id: string }) {
   if (logs.length === 0) return <p className="px-2 py-1 text-[11px] text-text-tertiary">No logs</p>
   return (
     <div className="ml-2 space-y-0.5 border-l border-border-subtle py-1 pl-2">
-      {logs.map((log: any) => (
+      {logs.map((log) => (
         <p key={log.id} className="text-[11px] text-text-secondary">
-          <span
-            className={`mr-1.5 font-semibold ${
-              log.level === 'ERROR' ? 'text-red-600' : 'text-text-tertiary'
-            }`}
-          >
-            {log.step}
-          </span>
+          <span className={`mr-1.5 font-semibold ${log.level === 'ERROR' ? 'text-red-600' : 'text-text-tertiary'}`}>{log.step}</span>
           {log.message}
         </p>
       ))}

@@ -5,6 +5,8 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { Button } from '@arko/ui'
 import { X, Loader2, Calendar } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
+import { RecordScopeField } from '../../../components/record-scope'
+import type { RecordScope } from '../../../lib/record-scope'
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear()
@@ -28,6 +30,7 @@ export function SprintDialog({ open, onOpenChange, editId }: SprintDialogProps) 
   const [endDate, setEndDate] = useState('')
   const [color, setColor] = useState('#2D6A4F')
   const [isActive, setIsActive] = useState(true)
+  const [scope, setScope] = useState<RecordScope>('PERSONAL')
 
   // Load existing sprint data when editing
   const { data: sprints } = api.events.listSprints.useQuery()
@@ -41,16 +44,23 @@ export function SprintDialog({ open, onOpenChange, editId }: SprintDialogProps) 
       setEndDate(toLocalDateString(new Date(existing.endDate)))
       setColor(existing.color)
       setIsActive(existing.isActive)
+      setScope(existing.scope)
     } else if (!open) {
       resetForm()
     }
   }, [existing, open, editId])
 
   const createMut = api.events.createSprint.useMutation({
-    onSuccess: () => { utils.events.listSprints.invalidate(); handleClose() },
+    onSuccess: () => {
+      utils.events.listSprints.invalidate()
+      handleClose()
+    },
   })
   const updateMut = api.events.updateSprint.useMutation({
-    onSuccess: () => { utils.events.listSprints.invalidate(); handleClose() },
+    onSuccess: () => {
+      utils.events.listSprints.invalidate()
+      handleClose()
+    },
   })
 
   const isPending = createMut.isPending || updateMut.isPending
@@ -63,6 +73,7 @@ export function SprintDialog({ open, onOpenChange, editId }: SprintDialogProps) 
     setEndDate('')
     setColor('#2D6A4F')
     setIsActive(true)
+    setScope('PERSONAL')
   }
 
   function handleClose() {
@@ -81,6 +92,7 @@ export function SprintDialog({ open, onOpenChange, editId }: SprintDialogProps) 
       endDate: new Date(endDate),
       color,
       isActive,
+      scope,
     }
 
     if (editId) {
@@ -96,9 +108,7 @@ export function SprintDialog({ open, onOpenChange, editId }: SprintDialogProps) 
         <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out" />
         <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-5 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
-            <Dialog.Title className="text-lg font-bold tracking-tight text-text-primary">
-              {editId ? 'Edit Sprint' : 'New Sprint'}
-            </Dialog.Title>
+            <Dialog.Title className="text-lg font-bold tracking-tight text-text-primary">{editId ? 'Edit Sprint' : 'New Sprint'}</Dialog.Title>
             <Dialog.Close asChild>
               <button className="rounded-lg p-1.5 text-text-tertiary hover:bg-card hover:text-text-secondary transition-colors">
                 <X className="h-4 w-4" />
@@ -192,6 +202,8 @@ export function SprintDialog({ open, onOpenChange, editId }: SprintDialogProps) 
             </div>
 
             {/* Active toggle */}
+            <RecordScopeField value={scope} onChange={setScope} disabled={isPending} />
+
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -205,7 +217,9 @@ export function SprintDialog({ open, onOpenChange, editId }: SprintDialogProps) 
             {/* Actions */}
             <div className="flex gap-3 justify-end pt-2">
               <Dialog.Close asChild>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
               </Dialog.Close>
               <Button type="submit" disabled={isPending || !isValid}>
                 {isPending && <Loader2 className="h-4 w-4 animate-spin" />}

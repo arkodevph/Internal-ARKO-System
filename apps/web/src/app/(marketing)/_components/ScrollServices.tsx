@@ -5,19 +5,17 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCallback, useRef } from 'react'
 import StarBorder from './StarBorder'
+import type { LandingContent } from '../../../lib/landing/content'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
-const SLIDES: { lead: string; accent: string; resolve?: boolean }[] = [
-  { lead: 'Looking for', accent: 'frontend development?' },
-  { lead: 'Backend', accent: 'systems?' },
-  { lead: 'Cross-platform', accent: 'mobile apps?' },
-  { lead: 'Workflows on', accent: 'automation?' },
-  { lead: 'Products with', accent: 'AI that ships?' },
-  { lead: 'Whatever you need,', accent: 'we build it.', resolve: true },
-]
-
-export default function ScrollServices() {
+export default function ScrollServices({
+  label,
+  videoSrc,
+  poster,
+  ctaLabel,
+  slides: SLIDES,
+}: LandingContent['services']) {
   const sectionRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -113,7 +111,7 @@ export default function ScrollServices() {
     <section id="services" ref={sectionRef} className="relative" style={{ height: '1200vh' }}>
       <div
         className="sticky top-0 flex h-screen items-center overflow-hidden bg-ink"
-        style={{ backgroundImage: 'url(/services-poster.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+        style={{ backgroundImage: `url(${poster})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
 
         <video
@@ -121,11 +119,11 @@ export default function ScrollServices() {
           muted
           playsInline
           preload="auto"
-          poster="/services-poster.jpg"
+          poster={poster}
           className="absolute inset-0 h-full w-full object-cover"
           style={{ willChange: 'contents', transform: 'translateZ(0)', filter: 'brightness(0.35)' }}
         >
-          <source src="/services.mp4" type="video/mp4" />
+          <source src={videoSrc} type="video/mp4" />
         </video>
 
         <div
@@ -150,7 +148,7 @@ export default function ScrollServices() {
         </div>
 
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pt-8 md:px-10">
-          <span ref={labelRef} className="eyebrow text-acid">What we build</span>
+          <span ref={labelRef} className="eyebrow text-acid">{label}</span>
           <span ref={counterRef} className="eyebrow mono text-white/60">01 / 06</span>
         </div>
 
@@ -171,7 +169,7 @@ export default function ScrollServices() {
                 {s.resolve && (
                   <div className="mt-8">
                     <StarBorder as="a" href="#contact">
-                      Start a project →
+                      {ctaLabel}
                     </StarBorder>
                   </div>
                 )}

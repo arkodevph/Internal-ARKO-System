@@ -4,13 +4,18 @@ import { useState } from 'react'
 import { Card, CardContent, Button } from '@arko/ui'
 import { Lightbulb, Plus, Trash2, Loader2, ArrowRight } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
+import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
+import type { RecordScope } from '../../../lib/record-scope'
+import { useSession } from 'next-auth/react'
 
 const STATUSES = ['IDEA', 'EXPLORING', 'VALIDATED', 'ARCHIVED'] as const
 
 export default function IdeasPage() {
+  const { data: session } = useSession()
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [scope, setScope] = useState<RecordScope>('PERSONAL')
 
   const { data: ideas, isLoading } = api.ideas.list.useQuery()
   const utils = api.useUtils()
@@ -23,8 +28,12 @@ export default function IdeasPage() {
       utils.ideas.list.invalidate()
     },
   })
-  const del = api.ideas.delete.useMutation({ onSuccess: () => utils.ideas.list.invalidate() })
-  const spawn = api.ideas.spawnTask.useMutation({ onSuccess: () => utils.ideas.list.invalidate() })
+  const del = api.ideas.delete.useMutation({
+    onSuccess: () => utils.ideas.list.invalidate(),
+  })
+  const spawn = api.ideas.spawnTask.useMutation({
+    onSuccess: () => utils.ideas.list.invalidate(),
+  })
 
   return (
     <div>
@@ -44,7 +53,7 @@ export default function IdeasPage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                if (title.trim()) create.mutate({ title: title.trim(), description })
+                if (title.trim()) create.mutate({ title: title.trim(), description, scope })
               }}
               className="space-y-3"
             >
@@ -63,6 +72,7 @@ export default function IdeasPage() {
                 rows={3}
                 className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               />
+              <RecordScopeField value={scope} onChange={setScope} />
               <Button type="submit" size="sm" disabled={create.isPending}>
                 {create.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Create'}
               </Button>
@@ -93,15 +103,12 @@ export default function IdeasPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-medium text-text-primary">{idea.title}</p>
-                    <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">
-                      {idea.status}
-                    </span>
+                    <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">{idea.status}</span>
+                    <RecordScopeBadge scope={idea.scope} />
                   </div>
-                  {idea.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-text-tertiary">{idea.description}</p>
-                  )}
+                  {idea.description && <p className="mt-1 line-clamp-2 text-xs text-text-tertiary">{idea.description}</p>}
                 </div>
-                {!idea.spawnedTaskId && (
+                {!idea.spawnedTaskId && (idea.userId === session?.user?.id || session?.user?.role === 'ADMIN') && (
                   <button
                     title="Spawn task"
                     onClick={() => spawn.mutate({ id: idea.id })}
@@ -110,12 +117,14 @@ export default function IdeasPage() {
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 )}
-                <button
-                  onClick={() => confirm('Delete this idea?') && del.mutate({ id: idea.id })}
-                  className="shrink-0 rounded-lg p-1 text-text-muted hover:bg-neg-bg hover:text-red-500"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {(idea.userId === session?.user?.id || session?.user?.role === 'ADMIN') && (
+                  <button
+                    onClick={() => confirm('Delete this idea?') && del.mutate({ id: idea.id })}
+                    className="shrink-0 rounded-lg p-1 text-text-muted hover:bg-neg-bg hover:text-red-500"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </CardContent>
             </Card>
           ))}

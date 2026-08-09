@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, Button, DetailPanel } from '@arko/ui'
 import {
   Plus,
@@ -22,6 +23,8 @@ import { api } from '../../../lib/trpc/client'
 import { CommentThread } from './comment-thread'
 import { FileUploader } from '../../../components/file-uploader'
 import { AttachmentList } from '../../../components/attachment-list'
+import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
+import type { RecordScope } from '../../../lib/record-scope'
 
 // resourceType key for the generic comments system (see comments router)
 const TASK_RESOURCE = 'TASK'
@@ -36,12 +39,11 @@ const columnLabels: Record<string, string> = {
 const priorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const
 
 // dependsOn = blockers of this task that are not yet DONE
-const blockers = (task: any) =>
-  (task.blockedBy ?? []).map((d: any) => d.blocking).filter(Boolean)
-const isBlocked = (task: any) =>
-  blockers(task).some((b: any) => b.status !== 'DONE')
+const blockers = (task: any) => (task.blockedBy ?? []).map((d: any) => d.blocking).filter(Boolean)
+const isBlocked = (task: any) => blockers(task).some((b: any) => b.status !== 'DONE')
 
 export default function TasksPage() {
+  const { data: session } = useSession()
   const { data: tasks, isLoading, error } = api.tasks.list.useQuery()
   const { data: users } = api.users.search.useQuery({})
   const { data: projects } = api.tasks.availableProjects.useQuery()
@@ -53,6 +55,7 @@ export default function TasksPage() {
   const [newPriority, setNewPriority] = useState('MEDIUM')
   const [newAssignee, setNewAssignee] = useState('')
   const [newProject, setNewProject] = useState('')
+  const [newScope, setNewScope] = useState<RecordScope>('PERSONAL')
   const [showAssigneeSearch, setShowAssigneeSearch] = useState(false)
   const [assigneeSearch, setAssigneeSearch] = useState('')
   const [search, setSearch] = useState('')
@@ -121,6 +124,7 @@ export default function TasksPage() {
       priority: newPriority as (typeof priorities)[number],
       assigneeId: newAssignee || undefined,
       projectId: newProject || undefined,
+      scope: newScope,
     })
   }
 
@@ -153,11 +157,13 @@ export default function TasksPage() {
 
       <div className="tasks-project-bar">
         <span className="mr-1 text-xs font-medium text-text-tertiary">Workstreams</span>
-        {([
-          ['ALL', 'All work'],
-          ['ACTIVE', 'Active sprint'],
-          ['REVIEW', 'Review queue'],
-        ] as const).map(([value, label]) => (
+        {(
+          [
+            ['ALL', 'All work'],
+            ['ACTIVE', 'Active sprint'],
+            ['REVIEW', 'Review queue'],
+          ] as const
+        ).map(([value, label]) => (
           <button
             key={value}
             type="button"
@@ -241,7 +247,9 @@ export default function TasksPage() {
                   >
                     <option value="">General / no project</option>
                     {(projects ?? []).map((project) => (
-                      <option key={project.id} value={project.id}>{project.name}</option>
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -259,17 +267,13 @@ export default function TasksPage() {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">
-                    Assign to
-                  </label>
+                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Assign to</label>
                   <div className="relative">
                     <div
                       onClick={() => setShowAssigneeSearch(true)}
                       className="flex h-[38px] cursor-pointer items-center rounded-lg border border-border-subtle px-3 text-sm text-text-secondary hover:border-border-subtle"
                     >
-                      {newAssignee
-                        ? users?.find((u) => u.id === newAssignee)?.name ?? 'Unknown'
-                        : 'Myself'}
+                      {newAssignee ? (users?.find((u) => u.id === newAssignee)?.name ?? 'Unknown') : 'Myself'}
                     </div>
                     {showAssigneeSearch && (
                       <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-border-subtle bg-card p-2 shadow-lg">
@@ -320,6 +324,7 @@ export default function TasksPage() {
                   </div>
                 </div>
               </div>
+              <RecordScopeField value={newScope} onChange={setNewScope} />
               <Button type="submit" disabled={createTask.isPending}>
                 {createTask.isPending ? (
                   <>
@@ -342,10 +347,7 @@ export default function TasksPage() {
               <AlertCircle className="h-4 w-4 shrink-0" />
               {notice}
             </div>
-            <button
-              onClick={() => setNotice(null)}
-              className="rounded p-1 text-amber-500 hover:bg-amber-100"
-            >
+            <button onClick={() => setNotice(null)} className="rounded p-1 text-amber-500 hover:bg-amber-100">
               <X className="h-4 w-4" />
             </button>
           </CardContent>
@@ -354,188 +356,196 @@ export default function TasksPage() {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1">
-      {error ? (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="flex items-center gap-3 py-6">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-            <p className="text-sm font-medium text-red-800">Failed to load tasks</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
-          {columns.map((column) => {
-            const colTasks = (tasks
-              ?.filter((task) => {
-                if (task.status !== column || task.parentId) return false
-                if (workstream === 'ACTIVE' && !['TODO', 'IN_PROGRESS'].includes(task.status)) return false
-                if (workstream === 'REVIEW' && task.status !== 'REVIEW') return false
-                if (priorityFilter !== 'ALL' && task.priority !== priorityFilter) return false
-                if (search && !`${task.title} ${task.description ?? ''}`.toLowerCase().includes(search.toLowerCase())) return false
-                return true
-              })
-              .sort((a, b) => sortNewest
-                ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                : a.position - b.position)) ?? []
-            const isEmpty = !isLoading && colTasks.length === 0
+          {error ? (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="flex items-center gap-3 py-6">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                <p className="text-sm font-medium text-red-800">Failed to load tasks</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+              {columns.map((column) => {
+                const colTasks =
+                  tasks
+                    ?.filter((task) => {
+                      if (task.status !== column || task.parentId) return false
+                      if (workstream === 'ACTIVE' && !['TODO', 'IN_PROGRESS'].includes(task.status)) return false
+                      if (workstream === 'REVIEW' && task.status !== 'REVIEW') return false
+                      if (priorityFilter !== 'ALL' && task.priority !== priorityFilter) return false
+                      if (search && !`${task.title} ${task.description ?? ''}`.toLowerCase().includes(search.toLowerCase())) return false
+                      return true
+                    })
+                    .sort((a, b) => (sortNewest ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : a.position - b.position)) ?? []
+                const isEmpty = !isLoading && colTasks.length === 0
 
-            return (
-              <div
-                key={column}
-                className="tasks-column space-y-3"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  const taskId = e.dataTransfer.getData('taskId')
-                  if (taskId) handleDrop(taskId, column)
-                }}
-              >
-                <div className="flex items-center justify-between px-1">
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
-                    <span className={`h-2 w-2 rounded-full ${
-                      column === 'TODO' ? 'bg-gray-500' :
-                      column === 'IN_PROGRESS' ? 'bg-blue-500' :
-                      column === 'REVIEW' ? 'bg-amber-500' : 'bg-primary-500'
-                    }`} />
-                    {columnLabels[column]}
-                  </h3>
-                  {!isLoading && (
-                    <span className="rounded-full bg-card px-2 py-0.5 text-xs text-text-tertiary">
-                      {colTasks.length}
-                    </span>
-                  )}
-                </div>
+                return (
+                  <div
+                    key={column}
+                    className="tasks-column space-y-3"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      const taskId = e.dataTransfer.getData('taskId')
+                      if (taskId) handleDrop(taskId, column)
+                    }}
+                  >
+                    <div className="flex items-center justify-between px-1">
+                      <h3 className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            column === 'TODO'
+                              ? 'bg-gray-500'
+                              : column === 'IN_PROGRESS'
+                                ? 'bg-blue-500'
+                                : column === 'REVIEW'
+                                  ? 'bg-amber-500'
+                                  : 'bg-primary-500'
+                          }`}
+                        />
+                        {columnLabels[column]}
+                      </h3>
+                      {!isLoading && <span className="rounded-full bg-card px-2 py-0.5 text-xs text-text-tertiary">{colTasks.length}</span>}
+                    </div>
 
-                {isLoading ? (
-                  <Card aria-hidden="true">
-                    <CardContent className="space-y-3 py-6">
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="space-y-1.5">
-                          <div className="h-4 w-full animate-pulse rounded bg-card" />
-                          <div className="h-3 w-3/4 animate-pulse rounded bg-card" />
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                ) : isEmpty ? (
-                  <Card className="border-dashed border-border-subtle">
-                    <CardContent>
-                      <div className="flex flex-col items-center py-8 text-text-muted">
-                        <ListTodo className="mb-2 h-7 w-7" />
-                        <p className="text-xs">No tasks</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-2">
-                    {colTasks.map((task) => {
-                      const subs = task.subtasks ?? []
-                      const doneSubs = subs.filter((s: any) => s.status === 'DONE').length
-                      const blocked = isBlocked(task)
-                      return (
-                        <Card
-                          key={task.id}
-                          className={`tasks-card cursor-pointer ${blocked ? 'border-red-500/30' : ''}`}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, task.id)}
-                          onClick={() => setSelectedId(task.id)}
-                        >
-                          <CardContent className="p-4">
-                            <div className="mb-3 flex items-center justify-between gap-2">
-                              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] text-text-tertiary">
-                                <Folder className="h-3 w-3 text-primary-400" />
-                                {task.project?.name ?? 'General'}
-                              </span>
-                              {task.priority && (
-                                <span className={`rounded-full px-2 py-1 text-[10px] font-medium ${
-                                  task.priority === 'URGENT' ? 'bg-red-500/10 text-red-400' :
-                                  task.priority === 'HIGH' ? 'bg-orange-500/10 text-orange-400' :
-                                  task.priority === 'MEDIUM' ? 'bg-amber-500/10 text-amber-300' :
-                                  'bg-white/[0.05] text-text-tertiary'
-                                }`}>
-                                  {task.priority.charAt(0) + task.priority.slice(1).toLowerCase()}
-                                </span>
-                              )}
+                    {isLoading ? (
+                      <Card aria-hidden="true">
+                        <CardContent className="space-y-3 py-6">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="space-y-1.5">
+                              <div className="h-4 w-full animate-pulse rounded bg-card" />
+                              <div className="h-3 w-3/4 animate-pulse rounded bg-card" />
                             </div>
-                            <p className="text-sm font-medium text-text-primary">{task.title}</p>
-                            {task.description && (
-                              <p className="mt-1.5 text-xs text-text-tertiary line-clamp-2">
-                                {task.description}
-                              </p>
-                            )}
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              {task.assignee && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">
-                                  <User className="h-2.5 w-2.5" />
-                                  {task.assignee.name ?? task.assignee.email}
-                                </span>
-                              )}
-                              {subs.length > 0 && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">
-                                  <CornerDownRight className="h-2.5 w-2.5" />
-                                  {doneSubs}/{subs.length}
-                                </span>
-                              )}
-                              {blocked && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-700">
-                                  <Ban className="h-2.5 w-2.5" />
-                                  Blocked
-                                </span>
-                              )}
-                              {/* Comment-count badge intentionally deferred: Comment has no FK
+                          ))}
+                        </CardContent>
+                      </Card>
+                    ) : isEmpty ? (
+                      <Card className="border-dashed border-border-subtle">
+                        <CardContent>
+                          <div className="flex flex-col items-center py-8 text-text-muted">
+                            <ListTodo className="mb-2 h-7 w-7" />
+                            <p className="text-xs">No tasks</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-2">
+                        {colTasks.map((task) => {
+                          const subs = task.subtasks ?? []
+                          const doneSubs = subs.filter((s: any) => s.status === 'DONE').length
+                          const blocked = isBlocked(task)
+                          return (
+                            <Card
+                              key={task.id}
+                              className={`tasks-card cursor-pointer ${blocked ? 'border-red-500/30' : ''}`}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, task.id)}
+                              onClick={() => setSelectedId(task.id)}
+                            >
+                              <CardContent className="p-4">
+                                <div className="mb-3 flex items-center justify-between gap-2">
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] text-text-tertiary">
+                                    <Folder className="h-3 w-3 text-primary-400" />
+                                    {task.project?.name ?? 'General'}
+                                  </span>
+                                  {task.priority && (
+                                    <span
+                                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${
+                                        task.priority === 'URGENT'
+                                          ? 'bg-red-500/10 text-red-400'
+                                          : task.priority === 'HIGH'
+                                            ? 'bg-orange-500/10 text-orange-400'
+                                            : task.priority === 'MEDIUM'
+                                              ? 'bg-amber-500/10 text-amber-300'
+                                              : 'bg-white/[0.05] text-text-tertiary'
+                                      }`}
+                                    >
+                                      {task.priority.charAt(0) + task.priority.slice(1).toLowerCase()}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm font-medium text-text-primary">{task.title}</p>
+                                {task.description && <p className="mt-1.5 text-xs text-text-tertiary line-clamp-2">{task.description}</p>}
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <RecordScopeBadge scope={task.scope} />
+                                  {task.assignee && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">
+                                      <User className="h-2.5 w-2.5" />
+                                      {task.assignee.name ?? task.assignee.email}
+                                    </span>
+                                  )}
+                                  {subs.length > 0 && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[10px] text-text-tertiary">
+                                      <CornerDownRight className="h-2.5 w-2.5" />
+                                      {doneSubs}/{subs.length}
+                                    </span>
+                                  )}
+                                  {blocked && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                                      <Ban className="h-2.5 w-2.5" />
+                                      Blocked
+                                    </span>
+                                  )}
+                                  {/* Comment-count badge intentionally deferred: Comment has no FK
                                   to Task (generic resourceType/resourceId), so a per-card count
                                   needs a batched count proc — out of scope for this story. */}
-                            </div>
-                            <div className="mt-4 flex items-center gap-2 text-[10px] text-text-tertiary">
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              <span>
-                                {task.dueDate
-                                  ? new Date(task.dueDate).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
-                                  : 'No due date'}
-                              </span>
-                            </div>
-                            {(() => {
-                              const progress = task.status === 'DONE'
-                                ? 100
-                                : subs.length
-                                  ? Math.round((doneSubs / subs.length) * 100)
-                                  : task.status === 'REVIEW'
-                                    ? 80
-                                    : task.status === 'IN_PROGRESS'
-                                      ? 45
-                                      : 0
-                              return (
-                                <div className="mt-3">
-                                  <div className="mb-1.5 flex justify-between text-[10px] text-text-tertiary">
-                                    <span>Progress</span>
-                                    <span className="tabular-nums">{progress}%</span>
-                                  </div>
-                                  <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                                    <div
-                                      className={`h-full rounded-full ${
-                                        column === 'REVIEW' ? 'bg-amber-500' :
-                                        column === 'DONE' ? 'bg-primary-500' : 'bg-blue-500'
-                                      }`}
-                                      style={{ width: `${progress}%` }}
-                                    />
-                                  </div>
                                 </div>
-                              )
-                            })()}
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
+                                <div className="mt-4 flex items-center gap-2 text-[10px] text-text-tertiary">
+                                  <CalendarDays className="h-3.5 w-3.5" />
+                                  <span>
+                                    {task.dueDate
+                                      ? new Date(task.dueDate).toLocaleDateString('en-PH', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                        })
+                                      : 'No due date'}
+                                  </span>
+                                </div>
+                                {(() => {
+                                  const progress =
+                                    task.status === 'DONE'
+                                      ? 100
+                                      : subs.length
+                                        ? Math.round((doneSubs / subs.length) * 100)
+                                        : task.status === 'REVIEW'
+                                          ? 80
+                                          : task.status === 'IN_PROGRESS'
+                                            ? 45
+                                            : 0
+                                  return (
+                                    <div className="mt-3">
+                                      <div className="mb-1.5 flex justify-between text-[10px] text-text-tertiary">
+                                        <span>Progress</span>
+                                        <span className="tabular-nums">{progress}%</span>
+                                      </div>
+                                      <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                                        <div
+                                          className={`h-full rounded-full ${
+                                            column === 'REVIEW' ? 'bg-amber-500' : column === 'DONE' ? 'bg-primary-500' : 'bg-blue-500'
+                                          }`}
+                                          style={{ width: `${progress}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )
+                                })()}
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {selected && (
           <TaskDetail
             task={selected}
+            canManage={selected.assigneeId === session?.user?.id || session?.user?.role === 'ADMIN'}
             allTasks={tasks ?? []}
             onClose={() => setSelectedId(null)}
             onError={setNotice}
@@ -554,6 +564,7 @@ export default function TasksPage() {
 
 function TaskDetail({
   task,
+  canManage,
   allTasks,
   onClose,
   onError,
@@ -568,6 +579,7 @@ function TaskDetail({
   const [description, setDescription] = useState(task.description ?? '')
   const [priority, setPriority] = useState(task.priority)
   const [status, setStatus] = useState(task.status)
+  const [scope, setScope] = useState<RecordScope>(task.scope)
   const [subtaskTitle, setSubtaskTitle] = useState('')
   const [depSearch, setDepSearch] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -584,219 +596,202 @@ function TaskDetail({
       description,
       priority,
       status,
+      scope,
     })
   }
 
   // Candidate blockers: any top-level task except self and existing deps
   const candidates = allTasks.filter(
-    (t: any) =>
-      t.id !== task.id &&
-      !depIds.has(t.id) &&
-      (!depSearch || t.title.toLowerCase().includes(depSearch.toLowerCase())),
+    (t: any) => t.id !== task.id && !depIds.has(t.id) && (!depSearch || t.title.toLowerCase().includes(depSearch.toLowerCase())),
   )
 
   return (
     <DetailPanel open onClose={onClose} title="Task details">
       <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-text-secondary">Title</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-text-secondary">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </div>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="mb-1.5 block text-sm font-medium text-text-secondary">Priority</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
-              >
-                {priorities.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="mb-1.5 block text-sm font-medium text-text-secondary">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
-              >
-                {columns.map((s) => (
-                  <option key={s} value={s}>
-                    {columnLabels[s]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <Button onClick={saveEdits} disabled={updateTask.isPending}>
-            {updateTask.isPending ? 'Saving...' : 'Save changes'}
-          </Button>
-
-          {/* Subtasks */}
-          <div className="border-t border-border-subtle pt-4">
-            <h3 className="mb-2 text-sm font-semibold text-text-secondary">
-              Subtasks ({subs.filter((s: any) => s.status === 'DONE').length}/{subs.length})
-            </h3>
-            <div className="space-y-1.5">
-              {subs.map((s: any) => (
-                <label
-                  key={s.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-md bg-card px-2.5 py-1.5 text-xs text-text-secondary"
-                >
-                  <input
-                    type="checkbox"
-                    checked={s.status === 'DONE'}
-                    disabled={updateStatus.isPending}
-                    onChange={() =>
-                      updateStatus.mutate({
-                        id: s.id,
-                        status: s.status === 'DONE' ? 'TODO' : 'DONE',
-                      })
-                    }
-                    className="h-3.5 w-3.5 rounded border-border-subtle"
-                  />
-                  <span className={s.status === 'DONE' ? 'line-through text-text-tertiary' : ''}>
-                    {s.title}
-                  </span>
-                </label>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-text-secondary">Title</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-text-secondary">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+          />
+        </div>
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label className="mb-1.5 block text-sm font-medium text-text-secondary">Priority</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+            >
+              {priorities.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
               ))}
-            </div>
-            <div className="mt-2 flex gap-2">
-              <input
-                value={subtaskTitle}
-                onChange={(e) => setSubtaskTitle(e.target.value)}
-                placeholder="Add a subtask..."
-                className="flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-xs focus:border-primary-500 focus:outline-none"
-              />
-              <Button
-                onClick={() => {
-                  if (!subtaskTitle.trim()) return
-                  createSubtask.mutate({ title: subtaskTitle.trim(), parentId: task.id })
-                  setSubtaskTitle('')
-                }}
-                disabled={createSubtask.isPending}
-              >
-                Add
-              </Button>
-            </div>
+            </select>
           </div>
-
-          {/* Dependencies */}
-          <div className="border-t border-border-subtle pt-4">
-            <h3 className="mb-2 text-sm font-semibold text-text-secondary">Blocked by</h3>
-            <div className="space-y-1.5">
-              {deps.length === 0 && <p className="text-xs text-text-tertiary">No dependencies</p>}
-              {deps.map((d: any) => (
-                <div
-                  key={d.id}
-                  className="flex items-center justify-between rounded-md bg-card px-2.5 py-1.5 text-xs"
-                >
-                  <span className="flex items-center gap-1.5 text-text-secondary">
-                    <Ban
-                      className={`h-3 w-3 ${d.status === 'DONE' ? 'text-text-muted' : 'text-red-500'}`}
-                    />
-                    {d.title}
-                  </span>
-                  <button
-                    onClick={() => removeDependency.mutate({ taskId: task.id, blockerId: d.id })}
-                    className="rounded p-0.5 text-text-tertiary hover:bg-card/[0.06] hover:text-red-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
+          <div className="flex-1">
+            <label className="mb-1.5 block text-sm font-medium text-text-secondary">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+            >
+              {columns.map((s) => (
+                <option key={s} value={s}>
+                  {columnLabels[s]}
+                </option>
               ))}
-            </div>
+            </select>
+          </div>
+        </div>
+        <RecordScopeField value={scope} onChange={setScope} disabled={!canManage} />
+        <Button onClick={saveEdits} disabled={updateTask.isPending || !canManage}>
+          {updateTask.isPending ? 'Saving...' : 'Save changes'}
+        </Button>
+
+        {/* Subtasks */}
+        <div className="border-t border-border-subtle pt-4">
+          <h3 className="mb-2 text-sm font-semibold text-text-secondary">
+            Subtasks ({subs.filter((s: any) => s.status === 'DONE').length}/{subs.length})
+          </h3>
+          <div className="space-y-1.5">
+            {subs.map((s: any) => (
+              <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-md bg-card px-2.5 py-1.5 text-xs text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={s.status === 'DONE'}
+                  disabled={updateStatus.isPending}
+                  onChange={() =>
+                    updateStatus.mutate({
+                      id: s.id,
+                      status: s.status === 'DONE' ? 'TODO' : 'DONE',
+                    })
+                  }
+                  className="h-3.5 w-3.5 rounded border-border-subtle"
+                />
+                <span className={s.status === 'DONE' ? 'line-through text-text-tertiary' : ''}>{s.title}</span>
+              </label>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-2">
             <input
-              value={depSearch}
-              onChange={(e) => setDepSearch(e.target.value)}
-              placeholder="Add a blocker..."
-              className="mt-2 w-full rounded-md border border-border-subtle px-2 py-1.5 text-xs focus:border-primary-500 focus:outline-none"
+              value={subtaskTitle}
+              onChange={(e) => setSubtaskTitle(e.target.value)}
+              placeholder="Add a subtask..."
+              className="flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-xs focus:border-primary-500 focus:outline-none"
             />
-            {depSearch && (
-              <div className="mt-1 max-h-32 space-y-0.5 overflow-y-auto rounded-md border border-border-subtle p-1">
-                {candidates.slice(0, 6).map((t: any) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      addDependency.mutate({ taskId: task.id, blockerId: t.id })
-                      setDepSearch('')
-                    }}
-                    className="block w-full rounded px-2 py-1 text-left text-xs text-text-secondary hover:bg-card/[0.04]"
-                  >
-                    {t.title}
-                  </button>
-                ))}
-                {candidates.length === 0 && (
-                  <p className="px-2 py-1 text-xs text-text-tertiary">No matching tasks</p>
-                )}
-              </div>
-            )}
+            <Button
+              onClick={() => {
+                if (!subtaskTitle.trim()) return
+                createSubtask.mutate({
+                  title: subtaskTitle.trim(),
+                  parentId: task.id,
+                })
+                setSubtaskTitle('')
+              }}
+              disabled={createSubtask.isPending}
+            >
+              Add
+            </Button>
           </div>
+        </div>
 
-          {/* Comments */}
-          <CommentThread resourceType={TASK_RESOURCE} resourceId={task.id} onError={onError} />
-
-          {/* Attachments */}
-          <div className="border-t border-border-subtle pt-4">
-            <AttachmentList key={attachRefresh} resourceType={TASK_RESOURCE} resourceId={task.id} />
-            <div className="mt-2">
-              <FileUploader
-                resourceType={TASK_RESOURCE}
-                resourceId={task.id}
-                onUploadComplete={() => setAttachRefresh((n) => n + 1)}
-              />
-            </div>
-          </div>
-
-          {/* Delete — two-step inline confirm (no native dialog) */}
-          <div className="border-t border-border-subtle pt-4">
-            {confirmDelete ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-text-secondary">
-                  Delete this task? Subtasks are promoted to top-level.
+        {/* Dependencies */}
+        <div className="border-t border-border-subtle pt-4">
+          <h3 className="mb-2 text-sm font-semibold text-text-secondary">Blocked by</h3>
+          <div className="space-y-1.5">
+            {deps.length === 0 && <p className="text-xs text-text-tertiary">No dependencies</p>}
+            {deps.map((d: any) => (
+              <div key={d.id} className="flex items-center justify-between rounded-md bg-card px-2.5 py-1.5 text-xs">
+                <span className="flex items-center gap-1.5 text-text-secondary">
+                  <Ban className={`h-3 w-3 ${d.status === 'DONE' ? 'text-text-muted' : 'text-red-500'}`} />
+                  {d.title}
                 </span>
                 <button
-                  onClick={() => deleteTask.mutate({ id: task.id })}
-                  disabled={deleteTask.isPending}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-2.5 py-1 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                  onClick={() =>
+                    removeDependency.mutate({
+                      taskId: task.id,
+                      blockerId: d.id,
+                    })
+                  }
+                  className="rounded p-0.5 text-text-tertiary hover:bg-card/[0.06] hover:text-red-600"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  {deleteTask.isPending ? 'Deleting...' : 'Confirm'}
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="text-sm text-text-tertiary hover:text-text-secondary"
-                >
-                  Cancel
+                  <X className="h-3 w-3" />
                 </button>
               </div>
-            ) : (
+            ))}
+          </div>
+          <input
+            value={depSearch}
+            onChange={(e) => setDepSearch(e.target.value)}
+            placeholder="Add a blocker..."
+            className="mt-2 w-full rounded-md border border-border-subtle px-2 py-1.5 text-xs focus:border-primary-500 focus:outline-none"
+          />
+          {depSearch && (
+            <div className="mt-1 max-h-32 space-y-0.5 overflow-y-auto rounded-md border border-border-subtle p-1">
+              {candidates.slice(0, 6).map((t: any) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    addDependency.mutate({ taskId: task.id, blockerId: t.id })
+                    setDepSearch('')
+                  }}
+                  className="block w-full rounded px-2 py-1 text-left text-xs text-text-secondary hover:bg-card/[0.04]"
+                >
+                  {t.title}
+                </button>
+              ))}
+              {candidates.length === 0 && <p className="px-2 py-1 text-xs text-text-tertiary">No matching tasks</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Comments */}
+        <CommentThread resourceType={TASK_RESOURCE} resourceId={task.id} onError={onError} />
+
+        {/* Attachments */}
+        <div className="border-t border-border-subtle pt-4">
+          <AttachmentList key={attachRefresh} resourceType={TASK_RESOURCE} resourceId={task.id} />
+          <div className="mt-2">
+            <FileUploader resourceType={TASK_RESOURCE} resourceId={task.id} onUploadComplete={() => setAttachRefresh((n) => n + 1)} />
+          </div>
+        </div>
+
+        {/* Delete — two-step inline confirm (no native dialog) */}
+        <div className="border-t border-border-subtle pt-4">
+          {confirmDelete ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-text-secondary">Delete this task? Subtasks are promoted to top-level.</span>
               <button
-                onClick={() => setConfirmDelete(true)}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700"
+                onClick={() => deleteTask.mutate({ id: task.id })}
+                disabled={deleteTask.isPending}
+                className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-2.5 py-1 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete task
+                {deleteTask.isPending ? 'Deleting...' : 'Confirm'}
               </button>
-            )}
-          </div>
+              <button onClick={() => setConfirmDelete(false)} className="text-sm text-text-tertiary hover:text-text-secondary">
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700">
+              <Trash2 className="h-4 w-4" />
+              Delete task
+            </button>
+          )}
+        </div>
       </div>
     </DetailPanel>
   )
