@@ -462,6 +462,55 @@ export function LandingEditor() {
         </CardContent>
       </Card>
 
+      {/* Projects (the /projects gallery page) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Projects page</CardTitle>
+          <CardDescription>The dedicated /projects gallery. Filter categories are generated from each project&apos;s Category.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Eyebrow"><Text value={c.projects.eyebrow} onChange={(v) => update((d) => { d.projects.eyebrow = v })} /></Field>
+            <Field label="Heading"><Text value={c.projects.heading} onChange={(v) => update((d) => { d.projects.heading = v })} /></Field>
+          </div>
+          <Field label="Intro"><Area value={c.projects.intro} onChange={(v) => update((d) => { d.projects.intro = v })} /></Field>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label="CTA eyebrow"><Text value={c.projects.ctaEyebrow} onChange={(v) => update((d) => { d.projects.ctaEyebrow = v })} /></Field>
+            <Field label="CTA heading"><Text value={c.projects.ctaHeading} onChange={(v) => update((d) => { d.projects.ctaHeading = v })} /></Field>
+            <Field label="CTA button label"><Text value={c.projects.ctaLabel} onChange={(v) => update((d) => { d.projects.ctaLabel = v })} /></Field>
+          </div>
+          <div className="space-y-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-black/50 dark:text-white/50">Projects</span>
+            {c.projects.items.map((project, i) => (
+              <div key={i} className="space-y-3 rounded-md border border-black/10 p-3 dark:border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-black/40">Project {i + 1}</span>
+                  <RowControls
+                    onUp={() => update((d) => move(d.projects.items, i, i - 1))}
+                    onDown={() => update((d) => move(d.projects.items, i, i + 1))}
+                    onRemove={() => update((d) => { d.projects.items.splice(i, 1) })}
+                  />
+                </div>
+                <div className="grid gap-3 md:grid-cols-[auto_2fr_1fr]">
+                  <Field label="Number"><Text value={project.number} onChange={(v) => update((d) => { d.projects.items[i].number = v })} /></Field>
+                  <Field label="Title"><Text value={project.title} onChange={(v) => update((d) => { d.projects.items[i].title = v })} /></Field>
+                  <Field label="Category"><Text value={project.category} onChange={(v) => update((d) => { d.projects.items[i].category = v })} /></Field>
+                </div>
+                <Field label="Type / description"><Text value={project.type} onChange={(v) => update((d) => { d.projects.items[i].type = v })} /></Field>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Field label="Domain (shown)"><Text value={project.domain} onChange={(v) => update((d) => { d.projects.items[i].domain = v })} /></Field>
+                  <Field label="Live URL (href)"><Text value={project.href} onChange={(v) => update((d) => { d.projects.items[i].href = v })} /></Field>
+                </div>
+                <Field label="Preview image URL" hint="e.g. /projects/my-site-preview.png"><Text value={project.image} onChange={(v) => update((d) => { d.projects.items[i].image = v })} /></Field>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => update((d) => { d.projects.items.push({ number: String(d.projects.items.length + 1).padStart(2, '0'), title: 'New project', category: 'Uncategorized', type: '', domain: '', href: '', image: '' }) })}>
+              <Plus className="mr-1 h-4 w-4" /> Add project
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* reset + save footer */}
       <div className="flex items-center justify-between">
         <Button

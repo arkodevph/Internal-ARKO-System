@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import { NavItem } from '@arko/ui'
 import { api } from '../../lib/trpc/client'
 import {
@@ -23,7 +22,6 @@ import {
   BookOpen,
   Link2,
   Calendar,
-  Palette,
 } from 'lucide-react'
 
 const navItems = [
@@ -45,18 +43,9 @@ const navItems = [
   { href: '/dashboard/settings', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
 ]
 
-// Landing CMS is admin-only; appended to the nav for ADMIN users.
-const adminNavItems = [
-  { href: '/dashboard/landing', label: 'Landing', icon: <Palette className="h-5 w-5" /> },
-]
-
 export function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session } = useSession()
-
-  const items =
-    session?.user?.role === 'ADMIN' ? [...navItems, ...adminNavItems] : navItems
 
   // Poll unread messages for the sidebar badge.
   const { data: unread } = api.messages.unreadCount.useQuery(undefined, {
@@ -67,14 +56,14 @@ export function DashboardNav() {
 
   // Prefetch all nav routes so they compile in the background
   useEffect(() => {
-    items.forEach((item) => {
+    navItems.forEach((item) => {
       router.prefetch(item.href)
     })
-  }, [router, items])
+  }, [router])
 
   return (
     <div className="space-y-1">
-      {items.map((item) => (
+      {navItems.map((item) => (
         <NavItem
           key={item.href}
           href={item.href}

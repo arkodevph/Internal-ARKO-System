@@ -1,74 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { LandingContent } from "../../../lib/landing/content";
 
-const PROJECTS = [
-  {
-    number: "01",
-    title: "BMW",
-    category: "Automotive",
-    type: "Immersive brand website",
-    domain: "unofficial-bmw.vercel.app",
-    href: "https://unofficial-bmw.vercel.app",
-    image: "/projects/unofficial-bmw-preview.png",
-  },
-  {
-    number: "02",
-    title: "Omniscient Reader's Viewpoint",
-    category: "Entertainment",
-    type: "Interactive story website",
-    domain: "unofficial-omniscient-readers-viewpoint.vercel.app",
-    href: "https://unofficial-omniscient-readers-viewpoint.vercel.app",
-    image: "/projects/unofficial-omniscient-readers-viewpoint-preview.png",
-  },
-  {
-    number: "03",
-    title: "Co-Map",
-    category: "Civic Tech",
-    type: "Community reporting web app",
-    domain: "co-map.vercel.app",
-    href: "https://co-map.vercel.app",
-    image: "/projects/co-map-preview.png",
-  },
-  {
-    number: "04",
-    title: "Yuenansichu Restaurant",
-    category: "Hospitality",
-    type: "Restaurant website",
-    domain: "yuenansichu-restaurant.vercel.app",
-    href: "https://yuenansichu-restaurant.vercel.app/",
-    image: "/projects/yuenansichu-restaurant-preview.png",
-  },
-  {
-    number: "05",
-    title: "Kapet Balay",
-    category: "Hospitality",
-    type: "Cafe website",
-    domain: "kapetbalay.vercel.app",
-    href: "https://kapetbalay.vercel.app/",
-    image: "/projects/kapetbalay-preview.png",
-  },
-] as const;
+type Project = LandingContent["projects"]["items"][number];
 
-type Project = (typeof PROJECTS)[number];
-const CATEGORIES = [
-  "All",
-  "Automotive",
-  "Entertainment",
-  "Civic Tech",
-  "Hospitality",
-] as const;
-type Category = (typeof CATEGORIES)[number];
-
-export default function ProjectGallery() {
+export default function ProjectGallery({ projects }: { projects: Project[] }) {
   const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [activeCategory, setActiveCategory] = useState<Category>("All");
+  const [activeCategory, setActiveCategory] = useState<string>("All");
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const categories = useMemo(
+    () => ["All", ...Array.from(new Set(projects.map((p) => p.category)))],
+    [projects],
+  );
   const visibleProjects =
     activeCategory === "All"
-      ? PROJECTS
-      : PROJECTS.filter((project) => project.category === activeCategory);
+      ? projects
+      : projects.filter((project) => project.category === activeCategory);
 
   useEffect(() => {
     if (!activeProject) return;
@@ -98,7 +47,7 @@ export default function ProjectGallery() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2" aria-label="Project categories">
-          {CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <button
               key={category}
               type="button"

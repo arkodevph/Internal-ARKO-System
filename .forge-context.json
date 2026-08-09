@@ -1,39 +1,40 @@
 {
   "root": "/home/nami/Desktop/projects/arko",
-  "scanned_at": "2026-08-09T00:00:00Z",
+  "scanned_at": "2026-08-09T11:45:00Z",
   "findings": [
     {
-      "fact": "The marketing app is Next.js 15.5.19 with React 19.2.7 and Tailwind CSS 4",
+      "fact": "The targeted marketing workspace uses Next.js 15.5.19, React 19.2.7, Tailwind CSS 4, GSAP 3.15, and Motion 12.42",
       "source": "apps/web/package.json"
     },
     {
-      "fact": "Relevant installed Next.js guides (node_modules/next/dist/docs/) must be read before code changes",
+      "fact": "Relevant installed Next.js guides must be read before code changes and deprecations must be heeded",
       "source": "AGENTS.md"
     },
     {
-      "fact": "The landing page is a single hardcoded React component; Hero roles, stats, Work, Services, Process, and Contact are literal JSX/arrays with no DB/content source",
+      "fact": "The preloader currently waits for services.mp4, exposes loading and ready states, and dismisses through a 700ms clip-path wipe",
+      "source": "apps/web/src/app/(marketing)/_components/Preloader.tsx"
+    },
+    {
+      "fact": "The transparent pipeline PNG is absolutely positioned along the bottom of the contact section and visibly overlaps the contact form submit area in the supplied screenshot",
+      "source": "apps/web/src/app/(marketing)/page.tsx and user screenshot"
+    },
+    {
+      "fact": "The footer already uses ARKO's acid/ink palette, hard grid borders, oversized typography, Squares texture, and a transparent system-core bitmap",
       "source": "apps/web/src/app/(marketing)/page.tsx"
     },
     {
-      "fact": "Landing sections are composed from _components: HeroFunnel, RotatingText, CountUp, ScrollServices, ScrollProcess, ScrollWork, ContactForm, ScrollReveal, Squares",
-      "source": "apps/web/src/app/(marketing)/_components/"
-    },
-    {
-      "fact": "RBAC exists: Role enum (ADMIN/USER/MEMBER...), requireRole(['ADMIN']) + protectedProcedure in tRPC, hasRole in lib/rbac",
-      "source": "apps/web/src/server/api/trpc.ts, apps/web/src/lib/rbac.ts"
-    },
-    {
-      "fact": "An authenticated dashboard already exists with sections including users, settings, documents, etc.; this is 'the system' an admin panel would live in",
-      "source": "apps/web/src/app/dashboard/"
-    },
-    {
-      "fact": "Backend is tRPC routers registered in root.ts + Prisma (packages/db/prisma/schema.prisma); there is NO landing-page content model yet",
-      "source": "apps/web/src/server/api/root.ts, packages/db/prisma/schema.prisma"
-    },
-    {
-      "fact": "A storage router exists (file uploads) usable for image/asset customization",
-      "source": "apps/web/src/server/api/routers/storage.ts"
+      "fact": "Marketing reduced-motion rules collapse animations and transitions to near-zero duration",
+      "source": "apps/web/src/app/globals.css"
     }
   ],
-  "workspaces": ["apps/web", "packages/db", "packages/ui"]
+  "workspaces": [
+    "apps/web",
+    "packages/config",
+    "packages/dashboard",
+    "packages/db",
+    "packages/finance",
+    "packages/tasks",
+    "packages/ui",
+    "packages/workflows"
+  ]
 }

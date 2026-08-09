@@ -7,7 +7,7 @@ jest.mock('next/cache', () => ({
 }))
 
 import { landingRouter } from '../landing'
-import { DEFAULT_LANDING_CONTENT } from '../../../../lib/landing/content'
+import { DEFAULT_LANDING_CONTENT, landingContentSchema } from '../../../../lib/landing/content'
 
 const ctx = (over: any = {}) => {
   let row: any = over._row ?? null
@@ -55,6 +55,34 @@ describe('landing router', () => {
         expect.objectContaining({ where: { singleton: true } }),
       )
       expect(res.hero.eyebrow).toBe('Changed eyebrow')
+    })
+
+    it('rejects dangerous URL schemes in link/asset fields (XSS defense)', async () => {
+      const c = ctx()
+      const malicious = {
+        ...DEFAULT_LANDING_CONTENT,
+        footer: { ...DEFAULT_LANDING_CONTENT.footer, githubUrl: 'javascript:alert(1)' },
+      }
+      await expect(landingRouter.createCaller(c).update(malicious)).rejects.toBeTruthy()
+      expect(c.prisma.landingContent.upsert).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('safeUrl validation', () => {
+    it('accepts https, root-relative, anchor, and empty; blocks javascript/data', () => {
+      const withHref = (href: string) => ({
+        ...DEFAULT_LANDING_CONTENT,
+        footer: {
+          ...DEFAULT_LANDING_CONTENT.footer,
+          whatWeDo: [{ label: 'x', href }],
+        },
+      })
+      for (const ok of ['https://example.com', '/work', '#contact', '']) {
+        expect(landingContentSchema.safeParse(withHref(ok)).success).toBe(true)
+      }
+      for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'vbscript:x']) {
+        expect(landingContentSchema.safeParse(withHref(bad)).success).toBe(false)
+      }
     })
   })
 })

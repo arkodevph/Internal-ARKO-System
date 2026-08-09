@@ -39,7 +39,23 @@ const processStepSchema = z.object({
   icon: z.string(),
 })
 
-const footerLinkSchema = z.object({ label: z.string(), href: z.string() })
+// Only allow safe link/asset values: https:// URL, root-relative path, #anchor, or empty.
+// Blocks dangerous schemes (javascript:, data:) from ever being stored and rendered.
+const safeUrl = z
+  .string()
+  .regex(/^$|^(https?:\/\/|\/|#)/, 'Must be an https:// URL, a /relative path, or a #anchor')
+
+const footerLinkSchema = z.object({ label: z.string(), href: safeUrl })
+
+const projectItemSchema = z.object({
+  number: z.string(),
+  title: z.string(),
+  category: z.string(),
+  type: z.string(),
+  domain: z.string(),
+  href: safeUrl,
+  image: safeUrl,
+})
 
 export const landingContentSchema = z.object({
   // Per-section visibility toggles (hero + footer are structural and always render).
@@ -69,8 +85,8 @@ export const landingContentSchema = z.object({
   }),
   services: z.object({
     label: z.string(),
-    videoSrc: z.string(),
-    poster: z.string(),
+    videoSrc: safeUrl,
+    poster: safeUrl,
     ctaLabel: z.string(),
     slides: z.array(serviceSlideSchema),
   }),
@@ -97,12 +113,22 @@ export const landingContentSchema = z.object({
   footer: z.object({
     brandBlurb: z.string(),
     email: z.string(),
-    githubUrl: z.string(),
+    githubUrl: safeUrl,
     whatWeDo: z.array(footerLinkSchema),
     ctaLine1: z.string(),
     ctaLine2: z.string(),
     ctaLine3: z.string(),
     location: z.string(),
+  }),
+  // The dedicated /projects gallery page (categories are derived from item.category).
+  projects: z.object({
+    eyebrow: z.string(),
+    heading: z.string(),
+    intro: z.string(),
+    ctaEyebrow: z.string(),
+    ctaHeading: z.string(),
+    ctaLabel: z.string(),
+    items: z.array(projectItemSchema),
   }),
 })
 
@@ -256,6 +282,62 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
     ctaLine3: 'real.',
     location: 'Philippines',
   },
+  projects: {
+    eyebrow: 'Selected work / 2025—2026',
+    heading: 'Projects',
+    intro:
+      'Websites and digital products built to turn an idea into something people can use.',
+    ctaEyebrow: 'Have a project in mind?',
+    ctaHeading: "Let's make it real.",
+    ctaLabel: 'Start a project →',
+    items: [
+      {
+        number: '01',
+        title: 'BMW',
+        category: 'Automotive',
+        type: 'Immersive brand website',
+        domain: 'unofficial-bmw.vercel.app',
+        href: 'https://unofficial-bmw.vercel.app',
+        image: '/projects/unofficial-bmw-preview.png',
+      },
+      {
+        number: '02',
+        title: "Omniscient Reader's Viewpoint",
+        category: 'Entertainment',
+        type: 'Interactive story website',
+        domain: 'unofficial-omniscient-readers-viewpoint.vercel.app',
+        href: 'https://unofficial-omniscient-readers-viewpoint.vercel.app',
+        image: '/projects/unofficial-omniscient-readers-viewpoint-preview.png',
+      },
+      {
+        number: '03',
+        title: 'Co-Map',
+        category: 'Civic Tech',
+        type: 'Community reporting web app',
+        domain: 'co-map.vercel.app',
+        href: 'https://co-map.vercel.app',
+        image: '/projects/co-map-preview.png',
+      },
+      {
+        number: '04',
+        title: 'Yuenansichu Restaurant',
+        category: 'Hospitality',
+        type: 'Restaurant website',
+        domain: 'yuenansichu-restaurant.vercel.app',
+        href: 'https://yuenansichu-restaurant.vercel.app/',
+        image: '/projects/yuenansichu-restaurant-preview.png',
+      },
+      {
+        number: '05',
+        title: 'Kapet Balay',
+        category: 'Hospitality',
+        type: 'Cafe website',
+        domain: 'kapetbalay.vercel.app',
+        href: 'https://kapetbalay.vercel.app/',
+        image: '/projects/kapetbalay-preview.png',
+      },
+    ],
+  },
 }
 
 /**
@@ -278,5 +360,6 @@ export function mergeLandingContent(stored: unknown): LandingContent {
     process: { ...d.process, ...s.process },
     contact: { ...d.contact, ...s.contact },
     footer: { ...d.footer, ...s.footer },
+    projects: { ...d.projects, ...s.projects },
   }
 }

@@ -26,6 +26,7 @@ import {
   X,
   PanelsTopLeft,
   BriefcaseBusiness,
+  Palette,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
@@ -40,23 +41,51 @@ type NavCategory = {
   icon: typeof LayoutDashboard
   label: string
   end?: boolean
+  /** Only shown to ADMIN users. */
+  adminOnly?: boolean
 }
 
-const ALL_CATEGORIES: NavCategory[] = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/dashboard/finance', icon: TrendingUp, label: 'Analytics' },
-  { to: '/dashboard/documents', icon: FileCheck, label: 'Documents' },
-  { to: '/dashboard/events', icon: CalendarDays, label: 'Calendar' },
-  { to: '/dashboard/tasks', icon: CheckSquare, label: 'Tasks' },
-  { to: '/dashboard/notes', icon: FileText, label: 'Notes' },
-  { to: '/dashboard/messages', icon: MessageSquare, label: 'Messages' },
-  { to: '/dashboard/reminders', icon: Bell, label: 'Reminders' },
-  { to: '/dashboard/journal', icon: Book, label: 'Journal' },
-  { to: '/dashboard/ideas', icon: Lightbulb, label: 'Ideas' },
-  { to: '/dashboard/resources', icon: Bookmark, label: 'Resources' },
-  { to: '/dashboard/client-portal', icon: BriefcaseBusiness, label: 'Client Portal' },
-  { to: '/dashboard/users', icon: Users, label: 'Users' },
+type NavGroup = { label: string; items: NavCategory[] }
+
+// Grouped, labelled navigation. Kept compact enough to fit without scrolling.
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Overview',
+    items: [
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
+      { to: '/dashboard/finance', icon: TrendingUp, label: 'Analytics' },
+    ],
+  },
+  {
+    label: 'Workspace',
+    items: [
+      { to: '/dashboard/tasks', icon: CheckSquare, label: 'Tasks' },
+      { to: '/dashboard/events', icon: CalendarDays, label: 'Calendar' },
+      { to: '/dashboard/reminders', icon: Bell, label: 'Reminders' },
+      { to: '/dashboard/notes', icon: FileText, label: 'Notes' },
+      { to: '/dashboard/journal', icon: Book, label: 'Journal' },
+      { to: '/dashboard/ideas', icon: Lightbulb, label: 'Ideas' },
+    ],
+  },
+  {
+    label: 'Content',
+    items: [
+      { to: '/dashboard/documents', icon: FileCheck, label: 'Documents' },
+      { to: '/dashboard/resources', icon: Bookmark, label: 'Resources' },
+      { to: '/dashboard/messages', icon: MessageSquare, label: 'Messages' },
+    ],
+  },
+  {
+    label: 'Admin',
+    items: [
+      { to: '/dashboard/client-portal', icon: BriefcaseBusiness, label: 'Client Portal', adminOnly: true },
+      { to: '/dashboard/users', icon: Users, label: 'Users' },
+      { to: '/dashboard/landing', icon: Palette, label: 'Landing', adminOnly: true },
+    ],
+  },
 ]
+
+const ALL_CATEGORIES: NavCategory[] = NAV_GROUPS.flatMap((g) => g.items)
 
 const CLIENT_CATEGORIES: NavCategory[] = [
   { to: '/dashboard/client-portal', icon: BriefcaseBusiness, label: 'Client Portal', end: true },
@@ -101,7 +130,7 @@ function NavRow({
     <Link
       href={item.to}
       onClick={onClick}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer ${
+      className={`group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer ${
         active
           ? 'bg-card text-text-primary font-medium'
           : 'text-text-secondary hover:bg-card/[0.03] hover:text-text-primary'
@@ -231,7 +260,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const isClient = sessionUser?.role === 'CLIENT'
   const [showSearch, setShowSearch] = useState(false)
   const [showDrawer, setShowDrawer] = useState(false)
-  const [navSearch, setNavSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   const unread = useUnreadCounts()
 
@@ -257,16 +285,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const requestSignOut = useRequestSignOut()
   const handleLogout = () => requestSignOut()
 
-  const categories = isClient
-    ? CLIENT_CATEGORIES
-    : ALL_CATEGORIES.filter(
-        (item) =>
-          item.to !== '/dashboard/client-portal' ||
-          sessionUser?.role === 'ADMIN',
-      )
-  const filteredCategories = navSearch
-    ? categories.filter((c) => c.label.toLowerCase().includes(navSearch.toLowerCase()))
-    : categories
+  const isAdmin = sessionUser?.role === 'ADMIN'
+  const navGroups: NavGroup[] = isClient
+    ? [{ label: 'Portal', items: CLIENT_CATEGORIES }]
+    : NAV_GROUPS.map((g) => ({
+        label: g.label,
+        items: g.items.filter((it) => !it.adminOnly || isAdmin),
+      })).filter((g) => g.items.length > 0)
+  const categories = navGroups.flatMap((g) => g.items)
   const currentCategory = categories.find((c) => isActivePath(pathname, c))
   const bottomCategories = isClient ? CLIENT_CATEGORIES : BOTTOM_NAV
   return (
@@ -289,36 +315,24 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-semibold text-text-primary">Your Dashboard</span>
           </div>
 
-          <div className="px-3 pb-2">
-            <div className="flex items-center gap-2 rounded-lg border border-border-subtle bg-card px-2.5 py-2">
-              <Search className="h-4 w-4 shrink-0 text-text-tertiary" />
-              <input
-                type="text"
-                placeholder="Search here..."
-                value={navSearch}
-                onChange={(e) => setNavSearch(e.target.value)}
-                className="w-full bg-transparent text-sm text-text-primary outline-none placeholder:text-text-tertiary"
-              />
-              {navSearch && (
-                <button onClick={() => setNavSearch('')} className="text-text-tertiary hover:text-text-primary shrink-0 cursor-pointer">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
-            {filteredCategories.length === 0 ? (
-              <p className="px-3 py-4 text-center text-xs text-text-tertiary">No results</p>
-            ) : (
-            filteredCategories.map((item) => (
-              <NavRow
-                key={item.to}
-                item={item}
-                active={isActivePath(pathname, item)}
-                badge={item.to === '/dashboard/messages' ? unread.messages : undefined}
-              />
-            )))}
+          <nav className="flex-1 min-h-0 overflow-hidden px-3 py-2">
+            {navGroups.map((group) => (
+              <div key={group.label} className="mb-1.5">
+                <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map((item) => (
+                    <NavRow
+                      key={item.to}
+                      item={item}
+                      active={isActivePath(pathname, item)}
+                      badge={item.to === '/dashboard/messages' ? unread.messages : undefined}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </nav>
 
           {/* User / status card at the bottom */}

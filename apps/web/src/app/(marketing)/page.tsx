@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import CountUp from './_components/CountUp'
 import RotatingText from './_components/RotatingText'
 import ScrollServices from './_components/ScrollServices'
@@ -13,6 +14,13 @@ import type { LandingContent } from '../../lib/landing/content'
 function Hero({ hero }: { hero: LandingContent['hero'] }) {
   return (
     <section id="top" data-bg="light" className="relative overflow-hidden bg-acid text-ink">
+      <Image
+        src="/brand/arko-system-art.webp"
+        alt=""
+        width={1254}
+        height={1254}
+        className="pointer-events-none absolute -bottom-[8vw] -right-[8vw] hidden w-[62vw] max-w-[58rem] select-none lg:block"
+      />
       <div className="relative z-10">
         <div className="px-6 pb-16 pt-32 md:px-10 md:pb-24 md:pt-44">
           <p className="eyebrow mb-6 text-ink/70">{hero.eyebrow}</p>
@@ -28,6 +36,15 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
               {hero.paragraph}
             </p>
             <HeroFunnel />
+          </div>
+          <div className="mt-12 aspect-[4/3] overflow-hidden border-4 border-ink lg:hidden">
+            <Image
+              src="/brand/arko-system-art.webp"
+              alt=""
+              width={1254}
+              height={1254}
+              className="h-full w-full object-cover object-right"
+            />
           </div>
         </div>
       </div>
@@ -103,16 +120,25 @@ function Contact({ contact }: { contact: LandingContent['contact'] }) {
     <section id="contact" className="bg-ink px-6 py-24 md:px-10">
       <ScrollReveal>
       <div className="grid gap-12 md:grid-cols-[1fr_1fr] md:gap-20">
-        <div>
-          <h2 className="display text-[clamp(2.5rem,9vw,6.5rem)] text-acid">
-            {contact.headingLine1}
-            <br />
-            {contact.headingLine2}
-          </h2>
-          <p className="mt-6 max-w-sm text-base font-medium text-white/70">
-            {contact.paragraph}
-          </p>
-          <p className="eyebrow mt-10 text-white/40">{contact.email}</p>
+        <div className="relative">
+          {/* Whole dotted world map, contained behind the heading text */}
+          <img
+            src="/world-dots.svg"
+            alt=""
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-20"
+          />
+          <div className="relative z-10">
+            <h2 className="display text-[clamp(2.5rem,9vw,6.5rem)] text-acid">
+              {contact.headingLine1}
+              <br />
+              {contact.headingLine2}
+            </h2>
+            <p className="mt-6 max-w-sm text-base font-medium text-white/70">
+              {contact.paragraph}
+            </p>
+            <p className="eyebrow mt-10 text-white/40">{contact.email}</p>
+          </div>
         </div>
         <ContactForm />
       </div>
@@ -141,6 +167,35 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
           borderColor="rgba(184,255,46,0.12)"
           hoverFillColor="rgba(184,255,46,0.06)"
         />
+      </div>
+
+      {/* ——— code-native contact-to-footer seam ——— */}
+      <div
+        aria-hidden
+        data-contact-footer-seam
+        className="relative z-10 grid grid-cols-2 overflow-hidden border-y-4 border-acid md:grid-cols-[1fr_7rem_1fr]"
+      >
+        <div className="relative overflow-hidden bg-ink px-6 py-8 md:px-10 md:py-10">
+          <div className="absolute inset-0 opacity-30">
+            <Squares direction="right" speed={0.12} squareSize={34} />
+          </div>
+          <span className="display relative text-[clamp(3.5rem,9vw,8rem)] text-acid">Build</span>
+        </div>
+        <div className="display hidden items-center justify-center border-x-4 border-ink bg-acid text-5xl text-ink md:flex">
+          →
+        </div>
+        <div className="relative overflow-hidden bg-acid px-6 py-8 text-right md:px-10 md:py-10">
+          <div className="absolute inset-0 opacity-20">
+            <Squares
+              direction="left"
+              speed={0.12}
+              squareSize={34}
+              borderColor="rgba(10,10,10,0.35)"
+              hoverFillColor="rgba(10,10,10,0.12)"
+            />
+          </div>
+          <span className="display relative text-[clamp(3.5rem,9vw,8rem)] text-ink">Ship</span>
+        </div>
       </div>
 
       {/* ——— thick acid-green top border with badge ——— */}

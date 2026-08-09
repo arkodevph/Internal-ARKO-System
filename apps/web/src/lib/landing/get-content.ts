@@ -17,5 +17,7 @@ export const getLandingContent = unstable_cache(
     return mergeLandingContent(row?.content)
   },
   ['landing-content'],
-  { tags: [LANDING_CACHE_TAG] },
+  // Tag-based revalidation is immediate on admin save; the time window is a
+  // self-heal fallback so a changed content shape can't stay cached indefinitely.
+  { tags: [LANDING_CACHE_TAG], revalidate: 3600 },
 )

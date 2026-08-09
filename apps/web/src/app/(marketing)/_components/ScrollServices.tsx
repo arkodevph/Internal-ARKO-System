@@ -4,6 +4,7 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCallback, useRef } from 'react'
+import Services3DScene from './Services3DScene'
 import StarBorder from './StarBorder'
 import type { LandingContent } from '../../../lib/landing/content'
 
@@ -17,7 +18,7 @@ export default function ScrollServices({
   slides: SLIDES,
 }: LandingContent['services']) {
   const sectionRef = useRef<HTMLElement>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const sceneProgressRef = useRef(0)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
   const counterRef = useRef<HTMLSpanElement>(null)
   const labelRef = useRef<HTMLSpanElement>(null)
@@ -27,29 +28,40 @@ export default function ScrollServices({
   const dotRefs = useRef<(HTMLSpanElement | null)[]>([])
 
   const paint = useCallback((progress: number) => {
+    sceneProgressRef.current = progress
     // ——— TEXT SLIDES (always work, no video dependency) ———
     const total = SLIDES.length
-    const active = Math.min(total - 1, Math.floor(progress * total))
-    const lastSlideStart = (total - 1) / total
+    const sequence = total === 6 ? [0, 2, 1, 3, 4, 5] : Array.from({ length: total }, (_, i) => i)
+    const chapterStarts = total === 6
+      ? [0, 0.25, 0.5, 0.75, 0.875, 0.94]
+      : sequence.map((_, i) => i / total)
+    const activePosition = chapterStarts.reduce(
+      (position, start, index) => (progress >= start ? index : position),
+      0,
+    )
+    const active = sequence[activePosition]
 
     slideRefs.current.forEach((el, i) => {
       if (!el) return
       const isActive = i === active
+      const slidePosition = sequence.indexOf(i)
       el.style.opacity = isActive ? '1' : '0'
       el.style.transform = isActive
         ? 'translateY(0) scale(1)'
-        : `translateY(${i < active ? '-2rem' : '2rem'}) scale(0.97)`
+        : `translateY(${slidePosition < activePosition ? '-2rem' : '2rem'}) scale(0.97)`
       el.style.filter = isActive ? 'blur(0px)' : 'blur(10px)'
       el.style.pointerEvents = isActive ? 'auto' : 'none'
     })
 
     if (counterRef.current)
-      counterRef.current.textContent = `${String(active + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`
+      counterRef.current.textContent = `${String(activePosition + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`
     if (progressRef.current) progressRef.current.style.width = `${progress * 100}%`
 
     dotRefs.current.forEach((dot, i) => {
       if (!dot) return
-      dot.style.background = i <= active ? 'var(--color-acid)' : 'rgba(255,255,255,0.2)'
+      dot.style.background = sequence.indexOf(i) <= activePosition
+        ? 'var(--color-acid)'
+        : 'rgba(255,255,255,0.2)'
     })
 
     if (labelRef.current)
@@ -57,29 +69,17 @@ export default function ScrollServices({
     if (hintRef.current)
       hintRef.current.style.opacity = String(Math.max(0, 1 - progress * total * 2))
 
-    const finalProg = Math.max(0, (progress - lastSlideStart) / (1 - lastSlideStart))
-
-    // ——— VIDEO EFFECTS (best-effort, only if video loaded) ———
-    const video = videoRef.current
-    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return
-
-    video.style.filter = `brightness(${0.35 + finalProg * 0.3})`
-
     if (scrimRef.current) {
       const o = 0.35 - progress * 0.15
       scrimRef.current.style.opacity = String(Math.max(0.15, o))
     }
-  }, [])
+  }, [SLIDES.length])
 
   // Create ScrollTrigger immediately — text always works, video seeking is extra
   useGSAP(
     () => {
       const section = sectionRef.current
-      const video = videoRef.current
-      if (!section || !video) return
-
-      const refresh = () => ScrollTrigger.refresh()
-      video.addEventListener('loadedmetadata', refresh)
+      if (!section) return
 
       const trigger = ScrollTrigger.create({
         trigger: section,
@@ -90,17 +90,11 @@ export default function ScrollServices({
           // Text transitions always
           paint(self.progress)
 
-          // Video seeking is best-effort
-          const video = videoRef.current
-          if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return
-          const lastFrame = Math.max(0, video.duration - 1 / 30)
-          try { video.currentTime = self.progress * lastFrame } catch {}
         },
       })
       paint(0)
 
       return () => {
-        video.removeEventListener('loadedmetadata', refresh)
         trigger.kill()
       }
     },
@@ -114,17 +108,7 @@ export default function ScrollServices({
         style={{ backgroundImage: `url(${poster})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
 
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          preload="auto"
-          poster={poster}
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ willChange: 'contents', transform: 'translateZ(0)', filter: 'brightness(0.35)' }}
-        >
-          <source src={videoSrc} type="video/mp4" />
-        </video>
+        <Services3DScene progress={sceneProgressRef} poster={poster} videoSrc={videoSrc} />
 
         <div
           ref={scrimRef}

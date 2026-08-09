@@ -1,0 +1,47 @@
+import { z } from 'zod'
+
+/**
+ * Server environment validation. Called at runtime (first tRPC request) so a
+ * misconfigured deployment fails fast with a clear message instead of behaving
+ * insecurely (e.g. a missing NEXTAUTH_SECRET). Not run at build time.
+ *
+ * Required vars are hard failures; integration vars (S3, email) are optional so
+ * those features degrade rather than crash the whole app.
+ */
+const serverEnvSchema = z
+  .object({
+    // NextAuth v5 reads AUTH_SECRET; NEXTAUTH_SECRET is the v4 name. Accept either.
+    AUTH_SECRET: z.string().min(1).optional(),
+    NEXTAUTH_SECRET: z.string().min(1).optional(),
+    DATABASE_URL: z.string().min(1, 'required — Postgres connection string'),
+    DIRECT_URL: z.string().min(1).optional(),
+    NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+    // Storage / email integrations — optional; features degrade if unset.
+    S3_BUCKET: z.string().optional(),
+    S3_ENDPOINT: z.string().optional(),
+    S3_ACCESS_KEY_ID: z.string().optional(),
+    S3_SECRET_ACCESS_KEY: z.string().optional(),
+    S3_REGION: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
+  })
+  .refine((e) => Boolean(e.AUTH_SECRET || e.NEXTAUTH_SECRET), {
+    message: 'AUTH_SECRET (or NEXTAUTH_SECRET) is required — session signing secret',
+    path: ['AUTH_SECRET'],
+  })
+
+export type ServerEnv = z.infer<typeof serverEnvSchema>
+
+let cached: ServerEnv | undefined
+
+export function serverEnv(): ServerEnv {
+  if (cached) return cached
+  const parsed = serverEnvSchema.safeParse(process.env)
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
+      .join('\n')
+    throw new Error(`Invalid/missing environment variables:\n${issues}`)
+  }
+  cached = parsed.data
+  return cached
+}

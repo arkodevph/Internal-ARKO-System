@@ -16,10 +16,14 @@ const HEADERS: Record<string, string> = {
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https:",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' ws:",
     "frame-ancestors 'none'",
+    // Hardening: block plugin embeds, <base> hijacking, and cross-origin form posts.
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
   ].join('; '),
 }
 

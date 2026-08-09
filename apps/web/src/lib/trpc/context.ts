@@ -1,7 +1,10 @@
 import { auth } from '../auth'
 import { prisma, type Role } from '@arko/db'
+import { serverEnv } from '../env'
 
 export async function createTRPCContext() {
+  // Fail fast on a misconfigured deployment (missing NEXTAUTH_SECRET, DATABASE_URL, …).
+  serverEnv()
   const session = await auth()
 
   // Fetch the user's role from DB (fresh on every request)
