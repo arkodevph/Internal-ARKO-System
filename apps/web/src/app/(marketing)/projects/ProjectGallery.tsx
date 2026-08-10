@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { LandingContent } from "../../../lib/landing/content";
 
 type Project = LandingContent["projects"]["items"][number];
+const loadedProjectUrls = new Set<string>();
 
 function displayDomain(domain: string) {
   if (!domain.endsWith(".vercel.app")) return domain;
@@ -15,7 +16,7 @@ function displayDomain(domain: string) {
 function ProjectBrowser({ project, onClose }: { project: Project; onClose: () => void }) {
   const embeddingBlocked = project.domain === "co-map.vercel.app";
   const vanityUrl = `https://${displayDomain(project.domain)}`;
-  const [loading, setLoading] = useState(!embeddingBlocked);
+  const [loading, setLoading] = useState(!embeddingBlocked && !loadedProjectUrls.has(project.href));
   const [frameReady, setFrameReady] = useState(embeddingBlocked);
   const [frameKey, setFrameKey] = useState(0);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -39,14 +40,14 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
   }, [onClose]);
 
   const reload = () => {
-    setLoading(true);
+    setLoading(!loadedProjectUrls.has(project.href));
     setFrameReady(false);
     setFrameKey((key) => key + 1);
     requestAnimationFrame(() => requestAnimationFrame(() => setFrameReady(true)));
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black p-2 sm:p-5 lg:p-8" role="dialog" aria-modal="true" aria-labelledby="project-browser-title">
+    <div className="fixed inset-0 z-[100] bg-black/75 p-2 backdrop-blur-[3px] sm:p-5 lg:p-8" role="dialog" aria-modal="true" aria-labelledby="project-browser-title">
       <div className="project-browser mx-auto flex h-full max-w-[96rem] flex-col overflow-hidden border-2 border-acid bg-ink">
         <div className="flex min-h-16 items-center gap-3 border-b-2 border-ink bg-acid px-3 text-ink sm:px-5">
           <div className="hidden items-center gap-2 sm:flex" aria-hidden>
@@ -77,8 +78,8 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
             <div className="project-live-loader absolute inset-0 z-10 grid place-items-center overflow-hidden bg-ink text-acid">
               <div className="project-loader-grid absolute inset-0 opacity-20" />
               <div className="relative w-full max-w-sm px-8 text-center">
-                <div className="project-loader-object relative mx-auto h-32 w-32 border-2 border-acid bg-acid">
-                  <Image src="/projects/models/project-browser-halftone.png" alt="" fill sizes="128px" className="object-contain p-2" />
+                <div className="project-loader-object relative mx-auto h-32 w-32">
+                  <Image src="/projects/models/project-loader-character.png" alt="" fill sizes="128px" className="object-contain" />
                 </div>
                 <p className="mono mt-8 text-[0.58rem] font-bold uppercase tracking-[0.2em] text-white/35">Preparing live environment</p>
                 <p className="display mt-2 truncate text-2xl text-acid">{project.title}</p>
@@ -98,7 +99,7 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
               </div>
             </div>
           ) : frameReady ? (
-            <iframe key={frameKey} src={project.href} title={`${project.title} live website`} className="h-full w-full border-0 bg-white" onLoad={() => setLoading(false)} allow="fullscreen" />
+            <iframe key={frameKey} src={project.href} title={`${project.title} live website`} className="h-full w-full border-0 bg-white" onLoad={() => { loadedProjectUrls.add(project.href); setLoading(false); }} allow="fullscreen" />
           ) : null}
           <a href={project.href} target="_blank" rel="noopener noreferrer" className="mono absolute bottom-3 right-3 z-20 flex min-h-11 items-center gap-2 border-2 border-ink bg-acid px-4 text-[0.6rem] font-bold uppercase tracking-wider text-ink shadow-[4px_4px_0_#0a0a0a] sm:hidden">
             Open site <ExternalLink className="h-3.5 w-3.5" />
