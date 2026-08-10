@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowLeft, ArrowUpRight, ExternalLink, Loader2, LockKeyhole, RotateCw, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ExternalLink, LockKeyhole, RotateCw, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LandingContent } from "../../../lib/landing/content";
 
@@ -74,10 +74,16 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
 
         <div className="relative min-h-0 flex-1 bg-white">
           {loading && (
-            <div className="absolute inset-0 z-10 grid place-items-center bg-ink text-acid">
-              <div className="text-center">
-                <Loader2 className="mx-auto h-7 w-7 animate-spin" />
-                <p className="mono mt-4 text-[0.62rem] font-bold uppercase tracking-[0.18em]">Loading live project</p>
+            <div className="project-live-loader absolute inset-0 z-10 grid place-items-center overflow-hidden bg-ink text-acid">
+              <div className="project-loader-grid absolute inset-0 opacity-20" />
+              <div className="relative w-full max-w-sm px-8 text-center">
+                <div className="project-loader-object relative mx-auto h-32 w-32 border-2 border-acid bg-acid">
+                  <Image src="/projects/models/project-browser-halftone.png" alt="" fill sizes="128px" className="object-contain p-2" />
+                </div>
+                <p className="mono mt-8 text-[0.58rem] font-bold uppercase tracking-[0.2em] text-white/35">Preparing live environment</p>
+                <p className="display mt-2 truncate text-2xl text-acid">{project.title}</p>
+                <div className="mt-6 h-1 overflow-hidden bg-white/10"><span className="project-loader-progress block h-full origin-left bg-acid" /></div>
+                <div className="mono mt-3 flex justify-between text-[0.5rem] uppercase tracking-wider text-white/25"><span>Connecting</span><span>{displayDomain(project.domain)}</span></div>
               </div>
             </div>
           )}

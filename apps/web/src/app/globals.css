@@ -255,6 +255,14 @@
 .landing-root .project-portal::after { content:''; position:absolute; inset:0; pointer-events:none; box-shadow:inset 0 0 0 0 var(--color-acid); transition:box-shadow 220ms ease; }
 .landing-root .project-portal:hover::after { box-shadow:inset 0 0 0 .35rem var(--color-acid); }
 .landing-root .project-browser { contain:layout paint; }
+.landing-root .project-hero-model { animation:project-model-float 4s steps(2,end) infinite; }
+.landing-root .project-loader-grid { background-image:linear-gradient(rgb(184 255 46 / 22%) 1px,transparent 1px),linear-gradient(90deg,rgb(184 255 46 / 22%) 1px,transparent 1px);background-size:2.5rem 2.5rem;animation:project-grid-drift 8s linear infinite; }
+.landing-root .project-loader-object { animation:project-loader-breathe 1.2s steps(2,end) infinite; }
+.landing-root .project-loader-progress { animation:project-loader-progress 2.8s cubic-bezier(.2,.8,.2,1) infinite; }
+@keyframes project-model-float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)} }
+@keyframes project-grid-drift { to{background-position:2.5rem 2.5rem} }
+@keyframes project-loader-breathe { 0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)} }
+@keyframes project-loader-progress { 0%{transform:scaleX(.03)}55%{transform:scaleX(.72)}100%{transform:scaleX(.96)} }
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

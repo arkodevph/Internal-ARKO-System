@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import ProjectGallery from "./ProjectGallery";
 import { getLandingContent } from "../../../lib/landing/get-content";
@@ -28,14 +29,22 @@ export default async function ProjectsPage() {
         className="relative overflow-hidden bg-acid px-6 pb-20 pt-32 text-ink md:px-10 md:pb-28 md:pt-44"
       >
         <div className="project-grid absolute inset-0 opacity-20" aria-hidden />
-        <div className="relative mx-auto max-w-[90rem]">
-          <p className="eyebrow text-ink/60">{projects.eyebrow}</p>
-          <h1 className="display mt-5 text-[clamp(4rem,11vw,10rem)] leading-[0.82]">
-            {projects.heading}
-          </h1>
-          <p className="mt-10 max-w-2xl text-lg font-semibold leading-relaxed text-ink/70 md:text-2xl">
-            {projects.intro}
-          </p>
+        <div className="relative mx-auto grid max-w-[90rem] items-center gap-10 lg:grid-cols-[1fr_.8fr]">
+          <div className="relative z-10">
+            <p className="eyebrow text-ink/60">{projects.eyebrow}</p>
+            <h1 className="display mt-5 text-[clamp(4rem,10vw,9rem)] leading-[0.82]">{projects.heading}</h1>
+            <p className="mt-10 max-w-2xl text-lg font-semibold leading-relaxed text-ink/70 md:text-2xl">{projects.intro}</p>
+            <div className="mono mt-10 flex flex-wrap gap-2 text-[0.58rem] font-bold uppercase tracking-wider">
+              <span className="border-2 border-ink bg-ink px-3 py-2 text-acid">{projects.items.length} live builds</span>
+              <span className="border-2 border-ink px-3 py-2">Click to explore</span>
+              <span className="border-2 border-ink px-3 py-2">Real websites</span>
+            </div>
+          </div>
+          <div className="project-hero-model relative mx-auto aspect-square w-full max-w-[34rem]" aria-hidden>
+            <div className="absolute inset-[11%] border-2 border-dashed border-ink/20" />
+            <Image src="/projects/models/project-browser-halftone.png" alt="" fill priority sizes="(min-width:1024px) 42vw, 80vw" className="relative z-10 object-contain p-[5%]" />
+            <span className="mono absolute bottom-[12%] right-[4%] z-20 border-2 border-ink bg-ink px-3 py-2 text-[0.55rem] font-bold text-acid">LIVE / 09</span>
+          </div>
         </div>
       </section>
 

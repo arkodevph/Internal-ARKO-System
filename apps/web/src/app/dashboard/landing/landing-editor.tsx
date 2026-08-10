@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Check, AlertCircle, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink } from 'lucide-react'
+import { Loader2, Check, AlertCircle, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LayoutTemplate, Sparkles, Activity, PanelsTopLeft, Clapperboard, BriefcaseBusiness, Route, Mail, PanelBottom, Images, Eye } from 'lucide-react'
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@arko/ui'
 import { api } from '../../../lib/trpc/client'
 import { DEFAULT_LANDING_CONTENT, type LandingContent } from '../../../lib/landing/content'
 
 const inputCls =
-  'w-full rounded-md border border-black/10 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-black/40 dark:border-white/10 dark:bg-neutral-900'
+  'w-full rounded-xl border border-black/10 bg-black/[0.025] px-3.5 py-2.5 text-sm outline-none transition-all hover:border-black/20 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10 dark:border-white/10 dark:bg-white/[0.035] dark:focus:bg-neutral-950'
 
 // ── small field primitives ──────────────────────────────
 
@@ -82,6 +82,20 @@ const SECTION_TOGGLES: { key: keyof LandingContent['sections']; label: string }[
   { key: 'contact', label: 'Contact' },
 ]
 
+const EDITOR_SECTIONS = [
+  { id: 'editor-visibility', label: 'Page structure', icon: LayoutTemplate },
+  { id: 'editor-hero', label: 'Hero', icon: Sparkles },
+  { id: 'editor-marquee', label: 'Marquee', icon: Activity },
+  { id: 'editor-stats', label: 'Stats', icon: PanelsTopLeft },
+  { id: 'editor-intro', label: 'Introduction', icon: PanelsTopLeft },
+  { id: 'editor-services', label: 'Services', icon: Clapperboard },
+  { id: 'editor-work', label: 'Work', icon: BriefcaseBusiness },
+  { id: 'editor-process', label: 'Process', icon: Route },
+  { id: 'editor-contact', label: 'Contact', icon: Mail },
+  { id: 'editor-footer', label: 'Footer', icon: PanelBottom },
+  { id: 'editor-projects', label: 'Projects', icon: Images },
+]
+
 type Status = 'idle' | 'saving' | 'success' | 'error'
 
 export function LandingEditor() {
@@ -129,11 +143,12 @@ export function LandingEditor() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 pb-24">
+    <div className="mx-auto max-w-7xl space-y-6 pb-24">
       {/* header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Landing page</h1>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-500">Website studio</p>
+          <h1 className="text-3xl font-semibold tracking-tight">Shape your landing page</h1>
           <p className="text-sm text-black/50 dark:text-white/50">
             Edit the public marketing site. Saving publishes immediately.
           </p>
@@ -165,28 +180,60 @@ export function LandingEditor() {
         </div>
       ) : null}
 
+      <div className="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside className="space-y-4 lg:sticky lg:top-6">
+          <div className="overflow-hidden rounded-2xl border border-black/10 bg-card shadow-card dark:border-white/10">
+            <div className="border-b border-black/10 p-4 dark:border-white/10">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40 dark:text-white/40">Edit journey</p>
+              <p className="mt-1 text-sm font-medium">Choose a page area</p>
+            </div>
+            <nav className="p-2" aria-label="Landing editor sections">
+              {EDITOR_SECTIONS.map(({ id, label, icon: Icon }, index) => (
+                <button key={id} type="button" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-black/55 transition-colors hover:bg-primary-500/10 hover:text-black dark:text-white/55 dark:hover:text-white">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-black/[0.04] text-black/45 group-hover:bg-primary-500 group-hover:text-primary-950 dark:bg-white/[0.06] dark:text-white/45"><Icon className="h-3.5 w-3.5" /></span>
+                  <span className="flex-1">{label}</span>
+                  <span className="text-[10px] tabular-nums text-black/25 dark:text-white/25">{String(index + 1).padStart(2, '0')}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-black/10 bg-card shadow-card dark:border-white/10">
+            <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10"><span className="flex items-center gap-2 text-xs font-semibold"><Eye className="h-3.5 w-3.5 text-primary-500" /> Live feel</span><span className="h-2 w-2 animate-pulse rounded-full bg-primary-500" /></div>
+            <div className="relative aspect-[4/3] overflow-hidden bg-[#b8ff2e] p-4 text-[#0a0a0a]">
+              <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'linear-gradient(currentColor 1px,transparent 1px),linear-gradient(90deg,currentColor 1px,transparent 1px)', backgroundSize: '22px 22px' }} />
+              <div className="relative"><p className="font-mono text-[7px] font-bold uppercase tracking-[0.18em] opacity-55">{c.hero.eyebrow || 'Your eyebrow'}</p><p className="mt-4 text-2xl font-black uppercase leading-[.85] tracking-tight">{c.hero.headingLead || 'Your headline'}</p><span className="mt-2 inline-block bg-[#0a0a0a] px-1.5 py-1 text-xs font-black uppercase text-[#b8ff2e]">{c.hero.roles[0] || 'Your role'}</span><p className="mt-4 line-clamp-3 text-[8px] font-semibold leading-relaxed opacity-65">{c.hero.paragraph}</p></div>
+              <div className="absolute bottom-3 right-3 h-10 w-10 rotate-12 border-2 border-[#0a0a0a] bg-[#0a0a0a] shadow-[4px_4px_0_rgba(10,10,10,.2)]" />
+            </div>
+            <a href="/" target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-2 text-xs font-semibold transition-colors hover:bg-primary-500/10 hover:text-primary-600">Open full preview <ExternalLink className="h-3.5 w-3.5" /></a>
+          </div>
+        </aside>
+        <div className="min-w-0 space-y-6">
+
       {/* Section visibility */}
-      <Card>
+      <Card id="editor-visibility" className="scroll-mt-6 overflow-hidden border-0 bg-gradient-to-br from-primary-500/10 to-transparent shadow-none hover:translate-y-0 hover:shadow-none">
         <CardHeader>
           <CardTitle>Sections</CardTitle>
           <CardDescription>Toggle which sections appear on the landing page.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-4">
+        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {SECTION_TOGGLES.map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2 text-sm">
+            <label key={key} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition-all ${c.sections[key] ? 'border-primary-500/30 bg-card text-black shadow-sm dark:text-white' : 'border-black/5 bg-black/[0.025] text-black/40 dark:border-white/5 dark:bg-white/[0.025] dark:text-white/40'}`}>
               <input
                 type="checkbox"
+                className="sr-only"
                 checked={c.sections[key]}
                 onChange={(e) => update((d) => { d.sections[key] = e.target.checked })}
               />
-              {label}
+              <span className={`relative h-6 w-10 rounded-full transition-colors ${c.sections[key] ? 'bg-primary-500' : 'bg-black/15 dark:bg-white/15'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${c.sections[key] ? 'translate-x-5' : 'translate-x-1'}`} /></span>
+              <span className="font-medium">{label}</span>
+              <span className="ml-auto text-[10px] font-semibold uppercase tracking-wider">{c.sections[key] ? 'Live' : 'Hidden'}</span>
             </label>
           ))}
         </CardContent>
       </Card>
 
       {/* Hero */}
-      <Card>
+      <Card id="editor-hero" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Hero</CardTitle>
         </CardHeader>
@@ -221,7 +268,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Marquee */}
-      <Card>
+      <Card id="editor-marquee" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Marquee</CardTitle>
         </CardHeader>
@@ -233,7 +280,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Stats */}
-      <Card>
+      <Card id="editor-stats" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Stats</CardTitle>
           <CardDescription>Leave “display text” blank to show the counter; type a value to show raw text instead.</CardDescription>
@@ -268,7 +315,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Intro */}
-      <Card>
+      <Card id="editor-intro" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Intro</CardTitle>
         </CardHeader>
@@ -282,7 +329,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Services */}
-      <Card>
+      <Card id="editor-services" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Services</CardTitle>
         </CardHeader>
@@ -324,7 +371,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Work */}
-      <Card>
+      <Card id="editor-work" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Work</CardTitle>
         </CardHeader>
@@ -369,7 +416,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Process */}
-      <Card>
+      <Card id="editor-process" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Process</CardTitle>
         </CardHeader>
@@ -409,7 +456,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Contact */}
-      <Card>
+      <Card id="editor-contact" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Contact</CardTitle>
         </CardHeader>
@@ -424,7 +471,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Footer */}
-      <Card>
+      <Card id="editor-footer" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Footer</CardTitle>
         </CardHeader>
@@ -463,7 +510,7 @@ export function LandingEditor() {
       </Card>
 
       {/* Projects (the /projects gallery page) */}
-      <Card>
+      <Card id="editor-projects" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>Projects page</CardTitle>
           <CardDescription>The dedicated /projects gallery. Filter categories are generated from each project&apos;s Category.</CardDescription>
@@ -524,6 +571,8 @@ export function LandingEditor() {
           {status === 'saving' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Save & publish
         </Button>
+      </div>
+        </div>
       </div>
     </div>
   )
