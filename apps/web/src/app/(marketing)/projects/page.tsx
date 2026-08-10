@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import ProjectGallery from "./ProjectGallery";
+import Breadcrumbs from "../_components/Breadcrumbs";
 import { getLandingContent } from "../../../lib/landing/get-content";
 
 const TITLE = "Projects — Arko Software Studio";
@@ -31,6 +32,10 @@ export default async function ProjectsPage() {
         <div className="project-grid absolute inset-0 opacity-20" aria-hidden />
         <div className="relative mx-auto grid max-w-[90rem] items-center gap-5 md:gap-10 lg:grid-cols-[1fr_.8fr]">
           <div className="relative z-10">
+            <Breadcrumbs
+              className="mb-6 text-ink"
+              items={[{ label: "Home", href: "/" }, { label: "Projects" }]}
+            />
             <p className="eyebrow text-ink/60">{projects.eyebrow}</p>
             <h1 className="display mt-3 text-[3.3rem] leading-[0.84] md:mt-5 md:text-[clamp(4rem,10vw,9rem)]">{projects.heading}</h1>
             <p className="mt-5 max-w-2xl text-base font-semibold leading-relaxed text-ink/70 md:mt-10 md:text-2xl">{projects.intro}</p>

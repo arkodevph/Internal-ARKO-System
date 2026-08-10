@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import CountUp from './_components/CountUp'
 import RotatingText from './_components/RotatingText'
 import ScrollServices from './_components/ScrollServices'
@@ -9,6 +10,8 @@ import HeroFunnel from './_components/HeroFunnel'
 import ScrollReveal from './_components/ScrollReveal'
 import Squares from './_components/Squares'
 import LandingViewTracker from './_components/LandingViewTracker'
+import FaqSection from './_components/FaqSection'
+import TeamSection from './_components/TeamSection'
 import { getLandingContent } from '../../lib/landing/get-content'
 import type { LandingContent } from '../../lib/landing/content'
 
@@ -326,9 +329,26 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         <p className="mono text-[0.65rem] text-white/25">
           © {new Date().getFullYear()} Arko Studio
         </p>
-        <p className="mono text-[0.65rem] text-white/25">
-          Built with Next.js · Deployed on Vercel
-        </p>
+        <div className="mono flex items-center gap-4 text-[0.65rem] text-white/25">
+          <Link
+            href="/privacy"
+            className="underline underline-offset-4 transition-colors hover:text-acid"
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/#faq"
+            className="underline underline-offset-4 transition-colors hover:text-acid"
+          >
+            FAQ
+          </Link>
+          <Link
+            href="/projects"
+            className="underline underline-offset-4 transition-colors hover:text-acid"
+          >
+            Projects
+          </Link>
+        </div>
         <p className="mono text-[0.65rem] text-white/25">{footer.location}</p>
       </div>
     </footer>
@@ -347,6 +367,8 @@ export default async function Home() {
       {content.sections.services && <ScrollServices {...content.services} />}
       {content.sections.work && <ScrollWork {...content.work} />}
       {content.sections.process && <ScrollProcess {...content.process} />}
+      <TeamSection />
+      <FaqSection />
       {content.sections.contact && <Contact contact={content.contact} />}
       <Footer footer={content.footer} />
     </main>

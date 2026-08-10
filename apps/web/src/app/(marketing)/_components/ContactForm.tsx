@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { CheckCircle2, Clock3, ShieldCheck } from 'lucide-react'
 import { type ContactState, sendContact } from '../actions/contact'
 import StarBorder from './StarBorder'
@@ -42,6 +43,7 @@ function persist(st: ContactState) {
 }
 
 export default function ContactForm() {
+  const router = useRouter()
   const [doneState, setDoneState] = useState<ContactState | null>(null)
   const [message, setMessage] = useState('')
   const [state, formAction, pending] = useActionState(sendContact, initial)
@@ -66,7 +68,12 @@ export default function ContactForm() {
       persist(state)
       setDoneState(state)
     }
-  }, [state])
+    // Send successful submissions to the dedicated thank-you page
+    // (dedicated URL for analytics conversion tracking).
+    if (state.status === 'success') {
+      router.push('/thank-you')
+    }
+  }, [state, router])
 
   // — render —
   // Use live state if done, otherwise fall back to persisted state
@@ -232,7 +239,7 @@ export default function ContactForm() {
       <div className="flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="mono flex flex-wrap gap-x-4 gap-y-2 text-[0.54rem] uppercase tracking-wider text-white/35">
           <span className="flex items-center gap-1.5">
-            <Clock3 className="h-3 w-3 text-acid" /> Reply within one day
+            <Clock3 className="h-3 w-3 text-acid" /> We reply within 24 hours
           </span>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="h-3 w-3 text-acid" /> No pressure

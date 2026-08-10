@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Breadcrumbs from "../../_components/Breadcrumbs";
 
 const TITLE = "Client document workflow — Arko project system";
 const DESCRIPTION =
@@ -143,16 +144,14 @@ export default function ClientDocumentWorkflowPage() {
       >
         <div className="project-grid absolute inset-0 opacity-20" aria-hidden />
         <div className="relative mx-auto max-w-[90rem]">
-          <div className="mono flex items-center gap-3 text-[0.65rem] font-bold uppercase tracking-[0.18em]">
-            <Link
-              href="/#work"
-              className="underline decoration-2 underline-offset-4"
-            >
-              Work
-            </Link>
-            <span>/</span>
-            <span>System 01</span>
-          </div>
+          <Breadcrumbs
+            className="text-ink"
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Projects", href: "/projects" },
+              { label: "Client document workflow" },
+            ]}
+          />
           <div className="mt-10 grid items-end gap-14 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
               <p className="eyebrow text-ink/60">Project → document → client</p>
@@ -306,12 +305,20 @@ export default function ClientDocumentWorkflowPage() {
               Build the boring part brilliantly.
             </h2>
           </div>
-          <Link
-            href="/#contact"
-            className="mono shrink-0 border-4 border-ink bg-ink px-7 py-4 text-xs font-bold uppercase tracking-[0.16em] text-acid transition-transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-ink/30"
-          >
-            Start a project →
-          </Link>
+          <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+            <Link
+              href="/projects"
+              className="mono border-4 border-ink px-7 py-4 text-center text-xs font-bold uppercase tracking-[0.16em] text-ink transition-transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-ink/30"
+            >
+              See all projects
+            </Link>
+            <Link
+              href="/#contact"
+              className="mono border-4 border-ink bg-ink px-7 py-4 text-center text-xs font-bold uppercase tracking-[0.16em] text-acid transition-transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-ink/30"
+            >
+              Start a project →
+            </Link>
+          </div>
         </div>
       </section>
     </div>

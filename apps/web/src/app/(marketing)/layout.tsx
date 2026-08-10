@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import SiteHeader from './_components/SiteHeader'
 import SmoothScrollProvider from './_components/SmoothScrollProvider'
 import Preloader from './_components/Preloader'
+import StickyMobileCta from './_components/StickyMobileCta'
 
 const TITLE = 'Arko — We build web, mobile, automation and AI'
 const DESCRIPTION =
@@ -26,13 +27,41 @@ export const metadata: Metadata = {
   },
 }
 
-const ORG_JSONLD = {
+const BASE = 'https://arkodevph.vercel.app'
+
+const SCHEMA_JSONLD = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Arko',
-  url: 'https://arkodevph.vercel.app',
-  description: DESCRIPTION,
-  slogan: 'We build web, mobile, automation and AI',
+  '@graph': [
+    {
+      '@type': ['Organization', 'ProfessionalService'],
+      '@id': `${BASE}/#organization`,
+      name: 'Arko',
+      alternateName: 'Arko Software Studio',
+      url: BASE,
+      email: 'arkodevph@gmail.com',
+      description: DESCRIPTION,
+      slogan: 'We build web, mobile, automation and AI',
+      sameAs: ['https://github.com/justrhey'],
+      address: {
+        '@type': 'PostalAddress',
+        addressCountry: 'PH',
+      },
+      areaServed: 'Worldwide',
+      knowsAbout: [
+        'Web development',
+        'Mobile app development',
+        'Automation',
+        'Artificial intelligence',
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${BASE}/#website`,
+      url: BASE,
+      name: 'Arko',
+      publisher: { '@id': `${BASE}/#organization` },
+    },
+  ],
 }
 
 export default function MarketingLayout({
@@ -42,13 +71,14 @@ export default function MarketingLayout({
     <div className="landing-root">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSONLD) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_JSONLD) }}
       />
       <Preloader />
       <SmoothScrollProvider>
         <SiteHeader />
         <main>{children}</main>
       </SmoothScrollProvider>
+      <StickyMobileCta />
     </div>
   )
 }

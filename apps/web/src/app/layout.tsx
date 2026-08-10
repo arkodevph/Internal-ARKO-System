@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Sora, Figtree, Poppins, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
+import GoogleAnalytics from './google-analytics'
 
 const sora = Sora({
   subsets: ['latin'],
@@ -48,6 +49,7 @@ export default function RootLayout({
     >
       <body className="font-body antialiased">
         <Providers>{children}</Providers>
+        <GoogleAnalytics />
       </body>
     </html>
   )
