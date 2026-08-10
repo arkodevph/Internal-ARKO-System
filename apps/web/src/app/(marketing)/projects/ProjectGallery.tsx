@@ -47,9 +47,9 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/75 p-2 backdrop-blur-[3px] sm:p-5 lg:p-8" role="dialog" aria-modal="true" aria-labelledby="project-browser-title">
-      <div className="project-browser mx-auto flex h-full max-w-[96rem] flex-col overflow-hidden border-2 border-acid bg-ink">
-        <div className="flex min-h-16 items-center gap-3 border-b-2 border-ink bg-acid px-3 text-ink sm:px-5">
+    <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-[3px] sm:p-5 lg:p-8" role="dialog" aria-modal="true" aria-labelledby="project-browser-title">
+      <div className="project-browser mx-auto flex h-full max-w-[96rem] flex-col overflow-hidden bg-ink sm:border-2 sm:border-acid">
+        <div className="flex min-h-14 items-center gap-2 border-b-2 border-ink bg-acid px-2 text-ink sm:min-h-16 sm:gap-3 sm:px-5">
           <div className="hidden items-center gap-2 sm:flex" aria-hidden>
             <span className="h-3 w-3 rounded-full border-2 border-ink" />
             <span className="h-3 w-3 rounded-full border-2 border-ink" />
@@ -58,7 +58,7 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
           <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center border border-ink/20 transition-colors hover:bg-ink hover:text-acid" aria-label="Back to projects">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <button type="button" onClick={reload} className="grid h-11 w-11 place-items-center border border-ink/20 transition-colors hover:bg-ink hover:text-acid" aria-label="Reload website">
+          <button type="button" onClick={reload} className="hidden h-11 w-11 place-items-center border border-ink/20 transition-colors hover:bg-ink hover:text-acid sm:grid" aria-label="Reload website">
             <RotateCw className="h-4 w-4" />
           </button>
           <div className="mono flex min-w-0 flex-1 items-center gap-2 border-2 border-ink bg-paper px-3 py-2.5 text-[0.62rem] font-semibold">
@@ -68,7 +68,7 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
           <a href={project.href} target="_blank" rel="noopener noreferrer" className="mono hidden min-h-11 items-center gap-2 border-2 border-ink px-4 text-[0.62rem] font-bold uppercase tracking-wider transition-colors hover:bg-ink hover:text-acid sm:flex">
             Open externally <ExternalLink className="h-3.5 w-3.5" />
           </a>
-          <button ref={closeRef} type="button" onClick={onClose} className="grid h-11 w-11 place-items-center border-2 border-ink transition-colors hover:bg-ink hover:text-acid" aria-label="Close project browser">
+          <button ref={closeRef} type="button" onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center border border-ink sm:h-11 sm:w-11 sm:border-2" aria-label="Close project browser">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -105,7 +105,7 @@ function ProjectBrowser({ project, onClose }: { project: Project; onClose: () =>
             Open site <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>
-        <div className="mono flex min-h-8 items-center justify-between gap-4 border-t border-white/10 bg-ink px-4 text-[0.52rem] uppercase tracking-wider text-white/35">
+        <div className="mono hidden min-h-8 items-center justify-between gap-4 border-t border-white/10 bg-ink px-4 text-[0.52rem] uppercase tracking-wider text-white/35 sm:flex">
           <span id="project-browser-title">Live preview / {project.title}</span>
           <span>Esc to close</span>
         </div>
@@ -122,8 +122,8 @@ export default function ProjectGallery({ projects }: { projects: Project[] }) {
 
   return (
     <div className="mx-auto max-w-[90rem]">
-      <div className="mb-8 flex flex-col gap-4 border-y border-white/15 py-4 md:flex-row md:items-center md:justify-between">
-        <div><p className="eyebrow text-white/45">Select a project</p><p className="mono mt-1 text-[0.62rem] text-white/30">Click any cover to enter the live site.</p></div>
+      <div className="sticky top-14 z-20 mb-2 flex flex-col gap-3 border-y border-white/10 bg-ink/95 px-4 py-3 backdrop-blur md:static md:mb-8 md:flex-row md:items-center md:justify-between md:bg-transparent md:px-0 md:py-4">
+        <div><p className="eyebrow text-white/45">Projects</p><p className="mono mt-1 text-[0.58rem] text-white/30 md:text-[0.62rem]">Tap a cover to open the live app.</p></div>
         <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Project categories">
           {categories.map((category) => (
             <button key={category} type="button" aria-pressed={activeCategory === category} onClick={() => setActiveCategory(category)} className={`mono min-h-10 shrink-0 border px-3 py-2 text-[0.58rem] font-bold uppercase tracking-wider transition-colors ${activeCategory === category ? "border-acid bg-acid text-ink" : "border-white/20 text-white/50 hover:border-acid hover:text-acid"}`}>{category}</button>
@@ -131,16 +131,16 @@ export default function ProjectGallery({ projects }: { projects: Project[] }) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-0 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {visibleProjects.map((project) => (
-          <button key={project.href} type="button" onClick={() => setActiveProject(project)} className="project-portal group relative cursor-pointer overflow-hidden border-2 border-white/15 bg-ink-soft text-left transition-colors hover:border-acid focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-acid" aria-label={`Load ${project.title} in the project browser`}>
-            <div className="relative aspect-[4/3] overflow-hidden bg-black">
+          <button key={project.href} type="button" onClick={() => setActiveProject(project)} className="project-portal group relative cursor-pointer overflow-hidden border-x-0 border-b border-t-0 border-white/10 bg-ink-soft text-left transition-colors focus-visible:outline focus-visible:outline-4 focus-visible:outline-inset focus-visible:outline-acid sm:border-2 sm:border-white/15 sm:hover:border-acid" aria-label={`Load ${project.title} in the project browser`}>
+            <div className="relative aspect-[16/11] overflow-hidden bg-black sm:aspect-[4/3]">
               <Image src={project.image} alt={`${project.title} website preview`} fill sizes="(min-width:1280px) 31vw,(min-width:640px) 48vw,100vw" className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transition-none" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent" />
               <span className="display absolute left-4 top-4 border-2 border-ink bg-acid px-2.5 py-1.5 text-xs text-ink">{project.number}</span>
-              <div className="absolute inset-x-0 bottom-0 p-5">
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
                 <p className="eyebrow text-acid">{project.category}</p>
-                <h2 className="display mt-2 text-3xl leading-none text-white md:text-4xl">{project.title}</h2>
+                <h2 className="display mt-2 text-3xl leading-none text-white sm:text-4xl">{project.title}</h2>
                 <p className="mt-2 text-sm font-semibold text-white/60">{project.type}</p>
               </div>
               <span className="absolute right-4 top-4 grid h-12 w-12 translate-y-2 place-items-center border-2 border-acid bg-ink text-acid opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:bg-acid group-hover:text-ink group-hover:opacity-100"><ArrowUpRight className="h-5 w-5" /></span>
@@ -150,7 +150,7 @@ export default function ProjectGallery({ projects }: { projects: Project[] }) {
         ))}
       </div>
 
-      <p className="mono mt-6 text-right text-[0.58rem] uppercase tracking-wider text-white/25">{visibleProjects.length} projects / live archive</p>
+      <p className="mono mt-5 px-4 text-right text-[0.58rem] uppercase tracking-wider text-white/25 md:px-0">{visibleProjects.length} projects / live archive</p>
       {activeProject && <ProjectBrowser project={activeProject} onClose={() => setActiveProject(null)} />}
     </div>
   );

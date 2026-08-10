@@ -71,6 +71,9 @@ export async function sendContact(_prev: ContactState, formData: FormData): Prom
   const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
   const message = String(formData.get('message') ?? '').trim()
+  const projectType = String(formData.get('projectType') ?? '').trim()
+  const budget = String(formData.get('budget') ?? '').trim()
+  const timeline = String(formData.get('timeline') ?? '').trim()
 
   if (!name || !email) {
     return { status: 'error', message: 'Add your name and email so we can reply.' }
@@ -153,7 +156,7 @@ export async function sendContact(_prev: ContactState, formData: FormData): Prom
       to: TO,
       replyTo: email,
       subject: `New project inquiry from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\n\n${message || '(no message)'}`,
+      text: `Name: ${name}\nEmail: ${email}\nProject type: ${projectType || 'Not specified'}\nBudget: ${budget || 'Not specified'}\nIdeal start: ${timeline || 'Not specified'}\n\n${message || '(no message)'}`,
     })
     if (error) {
       return { status: 'error', message: `Could not send. Email us at ${TO}.` }

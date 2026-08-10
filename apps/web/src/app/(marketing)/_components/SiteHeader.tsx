@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BriefcaseBusiness, FolderKanban, Home, LogIn, MessageCircle } from "lucide-react";
 import StarBorder from "./StarBorder";
 
 const NAV = [
@@ -13,6 +15,7 @@ const NAV = [
 ];
 
 export default function SiteHeader() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [onGreen, setOnGreen] = useState(true);
 
@@ -43,17 +46,17 @@ export default function SiteHeader() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 max-md:border-b max-md:border-white/10 max-md:bg-ink/95 max-md:backdrop-blur-md ${
         greenBgHeader
           ? "border-b border-white/10 bg-ink/90 backdrop-blur-md"
           : "bg-acid/90 backdrop-blur-sm"
       }`}
     >
-      <div className="flex h-16 items-center justify-between px-6 md:h-20 md:px-10">
+      <div className="flex h-14 items-center justify-between px-4 md:h-20 md:px-10">
         <Link href="/" className="flex items-baseline gap-2 leading-none">
           <span
-            className={`display text-2xl transition-colors md:text-3xl ${
-              greenBgHeader ? "text-acid" : "text-ink"
+            className={`display text-xl text-acid transition-colors md:text-3xl ${
+              greenBgHeader ? "md:text-acid" : "md:text-ink"
             }`}
           >
             ARKO
@@ -81,7 +84,7 @@ export default function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4 md:gap-6">
+        <div className="hidden items-center gap-4 md:flex md:gap-6">
           <a
             href="/auth/login"
             className={`eyebrow transition-colors hover:opacity-60 ${
@@ -99,7 +102,22 @@ export default function SiteHeader() {
             Start a project
           </StarBorder>
         </div>
+        <Link href="/#contact" className="mono inline-flex min-h-10 items-center border border-acid px-3 text-[0.58rem] font-bold uppercase tracking-wider text-acid md:hidden">Start project</Link>
       </div>
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
+        {[
+          { label: 'Home', href: '/', icon: Home },
+          { label: 'Work', href: '/#work', icon: BriefcaseBusiness },
+          { label: 'Projects', href: '/projects', icon: FolderKanban },
+          { label: 'Contact', href: '/#contact', icon: MessageCircle },
+          { label: 'Login', href: '/auth/login', icon: LogIn },
+        ].map(({ label, href, icon: Icon }) => (
+          <Link key={label} href={href} aria-current={(label === 'Home' && pathname === '/') || (label === 'Projects' && pathname.startsWith('/projects')) ? 'page' : undefined} className={`flex min-h-16 flex-col items-center justify-center gap-1 transition-colors active:bg-white/5 ${(label === 'Home' && pathname === '/') || (label === 'Projects' && pathname.startsWith('/projects')) ? 'text-acid' : 'text-white/45 active:text-acid'}`}>
+            <Icon className="h-4 w-4" />
+            <span className="mono text-[0.5rem] uppercase tracking-wider">{label}</span>
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }
