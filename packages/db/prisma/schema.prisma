@@ -11,51 +11,51 @@ datasource db {
 // ===== BASE MODELS =====
 
 model User {
-  id        String     @id @default(cuid())
-  name      String?
-  email     String     @unique
-  password  String?
-  image     String?
-  avatar    Json?     @default("{}")
-  phone     String?
-  title     String?
-  role      Role       @default(USER)
-  status    UserStatus @default(ACTIVE)
-  lastActiveAt DateTime? @default(now())
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  name         String?
+  email        String     @unique
+  password     String?
+  image        String?
+  avatar       Json?      @default("{}")
+  phone        String?
+  title        String?
+  role         Role       @default(USER)
+  status       UserStatus @default(ACTIVE)
+  lastActiveAt DateTime?  @default(now())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  accounts          Account[]
-  sessions          Session[]
-  workspaceMembers  WorkspaceMember[]
-  transactions      Transaction[]
-  accountCategories AccountCategory[]
-  splitShares       SplitShare[]
-  tasks             Task[]
-  comments          Comment[]
-  workflows         Workflow[]
-  conversationLinks ConversationParticipant[]
-  sentMessages      Message[]
-  reminders         Reminder[]
-  notes             Note[]
-  events            Event[]
-  sprints           Sprint[]
-  ideas             Idea[]
-  journalEntries    JournalEntry[]
-  notifications     Notification[]
-  resources         Resource[]
-  resourceCategories ResourceCategory[]
-  fileAttachments   FileAttachment[]
-  metrics           BusinessMetric[]
-  recurring         RecurringTransaction[]
-  budgets           Budget[]
-  clientProjects    ClientProject[] @relation("ClientProjects")
-  managedClientProjects ClientProject[] @relation("ManagedClientProjects")
-  clientUpdates     ClientUpdate[]
-  clientRequests    ClientRequest[]
-  docsCreated       Document[]     @relation("CreatedDocs")
-  clientDocs        Document[]     @relation("DocClient")
-  landingEdits      LandingContent[] @relation("LandingEditor")
+  accounts              Account[]
+  sessions              Session[]
+  workspaceMembers      WorkspaceMember[]
+  transactions          Transaction[]
+  accountCategories     AccountCategory[]
+  splitShares           SplitShare[]
+  tasks                 Task[]
+  comments              Comment[]
+  workflows             Workflow[]
+  conversationLinks     ConversationParticipant[]
+  sentMessages          Message[]
+  reminders             Reminder[]
+  notes                 Note[]
+  events                Event[]
+  sprints               Sprint[]
+  ideas                 Idea[]
+  journalEntries        JournalEntry[]
+  notifications         Notification[]
+  resources             Resource[]
+  resourceCategories    ResourceCategory[]
+  fileAttachments       FileAttachment[]
+  metrics               BusinessMetric[]
+  recurring             RecurringTransaction[]
+  budgets               Budget[]
+  clientProjects        ClientProject[]           @relation("ClientProjects")
+  managedClientProjects ClientProject[]           @relation("ManagedClientProjects")
+  clientUpdates         ClientUpdate[]
+  clientRequests        ClientRequest[]
+  docsCreated           Document[]                @relation("CreatedDocs")
+  clientDocs            Document[]                @relation("DocClient")
+  landingEdits          LandingContent[]          @relation("LandingEditor")
 }
 
 model Account {
@@ -127,10 +127,10 @@ model WorkspaceMember {
 // ===== FINANCE MODELS =====
 
 model AccountCategory {
-  id       String      @id @default(cuid())
+  id       String           @id @default(cuid())
   name     String
   type     AccountType
-  color    String?     @default("#6b7280")
+  color    String?          @default("#6b7280")
   icon     String?
   budgetId String?
   userId   String?
@@ -141,8 +141,8 @@ model AccountCategory {
   user         User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   recurring    RecurringTransaction[]
 
-  @@index([userId])
   @@unique([userId, name, type])
+  @@index([userId])
 }
 
 enum AccountType {
@@ -200,17 +200,17 @@ model SplitShare {
 }
 
 model Budget {
-  id          String    @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
   amount      Float
-  periodStart DateTime  @default(now())
+  periodStart DateTime         @default(now())
   periodEnd   DateTime?
   workspaceId String?
   scope       TransactionScope @default(PERSONAL)
   userId      String
 
   categories AccountCategory[]
-  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, scope])
 }
@@ -218,16 +218,16 @@ model Budget {
 // ===== WORKFLOW MODELS =====
 
 model Workflow {
-  id          String         @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
   description String?
   definition  String // JSON/YAML workflow definition
-  status      WorkflowStatus @default(ACTIVE)
+  status      WorkflowStatus   @default(ACTIVE)
   userId      String
   scope       TransactionScope @default(PERSONAL)
   workspaceId String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   user       User                @relation(fields: [userId], references: [id])
   executions WorkflowExecution[]
@@ -284,31 +284,31 @@ enum LogLevel {
 // ===== TASK MODELS =====
 
 model Task {
-  id          String     @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
-  status      TaskStatus @default(TODO)
-  priority    Priority   @default(MEDIUM)
+  status      TaskStatus       @default(TODO)
+  priority    Priority         @default(MEDIUM)
   assigneeId  String?
   scope       TransactionScope @default(PERSONAL)
   workspaceId String?
   projectId   String?
   dueDate     DateTime?
-  position    Int        @default(0)
+  position    Int              @default(0)
   parentId    String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
-  assignee User?  @relation(fields: [assigneeId], references: [id])
+  assignee User?          @relation(fields: [assigneeId], references: [id])
   project  ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  parent   Task?  @relation("TaskDependencies", fields: [parentId], references: [id])
-  subtasks Task[] @relation("TaskDependencies")
+  parent   Task?          @relation("TaskDependencies", fields: [parentId], references: [id])
+  subtasks Task[]         @relation("TaskDependencies")
 
   // Blocking dependencies (distinct from the parent/subtask hierarchy above).
   // `blocking`  = edges where this task blocks another (this task is the blocker).
   // `blockedBy` = edges where this task is blocked by another.
-  blocking  TaskDependency[] @relation("BlockingTask")
-  blockedBy TaskDependency[] @relation("BlockedTask")
+  blocking      TaskDependency[] @relation("BlockingTask")
+  blockedBy     TaskDependency[] @relation("BlockedTask")
   clientRequest ClientRequest?
 
   @@index([assigneeId, position])
@@ -407,14 +407,14 @@ model Message {
 // ===== REMINDER MODELS =====
 
 model Reminder {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   title     String
   note      String?
   dueAt     DateTime
-  isDone    Boolean  @default(false)
+  isDone    Boolean          @default(false)
   userId    String
   scope     TransactionScope @default(PERSONAL)
-  createdAt DateTime @default(now())
+  createdAt DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -425,13 +425,13 @@ model Reminder {
 // ===== NOTE MODELS =====
 
 model Note {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   title     String
   content   String
   userId    String
   scope     TransactionScope @default(PERSONAL)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -442,18 +442,18 @@ model Note {
 // ===== EVENTS / SPRINTS =====
 
 model Event {
-  id          String    @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
   date        DateTime
   endDate     DateTime?
   startTime   String
   endTime     String
-  color       String    @default("#2D6A4F")
+  color       String           @default("#2D6A4F")
   userId      String
   scope       TransactionScope @default(PERSONAL)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -462,17 +462,17 @@ model Event {
 }
 
 model Sprint {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   name      String
   goal      String?
   startDate DateTime
   endDate   DateTime
-  color     String   @default("#2D6A4F")
-  isActive  Boolean  @default(true)
+  color     String           @default("#2D6A4F")
+  isActive  Boolean          @default(true)
   userId    String
   scope     TransactionScope @default(PERSONAL)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -483,16 +483,16 @@ model Sprint {
 // ===== IDEAS =====
 
 model Idea {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
   title         String
   description   String?
-  status        String   @default("IDEA") // IDEA | EXPLORING | VALIDATED | ARCHIVED
-  tags          String[] @default([])
+  status        String           @default("IDEA") // IDEA | EXPLORING | VALIDATED | ARCHIVED
+  tags          String[]         @default([])
   spawnedTaskId String?
   userId        String
   scope         TransactionScope @default(PERSONAL)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -503,15 +503,15 @@ model Idea {
 // ===== JOURNAL =====
 
 model JournalEntry {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   title     String
   content   String?
   mood      String?
-  date      DateTime @default(now())
+  date      DateTime         @default(now())
   userId    String
   scope     TransactionScope @default(PERSONAL)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -553,18 +553,18 @@ model ResourceCategory {
 }
 
 model Resource {
-  id           String            @id @default(cuid())
+  id           String   @id @default(cuid())
   title        String
   url          String?
-  resourceType String            @default("LINK") // LINK | FILE | DOC
+  resourceType String   @default("LINK") // LINK | FILE | DOC
   description  String?
-  tags         String[]          @default([])
+  tags         String[] @default([])
   fileId       String?
   categoryId   String?
-  isPublic     Boolean           @default(true) // public resources are visible/accessible to all users
+  isPublic     Boolean  @default(true) // public resources are visible/accessible to all users
   userId       String
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   category ResourceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -578,16 +578,16 @@ model Resource {
 // ===== STORAGE (S3) =====
 
 model FileAttachment {
-  id           String   @id @default(cuid())
+  id           String           @id @default(cuid())
   userId       String
   scope        TransactionScope @default(PERSONAL)
   resourceType String
   resourceId   String?
   fileKey      String
   fileName     String
-  fileSize     Int      @default(0)
-  mimeType     String   @default("application/octet-stream")
-  createdAt    DateTime @default(now())
+  fileSize     Int              @default(0)
+  mimeType     String           @default("application/octet-stream")
+  createdAt    DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -598,27 +598,27 @@ model FileAttachment {
 // ===== CLIENT PORTAL =====
 
 model ClientProject {
-  id          String   @id @default(cuid())
-  name        String
-  summary     String?
-  status      String   @default("PLANNING")
-  progress    Int      @default(0)
-  startDate   DateTime?
-  dueDate     DateTime?
-  clientId    String
-  ownerId     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String    @id @default(cuid())
+  name      String
+  summary   String?
+  status    String    @default("PLANNING")
+  progress  Int       @default(0)
+  startDate DateTime?
+  dueDate   DateTime?
+  clientId  String
+  ownerId   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  client   User            @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
-  owner    User            @relation("ManagedClientProjects", fields: [ownerId], references: [id], onDelete: Restrict)
-  updates  ClientUpdate[]
-  requests ClientRequest[]
-  milestones ProjectMilestone[]
+  client       User                 @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
+  owner        User                 @relation("ManagedClientProjects", fields: [ownerId], references: [id], onDelete: Restrict)
+  updates      ClientUpdate[]
+  requests     ClientRequest[]
+  milestones   ProjectMilestone[]
   deliverables ProjectDeliverable[]
-  activities ProjectActivity[]
-  tasks      Task[]
-  documents  Document[]
+  activities   ProjectActivity[]
+  tasks        Task[]
+  documents    Document[]
 
   @@index([clientId])
   @@index([ownerId])
@@ -651,21 +651,21 @@ model ClientRequest {
 
   client  User           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   project ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  task    Task?           @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  task    Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
 
   @@index([clientId, status])
   @@index([projectId])
 }
 
 model ProjectMilestone {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
-  completed   Boolean  @default(false)
+  completed   Boolean   @default(false)
   dueDate     DateTime?
   projectId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   project ClientProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -731,7 +731,7 @@ model MetricHistory {
 }
 
 model RecurringTransaction {
-  id          String          @id @default(cuid())
+  id          String           @id @default(cuid())
   userId      String
   description String
   amount      Float
@@ -740,8 +740,8 @@ model RecurringTransaction {
   frequency   String // DAILY | WEEKLY | MONTHLY | YEARLY
   categoryId  String?
   nextDate    DateTime
-  isActive    Boolean         @default(true)
-  createdAt   DateTime        @default(now())
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
 
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   category AccountCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -804,11 +804,13 @@ model DocumentLineItem {
 // Singleton row holding the editable content of the public marketing landing page.
 // `singleton` is unique so upserts always target the single row.
 model LandingContent {
-  id          String   @id @default(cuid())
-  singleton   Boolean  @unique @default(true)
-  content     Json     @default("{}")
-  updatedById String?
-  updatedBy   User?    @relation("LandingEditor", fields: [updatedById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  singleton    Boolean   @unique @default(true)
+  content      Json      @default("{}")
+  updatedById  String?
+  updatedBy    User?     @relation("LandingEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  viewCount    Int       @default(0)
+  lastViewedAt DateTime?
 }

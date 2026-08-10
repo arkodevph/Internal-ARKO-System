@@ -1,14 +1,35 @@
 import { Prisma } from '@prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { router, publicProcedure, protectedProcedure, requireRole } from '../trpc'
-import { landingContentSchema, mergeLandingContent } from '../../../lib/landing/content'
+import {
+  router,
+  publicProcedure,
+  protectedProcedure,
+  requireRole,
+} from '../trpc'
+import {
+  landingContentSchema,
+  mergeLandingContent,
+} from '../../../lib/landing/content'
 import { LANDING_CACHE_TAG } from '../../../lib/landing/get-content'
 
 export const landingRouter = router({
   // Public: the marketing page and the admin form both read the current content.
   get: publicProcedure.query(async ({ ctx }) => {
-    const row = await ctx.prisma.landingContent.findFirst({ where: { singleton: true } })
+    const row = await ctx.prisma.landingContent.findFirst({
+      where: { singleton: true },
+    })
     return mergeLandingContent(row?.content)
+  }),
+
+  stats: protectedProcedure.query(async ({ ctx }) => {
+    const row = await ctx.prisma.landingContent.findFirst({
+      where: { singleton: true },
+      select: { viewCount: true, lastViewedAt: true },
+    })
+    return {
+      viewCount: row?.viewCount ?? 0,
+      lastViewedAt: row?.lastViewedAt ?? null,
+    }
   }),
 
   // Admin-only: replace the full landing content, then revalidate the public page.

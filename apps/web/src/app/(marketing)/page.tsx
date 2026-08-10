@@ -8,12 +8,17 @@ import ContactForm from './_components/ContactForm'
 import HeroFunnel from './_components/HeroFunnel'
 import ScrollReveal from './_components/ScrollReveal'
 import Squares from './_components/Squares'
+import LandingViewTracker from './_components/LandingViewTracker'
 import { getLandingContent } from '../../lib/landing/get-content'
 import type { LandingContent } from '../../lib/landing/content'
 
 function Hero({ hero }: { hero: LandingContent['hero'] }) {
   return (
-    <section id="top" data-bg="light" className="relative overflow-hidden bg-acid text-ink">
+    <section
+      id="top"
+      data-bg="light"
+      className="relative overflow-hidden bg-acid text-ink"
+    >
       <Image
         src="/brand/arko-system-art.webp"
         alt=""
@@ -81,9 +86,15 @@ function Stats({ stats }: { stats: LandingContent['stats'] }) {
           className={`border-acid/20 p-8 md:p-10 ${i !== 0 ? 'border-l-4' : ''} ${i < 2 ? 'border-b-4 md:border-b-0' : ''}`}
         >
           {s.displayText !== undefined ? (
-            <span className="display text-5xl text-acid md:text-6xl">{s.displayText}</span>
+            <span className="display text-5xl text-acid md:text-6xl">
+              {s.displayText}
+            </span>
           ) : (
-            <CountUp to={s.to} suffix={s.suffix} className="display text-5xl text-acid md:text-6xl" />
+            <CountUp
+              to={s.to}
+              suffix={s.suffix}
+              className="display text-5xl text-acid md:text-6xl"
+            />
           )}
           <div className="eyebrow mt-3 text-white/55">{s.label}</div>
         </div>
@@ -94,7 +105,10 @@ function Stats({ stats }: { stats: LandingContent['stats'] }) {
 
 function Intro({ intro }: { intro: LandingContent['intro'] }) {
   return (
-    <section className="bg-acid px-6 py-20 text-ink md:px-10 md:py-28" data-bg="light">
+    <section
+      className="bg-acid px-6 py-20 text-ink md:px-10 md:py-28"
+      data-bg="light"
+    >
       <ScrollReveal>
         <div className="grid gap-10 md:grid-cols-[1fr_1.2fr] md:gap-16">
           <h2 className="display text-[clamp(3rem,9vw,7rem)]">
@@ -105,7 +119,9 @@ function Intro({ intro }: { intro: LandingContent['intro'] }) {
             <p className="eyebrow mb-6 text-ink/60">{intro.eyebrowNote}</p>
             <p className="text-lg font-medium leading-relaxed md:text-2xl">
               {intro.bodyBefore}
-              <span className="bg-ink px-2 text-acid">{intro.bodyHighlight}</span>
+              <span className="bg-ink px-2 text-acid">
+                {intro.bodyHighlight}
+              </span>
               {intro.bodyAfter}
             </p>
           </div>
@@ -119,29 +135,29 @@ function Contact({ contact }: { contact: LandingContent['contact'] }) {
   return (
     <section id="contact" className="bg-ink px-6 py-24 md:px-10">
       <ScrollReveal>
-      <div className="grid gap-12 md:grid-cols-[1fr_1fr] md:gap-20">
-        <div className="relative">
-          {/* Whole dotted world map, contained behind the heading text */}
-          <img
-            src="/world-dots.svg"
-            alt=""
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-20"
-          />
-          <div className="relative z-10">
-            <h2 className="display text-[clamp(2.5rem,9vw,6.5rem)] text-acid">
-              {contact.headingLine1}
-              <br />
-              {contact.headingLine2}
-            </h2>
-            <p className="mt-6 max-w-sm text-base font-medium text-white/70">
-              {contact.paragraph}
-            </p>
-            <p className="eyebrow mt-10 text-white/40">{contact.email}</p>
+        <div className="grid gap-12 md:grid-cols-[1fr_1fr] md:gap-20">
+          <div className="relative">
+            {/* Whole dotted world map, contained behind the heading text */}
+            <img
+              src="/world-dots.svg"
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-20"
+            />
+            <div className="relative z-10">
+              <h2 className="display text-[clamp(2.5rem,9vw,6.5rem)] text-acid">
+                {contact.headingLine1}
+                <br />
+                {contact.headingLine2}
+              </h2>
+              <p className="mt-6 max-w-sm text-base font-medium text-white/70">
+                {contact.paragraph}
+              </p>
+              <p className="eyebrow mt-10 text-white/40">{contact.email}</p>
+            </div>
           </div>
+          <ContactForm />
         </div>
-        <ContactForm />
-      </div>
       </ScrollReveal>
     </section>
   )
@@ -179,7 +195,9 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
           <div className="absolute inset-0 opacity-30">
             <Squares direction="right" speed={0.12} squareSize={34} />
           </div>
-          <span className="display relative text-[clamp(3.5rem,9vw,8rem)] text-acid">Build</span>
+          <span className="display relative text-[clamp(3.5rem,9vw,8rem)] text-acid">
+            Build
+          </span>
         </div>
         <div className="display hidden items-center justify-center border-x-4 border-ink bg-acid text-5xl text-ink md:flex">
           →
@@ -194,7 +212,9 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
               hoverFillColor="rgba(10,10,10,0.12)"
             />
           </div>
-          <span className="display relative text-[clamp(3.5rem,9vw,8rem)] text-ink">Ship</span>
+          <span className="display relative text-[clamp(3.5rem,9vw,8rem)] text-ink">
+            Ship
+          </span>
         </div>
       </div>
 
@@ -209,7 +229,9 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
       <div className="relative z-10 grid border-t border-white/10 md:grid-cols-[1.5fr_1.5fr_2fr]">
         {/* col 1 — brand */}
         <div className="border-b border-white/10 p-8 md:border-b-0 md:border-r md:p-10">
-          <div className="display text-4xl tracking-tighter text-acid">ARKO</div>
+          <div className="display text-4xl tracking-tighter text-acid">
+            ARKO
+          </div>
           <p className="mono mt-3 max-w-xs text-sm leading-relaxed text-white/45">
             {footer.brandBlurb}
           </p>
@@ -250,7 +272,9 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
                   href={item.href}
                   className="group inline-flex items-center gap-2 text-white/50 underline underline-offset-4 transition-colors hover:text-acid"
                 >
-                  <span className="text-acid/0 transition-colors group-hover:text-acid">▸</span>
+                  <span className="text-acid/0 transition-colors group-hover:text-acid">
+                    ▸
+                  </span>
                   {item.label}
                 </a>
               </li>
@@ -273,7 +297,9 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
             className="mono group mt-6 inline-flex items-center gap-3 border-2 border-acid px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-acid transition-all hover:bg-acid hover:text-ink"
           >
             Start a project
-            <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+            <span className="inline-block transition-transform group-hover:translate-x-1">
+              →
+            </span>
           </a>
           <p className="mono mt-6 text-xs text-white/30">
             Or email{' '}
@@ -303,9 +329,7 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         <p className="mono text-[0.65rem] text-white/25">
           Built with Next.js · Deployed on Vercel
         </p>
-        <p className="mono text-[0.65rem] text-white/25">
-          {footer.location}
-        </p>
+        <p className="mono text-[0.65rem] text-white/25">{footer.location}</p>
       </div>
     </footer>
   )
@@ -315,6 +339,7 @@ export default async function Home() {
   const content = await getLandingContent()
   return (
     <main>
+      <LandingViewTracker />
       <Hero hero={content.hero} />
       {content.sections.marquee && <Marquee words={content.marquee.words} />}
       {content.sections.stats && <Stats stats={content.stats} />}
