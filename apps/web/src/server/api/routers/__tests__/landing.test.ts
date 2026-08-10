@@ -7,7 +7,7 @@ jest.mock('next/cache', () => ({
 }))
 
 import { landingRouter } from '../landing'
-import { DEFAULT_LANDING_CONTENT, landingContentSchema } from '../../../../lib/landing/content'
+import { DEFAULT_LANDING_CONTENT, landingContentSchema, mergeLandingContent } from '../../../../lib/landing/content'
 
 const ctx = (over: any = {}) => {
   let row: any = over._row ?? null
@@ -83,6 +83,24 @@ describe('landing router', () => {
       for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'vbscript:x']) {
         expect(landingContentSchema.safeParse(withHref(bad)).success).toBe(false)
       }
+    })
+  })
+
+  describe('stored project migration', () => {
+    it('keeps stored projects and appends newly shipped projects without duplicates', () => {
+      const storedFirst = {
+        ...DEFAULT_LANDING_CONTENT.projects.items[0],
+        title: 'Custom BMW title',
+        href: 'https://unofficial-bmw.vercel.app/',
+      }
+      const merged = mergeLandingContent({
+        projects: { items: [storedFirst] },
+      })
+
+      expect(merged.projects.items).toHaveLength(DEFAULT_LANDING_CONTENT.projects.items.length)
+      expect(merged.projects.items[0]?.title).toBe('Custom BMW title')
+      expect(merged.projects.items.filter((project) => project.domain === 'arko-islas.vercel.app')).toHaveLength(1)
+      expect(merged.projects.items.filter((project) => project.domain === 'freshphonesph.vercel.app')).toHaveLength(1)
     })
   })
 })

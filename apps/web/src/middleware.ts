@@ -19,6 +19,18 @@ const HEADERS: Record<string, string> = {
     "img-src 'self' data: blob: https:",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' ws:",
+    [
+      "frame-src 'self'",
+      'https://unofficial-bmw.vercel.app',
+      'https://unofficial-omniscient-readers-viewpoint.vercel.app',
+      'https://co-map.vercel.app',
+      'https://yuenansichu-restaurant.vercel.app',
+      'https://kapetbalay.vercel.app',
+      'https://arko-islas.vercel.app',
+      'https://arko-locus-assembly.vercel.app',
+      'https://dmarc-construction.vercel.app',
+      'https://freshphonesph.vercel.app',
+    ].join(' '),
     "frame-ancestors 'none'",
     // Hardening: block plugin embeds, <base> hijacking, and cross-origin form posts.
     "object-src 'none'",

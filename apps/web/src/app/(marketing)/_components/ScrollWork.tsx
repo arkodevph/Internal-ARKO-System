@@ -3,10 +3,59 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowUpRight, Bot, Globe2, Smartphone, Workflow } from "lucide-react";
 import { useRef } from "react";
 import type { LandingContent } from "../../../lib/landing/content";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
+
+const serviceIcons = [Globe2, Smartphone, Workflow, Bot];
+
+function WorkModel({ index }: { index: number }) {
+  if (index === 0) {
+    return (
+      <div className="work-model work-browser" aria-hidden="true">
+        <div className="work-browser-bar"><i /><i /><i /><span>arko.studio/project</span></div>
+        <div className="work-browser-body">
+          <div><small>Built to convert</small><strong>Clear idea.<br />Sharp launch.</strong><b>Start a project →</b></div>
+          <span className="work-browser-shape">A</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (index === 1) {
+    return (
+      <div className="work-model work-phone-scene" aria-hidden="true">
+        <div className="work-phone work-phone-back"><span /><span /><span /></div>
+        <div className="work-phone work-phone-front">
+          <small>09:41</small><strong>Your day</strong>
+          <div className="work-phone-chart"><i /><i /><i /><i /></div>
+          <div className="work-phone-nav"><i /><i /><i /></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (index === 2) {
+    return (
+      <div className="work-model work-flow" aria-hidden="true">
+        <span className="work-flow-node">FORM</span><i />
+        <span className="work-flow-node work-flow-node-acid">SORT</span><i />
+        <span className="work-flow-node">DONE</span>
+        <b className="work-flow-pulse" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="work-model work-ai" aria-hidden="true">
+      <div className="work-ai-orb"><span>AI</span></div>
+      <div className="work-ai-message work-ai-message-one">Find the useful answer</div>
+      <div className="work-ai-message work-ai-message-two">Ready in your product.</div>
+    </div>
+  );
+}
 
 export default function ScrollWork({
   eyebrow,
@@ -78,67 +127,41 @@ export default function ScrollWork({
           </p>
         </div>
 
-        {/* cards grid */}
-        <div className="grid gap-px overflow-hidden border-4 border-acid bg-acid md:grid-cols-2">
+        {/* service models */}
+        <div className="grid gap-4 md:grid-cols-2">
           {WORK.map((item, i) => (
             <div
               key={item.title}
               ref={(el) => {
                 cardRefs.current[i] = el;
               }}
-              className="group relative bg-ink p-8 transition-colors duration-500 md:p-14"
+              className="work-card group relative overflow-hidden border-2 border-white/15 bg-ink-soft transition-colors duration-300 hover:border-acid"
               style={{ opacity: 0, transform: "translateY(60px) scale(0.92)" }}
             >
-              {/* corner brackets — decorative */}
-              <div
-                ref={(el) => {
-                  cornerRefs.current[i] = el;
-                }}
-                className="pointer-events-none absolute right-4 top-4 text-acid/20 transition-all duration-500 group-hover:text-acid/60"
-                style={{ opacity: 0 }}
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                >
-                  <path d="M20 4L20 20L4 20" />
-                </svg>
+              <div className="relative h-64 overflow-hidden border-b-2 border-white/15 bg-acid group-hover:border-acid md:h-72">
+                <div className="project-grid absolute inset-0 text-ink/10" />
+                <span className="display absolute left-5 top-4 text-sm text-ink/45">0{i + 1} / 04</span>
+                <WorkModel index={i} />
               </div>
 
-              <div className="eyebrow text-acid/60 transition-colors duration-300 group-hover:text-acid">
-                {item.kind}
+              <div className="p-6 md:p-8">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="eyebrow flex items-center gap-2 text-acid">
+                    {(() => { const Icon = serviceIcons[i] ?? Globe2; return <Icon className="h-4 w-4" />; })()}
+                    {item.kind}
+                  </div>
+                  <div
+                    ref={(el) => { cornerRefs.current[i] = el; }}
+                    className="grid h-10 w-10 place-items-center border border-white/15 text-white/40 transition-all duration-200 group-hover:border-acid group-hover:bg-acid group-hover:text-ink"
+                    style={{ opacity: 0 }}
+                  ><ArrowUpRight className="h-4 w-4" /></div>
+                </div>
+                <h3 className="display mt-5 text-3xl text-white md:text-4xl">{item.title}</h3>
+                <p className="mt-3 max-w-md text-base font-medium leading-relaxed text-white/60">{item.copy}</p>
+                <div className="mono mt-6 flex flex-wrap gap-2">
+                  {item.tags.map((tag) => <span key={tag} className="border border-white/15 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white/45 transition-colors group-hover:border-acid/40 group-hover:text-acid">{tag}</span>)}
+                </div>
               </div>
-
-              <div className="mt-6 flex items-start gap-4">
-                <span className="display mt-1 text-3xl text-acid/20 transition-colors duration-300 group-hover:text-acid/60 md:text-4xl">
-                  {item.icon}
-                </span>
-                <h3 className="display text-3xl text-white transition-colors duration-300 group-hover:text-acid md:text-5xl">
-                  {item.title}
-                </h3>
-              </div>
-
-              <p className="mt-6 max-w-sm text-sm font-medium leading-relaxed text-white/50 transition-colors duration-300 group-hover:text-white/70">
-                {item.copy}
-              </p>
-
-              <div className="mono mt-8 flex flex-wrap gap-2">
-                {item.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="border border-acid/20 px-3 py-1.5 text-xs font-semibold tracking-wider text-acid/50 transition-all duration-300 group-hover:border-acid/60 group-hover:text-acid"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* hover line — slides in from left */}
-              <div className="absolute bottom-0 left-0 h-[3px] w-0 bg-acid transition-all duration-500 group-hover:w-full" />
             </div>
           ))}
         </div>
@@ -146,8 +169,8 @@ export default function ScrollWork({
         {/* bottom CTA */}
         <div className="mono mt-16 flex items-center gap-4 text-sm font-semibold tracking-wider text-white/30">
           <span className="h-[2px] flex-1 bg-white/10" />
-          <a href="#contact" className="transition-colors hover:text-acid">
-            {ctaLabel}
+          <a href="#contact" className="border-2 border-acid px-5 py-3 text-acid transition-colors hover:bg-acid hover:text-ink">
+            {ctaLabel} <span aria-hidden>→</span>
           </a>
           <span className="h-[2px] flex-1 bg-white/10" />
         </div>

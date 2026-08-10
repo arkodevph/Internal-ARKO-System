@@ -325,7 +325,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         type: 'Restaurant website',
         domain: 'yuenansichu-restaurant.vercel.app',
         href: 'https://yuenansichu-restaurant.vercel.app/',
-        image: '/projects/yuenansichu-restaurant-preview.png',
+        image: '/projects/yuenansichu-restaurant-preview.webp',
       },
       {
         number: '05',
@@ -336,6 +336,42 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         href: 'https://kapetbalay.vercel.app/',
         image: '/projects/kapetbalay-preview.png',
       },
+      {
+        number: '06',
+        title: 'ISLAS',
+        category: 'Travel',
+        type: 'Boutique Philippine journey platform',
+        domain: 'arko-islas.vercel.app',
+        href: 'https://arko-islas.vercel.app/',
+        image: '/projects/islas-preview.webp',
+      },
+      {
+        number: '07',
+        title: 'Locus Assembly',
+        category: 'Architecture',
+        type: 'Terrain-rooted architecture studio website',
+        domain: 'arko-locus-assembly.vercel.app',
+        href: 'https://arko-locus-assembly.vercel.app/',
+        image: '/projects/locus-assembly-preview.avif',
+      },
+      {
+        number: '08',
+        title: 'DM ARC Construction',
+        category: 'Construction',
+        type: 'Construction services and project portfolio website',
+        domain: 'dmarc-construction.vercel.app',
+        href: 'https://dmarc-construction.vercel.app/',
+        image: '/projects/dmarc-construction-preview.webp',
+      },
+      {
+        number: '09',
+        title: 'Fresh Phones PH',
+        category: 'E-commerce',
+        type: 'Mobile device catalog and flexible payment platform',
+        domain: 'freshphonesph.vercel.app',
+        href: 'https://freshphonesph.vercel.app/',
+        image: '/projects/freshphonesph-preview.webp',
+      },
     ],
   },
 }
@@ -343,12 +379,20 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
 /**
  * Merge stored (possibly partial / older-schema) content over the defaults so a
  * freshly-added field never renders as `undefined`. Arrays are replaced wholesale
- * (the admin form always saves complete arrays); objects merge per-section.
+ * except project items, where newly shipped defaults are appended by URL.
  */
 export function mergeLandingContent(stored: unknown): LandingContent {
   const d = DEFAULT_LANDING_CONTENT
   if (!stored || typeof stored !== 'object') return d
   const s = stored as Partial<LandingContent>
+  const storedProjects = s.projects?.items ?? []
+  const storedProjectUrls = new Set(storedProjects.map((project) => project.href.replace(/\/$/, '')))
+  const projectItems = [
+    ...storedProjects,
+    ...d.projects.items.filter(
+      (project) => !storedProjectUrls.has(project.href.replace(/\/$/, '')),
+    ),
+  ]
   return {
     sections: { ...d.sections, ...s.sections },
     hero: { ...d.hero, ...s.hero },
@@ -360,6 +404,6 @@ export function mergeLandingContent(stored: unknown): LandingContent {
     process: { ...d.process, ...s.process },
     contact: { ...d.contact, ...s.contact },
     footer: { ...d.footer, ...s.footer },
-    projects: { ...d.projects, ...s.projects },
+    projects: { ...d.projects, ...s.projects, items: projectItems },
   }
 }

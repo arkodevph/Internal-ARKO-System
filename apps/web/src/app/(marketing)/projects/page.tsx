@@ -39,7 +39,7 @@ export default async function ProjectsPage() {
         </div>
       </section>
 
-      <section className="px-6 py-16 md:px-10 md:py-24">
+      <section className="px-6 py-12 md:px-10 md:py-16">
         <ProjectGallery projects={projects.items} />
       </section>
 

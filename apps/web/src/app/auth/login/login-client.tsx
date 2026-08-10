@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
@@ -142,37 +142,62 @@ function useQuote(): { quote: Quote | null; loading: boolean } {
 /* ─── Quote panel ─── */
 
 function QuotePanel({ quote, loading }: { quote: Quote | null; loading: boolean }) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const frameRef = useRef<number | null>(null)
+
+  const updatePointerDepth = (event: React.PointerEvent<HTMLDivElement>) => {
+    const panel = panelRef.current
+    if (!panel) return
+    const bounds = panel.getBoundingClientRect()
+    const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2
+    const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2
+
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
+    frameRef.current = requestAnimationFrame(() => {
+      panel.style.setProperty('--pointer-x', `${(x * 18).toFixed(2)}px`)
+      panel.style.setProperty('--pointer-y', `${(y * 18).toFixed(2)}px`)
+      panel.style.setProperty('--pointer-x-soft', `${(x * 10).toFixed(2)}px`)
+      panel.style.setProperty('--pointer-y-soft', `${(y * 10).toFixed(2)}px`)
+      panel.style.setProperty('--pointer-tilt', `${(x * 3).toFixed(2)}deg`)
+    })
+  }
+
+  const resetPointerDepth = () => {
+    const panel = panelRef.current
+    if (!panel) return
+    panel.style.setProperty('--pointer-x', '0px')
+    panel.style.setProperty('--pointer-y', '0px')
+    panel.style.setProperty('--pointer-x-soft', '0px')
+    panel.style.setProperty('--pointer-y-soft', '0px')
+    panel.style.setProperty('--pointer-tilt', '0deg')
+  }
+
   return (
-    <div className="hidden lg:flex lg:w-[55%] flex-col bg-[#09090B] relative overflow-hidden select-none">
-      <div
-        className="absolute top-[-20%] left-[-10%] w-[70%] aspect-square rounded-full opacity-[0.06]"
-        style={{ background: 'radial-gradient(circle, #2D6A4F 0%, transparent 70%)', animation: 'float-drift 30s ease-in-out infinite' }}
-      />
-      <div
-        className="absolute bottom-[-15%] right-[-5%] w-[60%] aspect-square rounded-full opacity-[0.04]"
-        style={{ background: 'radial-gradient(circle, #40916C 0%, transparent 70%)', animation: 'float-drift-slow 40s ease-in-out infinite' }}
-      />
-      <div
-        className="absolute top-[40%] right-[-10%] w-[40%] aspect-square rounded-full opacity-[0.03]"
-        style={{ background: 'radial-gradient(circle, #C28B5E 0%, transparent 70%)', animation: 'float-drift 25s ease-in-out infinite reverse' }}
-      />
-      <div
-        className="absolute inset-0 opacity-[0.015]"
-        style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '28px 28px' }}
-      />
-      <div
-        className="absolute inset-0 opacity-[0.03] overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%)', animation: 'shimmer-shift 8s ease-in-out infinite' }}
-      />
+    <div
+      ref={panelRef}
+      onPointerMove={updatePointerDepth}
+      onPointerLeave={resetPointerDepth}
+      className="auth-art-panel relative hidden select-none flex-col overflow-hidden border-r-4 border-ink bg-acid text-ink lg:flex lg:w-[55%]"
+    >
+      <div aria-hidden className="auth-art-grid absolute inset-0" />
+      <div aria-hidden className="auth-shape auth-shape-cube">
+        <span className="auth-cube-face auth-cube-front">BUILD</span>
+        <span className="auth-cube-face auth-cube-back">ARKO</span>
+        <span className="auth-cube-face auth-cube-right">SHIP</span>
+        <span className="auth-cube-face auth-cube-left">IDEA</span>
+        <span className="auth-cube-face auth-cube-top">01</span>
+        <span className="auth-cube-face auth-cube-bottom">OS</span>
+      </div>
+      <div aria-hidden className="auth-orbit auth-orbit-one" />
+      <div aria-hidden className="auth-orbit auth-orbit-two" />
+      <div aria-hidden className="auth-float-card auth-float-card-one"><b>01</b><span>DESIGN</span><i /></div>
+      <div aria-hidden className="auth-float-card auth-float-card-two"><b>02</b><span>DEVELOP</span><i /></div>
 
       <div className="relative z-10 flex flex-col flex-1 px-12 pt-8 pb-12">
-        <span
-          className="select-none text-[clamp(40px,5vw,72px)] leading-none text-white/85 flex items-center gap-3"
-          style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, animation: 'fade-in-left 0.8s ease-out' }}
-        >
-          <img src="/icon.png" alt="" className="h-[1em] w-auto" />
-          A R K O
+        <span className="auth-brand display flex w-fit items-center gap-3 text-[clamp(2.5rem,5vw,4.5rem)] leading-none">
+          <img src="/icon.png" alt="" className="h-[0.8em] w-auto" /> ARKO
         </span>
+        <span className="mono mt-3 w-fit border-2 border-ink bg-ink px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-acid">Secure workspace / 2026</span>
 
         <div className="flex flex-col justify-center flex-1 min-h-0 max-w-xl mx-auto w-full">
           {loading ? (
@@ -189,28 +214,26 @@ function QuotePanel({ quote, loading }: { quote: Quote | null; loading: boolean 
             <div style={{ animation: 'fade-in 0.8s ease-out' }}>
               <div className="mb-6">
                 <span
-                  className="block select-none leading-none"
-                  style={{ fontSize: 'clamp(100px, 12vw, 180px)', color: 'rgba(255, 255, 255, 0.4)', fontFamily: "'Alfa Slab One', serif", fontWeight: 400, lineHeight: 0.6 }}
+                  className="display block select-none leading-none text-ink/25"
+                  style={{ fontSize: 'clamp(100px, 12vw, 180px)', lineHeight: 0.6 }}
                 >
                   &ldquo;
                 </span>
               </div>
               <blockquote className="-mt-4">
                 <p
-                  className="text-[clamp(17px,2vw,26px)] leading-[1.6] text-[#E8E5DE] font-normal"
-                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                  className="display max-w-lg text-[clamp(1.75rem,3vw,3.6rem)] leading-[0.95] text-ink"
                 >
                   {quote.content}
                 </p>
               </blockquote>
               <cite
-                className="block mt-5 not-italic text-[clamp(13px,1vw,15px)] text-zinc-500"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic' }}
+                className="mono mt-6 block border-l-4 border-ink pl-3 text-xs not-italic uppercase tracking-widest text-ink/60"
               >
                 &mdash; {quote.author}
               </cite>
               <div className="mt-auto pt-12">
-                <span className="text-[9px] uppercase tracking-[0.25em] text-zinc-700" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                <span className="mono text-[9px] uppercase tracking-[0.25em] text-ink/50">
                   Quote of the day
                 </span>
               </div>
@@ -273,24 +296,20 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-[#09090B] px-6 relative overflow-hidden">
+    <div className="auth-form-panel relative flex flex-1 items-center justify-center overflow-hidden bg-ink px-5 py-20 sm:px-8">
       <Link
         href="/"
-        className="absolute left-6 top-6 z-10 text-xs font-medium text-zinc-500 transition-colors hover:text-white"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
+        className="auth-back-link mono absolute left-5 top-5 z-10 border border-white/20 px-3 py-2 text-[0.65rem] font-bold uppercase tracking-wider text-white/60 transition-colors hover:border-acid hover:text-acid sm:left-8 sm:top-8"
       >
         ← Back to ARKO
       </Link>
-      <div
-        className="absolute top-[-30%] right-[-20%] w-[60%] aspect-square rounded-full opacity-[0.03]"
-        style={{ background: 'radial-gradient(circle, #2D6A4F 0%, transparent 70%)' }}
-      />
+      <div aria-hidden className="auth-form-cross absolute right-8 top-8 text-acid/20">+</div>
+      <div aria-hidden className="auth-form-cross absolute bottom-10 left-10 text-acid/20">+</div>
 
       <div className="relative w-full max-w-sm" style={{ animation: 'fade-in-up 0.6s ease-out' }}>
-        <div className="lg:hidden text-center mb-8">
+        <div className="mb-8 text-center lg:hidden">
           <span
-            className="text-3xl text-white/85 inline-flex items-center justify-center gap-2"
-            style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700 }}
+            className="display inline-flex items-center justify-center gap-2 text-4xl text-acid"
           >
             <img src="/icon.png" alt="" className="h-[1em] w-auto" />
             A R K O
@@ -298,11 +317,11 @@ function LoginForm() {
         </div>
 
         <div
-          className="rounded-2xl border border-white/[0.06] p-8 shadow-2xl"
-          style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)', backdropFilter: 'blur(20px)' }}
+          className="auth-login-card relative border-2 border-white/15 bg-ink-soft p-6 shadow-[12px_12px_0_#b8ff2e] sm:p-8"
         >
           <div className="text-center mb-7" style={{ animation: 'fade-in-up 0.5s ease-out 0.1s both' }}>
-            <h1 className="text-xl font-semibold text-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="mono mb-3 text-[0.62rem] font-bold uppercase tracking-[0.2em] text-acid">Member access / 01</p>
+            <h1 className="display text-4xl text-white">
               Welcome back
             </h1>
             <p className="text-sm text-zinc-500 mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -397,8 +416,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-600/20 hover:bg-accent-700 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
+              className="mono w-full border-2 border-acid bg-acid px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-ink transition-all duration-200 hover:bg-transparent hover:text-acid active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
                 <span className="inline-flex items-center gap-2">

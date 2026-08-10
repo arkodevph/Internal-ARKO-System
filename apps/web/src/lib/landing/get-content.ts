@@ -16,7 +16,7 @@ export const getLandingContent = unstable_cache(
     const row = await prisma.landingContent.findFirst({ where: { singleton: true } })
     return mergeLandingContent(row?.content)
   },
-  ['landing-content'],
+  ['landing-content-v2'],
   // Tag-based revalidation is immediate on admin save; the time window is a
   // self-heal fallback so a changed content shape can't stay cached indefinitely.
   { tags: [LANDING_CACHE_TAG], revalidate: 3600 },
