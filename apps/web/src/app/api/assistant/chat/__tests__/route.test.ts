@@ -6,6 +6,7 @@ const eventFindMany = jest.fn()
 const noteFindMany = jest.fn()
 const transactionFindMany = jest.fn()
 const categoryFindMany = jest.fn()
+const userFindMany = jest.fn()
 const conversationFindFirst = jest.fn()
 const conversationCreate = jest.fn()
 const conversationUpdate = jest.fn()
@@ -17,6 +18,7 @@ jest.mock('@arko/db', () => ({
     note: { findMany: noteFindMany },
     transaction: { findMany: transactionFindMany },
     accountCategory: { findMany: categoryFindMany },
+    user: { findMany: userFindMany },
     assistantConversation: {
       findFirst: conversationFindFirst,
       create: conversationCreate,
@@ -89,6 +91,7 @@ describe('assistant chat route', () => {
     noteFindMany.mockResolvedValue([])
     transactionFindMany.mockResolvedValue([])
     categoryFindMany.mockResolvedValue([])
+    userFindMany.mockResolvedValue([])
     conversationFindFirst.mockResolvedValue({ id: 'conversation-1' })
     conversationCreate.mockResolvedValue({ id: 'conversation-1' })
     conversationUpdate.mockResolvedValue({ id: 'conversation-1' })
@@ -156,12 +159,14 @@ describe('assistant chat route', () => {
           canCreateEvents: false,
           canCreateNotes: false,
           canCreateTransactions: false,
+          canCreateUsers: false,
           contextTruncated: false,
           tasks: [],
           events: [],
           notes: [],
           transactions: [],
           transactionCategories: [],
+          users: [],
         },
       }),
     )
@@ -187,6 +192,7 @@ describe('assistant chat route', () => {
     expect(noteFindMany).toHaveBeenCalledTimes(1)
     expect(transactionFindMany).toHaveBeenCalledTimes(1)
     expect(categoryFindMany).toHaveBeenCalledTimes(1)
+    expect(userFindMany).toHaveBeenCalledTimes(1)
     expect(await response.json()).toMatchObject({ message: 'Ready.' })
     expect(conversationCreate).toHaveBeenCalledWith(
       expect.objectContaining({

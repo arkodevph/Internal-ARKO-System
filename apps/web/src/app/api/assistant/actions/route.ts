@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
+import { hash } from 'bcryptjs'
 import { prisma } from '@arko/db'
 import { auth } from '../../../../lib/auth'
+import { avatarConfigToJson, generateAvatarSeed } from '../../../../lib/avatar'
 import { hasPermission } from '../../../../lib/rbac'
 import { assistantActionSchema } from '../../../../server/services/assistant'
 
@@ -9,6 +12,7 @@ const ACTION_PERMISSIONS = {
   create_event: 'events:create',
   create_note: 'notes:create',
   create_transaction: 'transactions:create',
+  create_user: 'users:create',
 } as const
 
 const TRANSACTION_CATEGORY_TYPES = {
@@ -42,6 +46,46 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (action.data.type === 'create_user') {
+      const slug =
+        action.data.name
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '.')
+          .replace(/^\.|\.$/g, '') || 'user'
+      let email = action.data.email.toLowerCase()
+      if (!email) {
+        email = `${slug}@arko.app`
+        for (let suffix = 1; await prisma.user.findUnique({ where: { email } }); suffix++) {
+          email = `${slug}${suffix}@arko.app`
+        }
+      } else if (await prisma.user.findUnique({ where: { email } })) {
+        return NextResponse.json(
+          { error: 'A user with this email already exists.' },
+          { status: 409 },
+        )
+      }
+
+      const generatedPassword = `${randomBytes(12).toString('base64url')}Aa1!`
+      const user = await prisma.user.create({
+        data: {
+          name: action.data.name,
+          email,
+          title: action.data.userTitle || null,
+          role: action.data.userRole,
+          password: await hash(generatedPassword, 12),
+        },
+        select: { id: true, name: true, email: true, role: true },
+      })
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          avatar: avatarConfigToJson(generateAvatarSeed(user.id)) as any,
+        },
+      })
+      return NextResponse.json({ user, generatedPassword })
+    }
+
     if (action.data.type === 'create_note') {
       const note = await prisma.note.create({
         data: {
@@ -135,6 +179,7 @@ export async function POST(request: Request) {
       create_event: 'event',
       create_note: 'note',
       create_transaction: 'transaction',
+      create_user: 'user',
     }[action.data.type]
     return NextResponse.json(
       { error: `The ${resource} could not be created.` },

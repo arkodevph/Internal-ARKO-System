@@ -8,6 +8,9 @@ const createNote = jest.fn()
 const createTransaction = jest.fn()
 const findCategory = jest.fn()
 const createCategory = jest.fn()
+const findUser = jest.fn()
+const createUser = jest.fn()
+const updateUser = jest.fn()
 
 jest.mock('@arko/db', () => ({
   prisma: {
@@ -16,9 +19,11 @@ jest.mock('@arko/db', () => ({
     note: { create: createNote },
     transaction: { create: createTransaction },
     accountCategory: { findFirst: findCategory, create: createCategory },
+    user: { findUnique: findUser, create: createUser, update: updateUser },
   },
 }))
 jest.mock('../../../../../lib/auth', () => ({ auth: jest.fn() }))
+jest.mock('bcryptjs', () => ({ hash: jest.fn(() => Promise.resolve('hashed')) }))
 
 import { auth } from '../../../../../lib/auth'
 import { POST } from '../route'
@@ -64,6 +69,14 @@ const validTransactionAction = {
   date: '2026-08-11',
 }
 
+const validUserAction = {
+  type: 'create_user',
+  name: 'Maria Santos',
+  email: 'maria@example.com',
+  userRole: 'MEMBER',
+  userTitle: 'Designer',
+}
+
 describe('assistant action route', () => {
   beforeEach(() => {
     authMock.mockResolvedValue({ user: { id: 'user-1', role: 'USER' } } as any)
@@ -82,6 +95,14 @@ describe('assistant action route', () => {
       amount: 1000,
       type: 'INCOME',
     })
+    findUser.mockResolvedValue(null)
+    createUser.mockResolvedValue({
+      id: 'new-user-1',
+      name: validUserAction.name,
+      email: validUserAction.email,
+      role: validUserAction.userRole,
+    })
+    updateUser.mockResolvedValue({ id: 'new-user-1' })
   })
 
   it('requires authentication', async () => {
@@ -234,5 +255,35 @@ describe('assistant action route', () => {
         data: expect.objectContaining({ categoryId: 'new-income-category' }),
       }),
     )
+  })
+
+  it('allows an admin to create a user after confirmation', async () => {
+    authMock.mockResolvedValue({ user: { id: 'admin-1', role: 'ADMIN' } } as any)
+
+    const response = await POST(request(validUserAction))
+
+    expect(response.status).toBe(200)
+    expect(createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: 'Maria Santos',
+          email: 'maria@example.com',
+          role: 'MEMBER',
+          password: 'hashed',
+        }),
+      }),
+    )
+    expect(updateUser).toHaveBeenCalled()
+    expect(await response.json()).toMatchObject({
+      user: { email: 'maria@example.com' },
+      generatedPassword: expect.any(String),
+    })
+  })
+
+  it('prevents non-admin roles from creating users', async () => {
+    const response = await POST(request(validUserAction))
+
+    expect(response.status).toBe(403)
+    expect(createUser).not.toHaveBeenCalled()
   })
 })

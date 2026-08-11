@@ -131,11 +131,11 @@ describe('assistant service', () => {
     ).resolves.toMatchObject({ action: null })
   })
 
-  it('replaces model output with a fixed refusal outside system scope', async () => {
+  it('returns a natural model refusal without outside information', async () => {
     generateContent.mockResolvedValue({
       text: JSON.stringify({
         scope: 'refusal',
-        reply: 'Outside information that must never reach the user.',
+        reply: "I can’t check that, but I can help organize it as an ARKO task.",
         action: {
           type: 'none',
           title: '',
@@ -170,13 +170,12 @@ describe('assistant service', () => {
         config,
       }),
     ).resolves.toMatchObject({
-      message:
-        'I can only help with the ARKO system and the workspace information available to you.',
+      message: "I can’t check that, but I can help organize it as an ARKO task.",
       action: null,
     })
   })
 
-  it('allows ARKO requests and blocks unrelated requests locally', () => {
+  it('lets Vertex handle normal conversation while blocking prompt injection locally', () => {
     expect(
       isAssistantRequestInScope([
         { role: 'user', content: 'Summarize my open tasks' },
@@ -186,7 +185,10 @@ describe('assistant service', () => {
       isAssistantRequestInScope([
         { role: 'user', content: 'What is the weather in Manila?' },
       ]),
-    ).toBe(false)
+    ).toBe(true)
+    expect(
+      isAssistantRequestInScope([{ role: 'user', content: 'Hello, how are you?' }]),
+    ).toBe(true)
   })
 
   it('recognizes natural-language meeting requests as ARKO calendar work', () => {
@@ -367,6 +369,61 @@ describe('assistant service', () => {
       action: {
         type: 'create_note',
         title: 'Send a cold text to clients through WhatsApp',
+      },
+    })
+  })
+
+  it('returns an admin-permitted user action', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        scope: 'system',
+        reply: 'I can add Maria as a member after you confirm.',
+        action: {
+          type: 'create_user',
+          title: '',
+          description: '',
+          priority: 'MEDIUM',
+          date: '',
+          startTime: '',
+          endTime: '',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
+          name: 'Maria Santos',
+          email: 'maria@example.com',
+          userRole: 'MEMBER',
+          userTitle: 'Designer',
+        },
+      }),
+    })
+
+    await expect(
+      generateAssistantReply({
+        messages: [
+          { role: 'user', content: 'Add Maria Santos as a member' },
+        ],
+        context: {
+          canCreateTasks: true,
+          canCreateEvents: true,
+          canCreateNotes: true,
+          canCreateTransactions: true,
+          canCreateUsers: true,
+          contextTruncated: false,
+          tasks: [],
+          events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
+          users: [],
+        },
+        config,
+      }),
+    ).resolves.toMatchObject({
+      action: {
+        type: 'create_user',
+        name: 'Maria Santos',
+        userRole: 'MEMBER',
       },
     })
   })

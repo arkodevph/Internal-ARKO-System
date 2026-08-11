@@ -155,6 +155,8 @@ export default function AssistantPage() {
         event?: { title: string }
         note?: { title: string }
         transaction?: { amount: number; type: string }
+        user?: { name: string | null; email: string; role: string }
+        generatedPassword?: string
         error?: string
       }
       if (!response.ok) throw new Error(data.error)
@@ -171,6 +173,8 @@ export default function AssistantPage() {
                 return `Saved “${data.note?.title ?? pendingAction.title}” in Notes.`
               case 'create_transaction':
                 return `Recorded ${data.transaction?.type ?? pendingAction.transactionType} of ₱${(data.transaction?.amount ?? pendingAction.amount).toLocaleString()}.`
+              case 'create_user':
+                return `Created ${data.user?.name ?? pendingAction.name} as ${data.user?.role ?? pendingAction.userRole}. Sign-in: ${data.user?.email ?? pendingAction.email}\nTemporary password: ${data.generatedPassword ?? 'Unavailable'}\nShare these credentials securely; the password is shown only once.`
               default:
                 return `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`
             }
@@ -402,6 +406,8 @@ export default function AssistantPage() {
                   `Save note: ${pendingAction.title}`}
                 {pendingAction.type === 'create_transaction' &&
                   `Record ${pendingAction.transactionType.toLowerCase()}: ₱${pendingAction.amount.toLocaleString()}`}
+                {pendingAction.type === 'create_user' &&
+                  `Add user: ${pendingAction.name}`}
               </p>
               {'description' in pendingAction && pendingAction.description && (
                 <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
@@ -425,6 +431,11 @@ export default function AssistantPage() {
                 <p className="mt-2 text-[11px] font-medium text-text-tertiary">
                   Date: {pendingAction.date}
                 </p>
+              ) : pendingAction.type === 'create_user' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Role: {pendingAction.userRole}
+                  {pendingAction.email ? ` · ${pendingAction.email}` : ' · Email auto-generated'}
+                </p>
               ) : null}
               <div className="mt-4 flex flex-col gap-2 min-[400px]:flex-row">
                 <button
@@ -443,6 +454,7 @@ export default function AssistantPage() {
                   {pendingAction.type === 'create_note' && 'Confirm note'}
                   {pendingAction.type === 'create_transaction' &&
                     'Confirm finance entry'}
+                  {pendingAction.type === 'create_user' && 'Confirm user'}
                 </button>
                 <button
                   type="button"

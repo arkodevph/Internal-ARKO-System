@@ -177,6 +177,21 @@ export async function POST(request: Request) {
           select: { id: true, name: true, type: true },
         })
       : []
+    const canReadUsers = hasPermission(role, 'users:read')
+    const users = canReadUsers
+      ? await prisma.user.findMany({
+          orderBy: { name: 'asc' },
+          take: 40,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            title: true,
+          },
+        })
+      : []
     const config = await getAssistantConfig()
 
     const result = await generateAssistantReply({
@@ -186,12 +201,14 @@ export async function POST(request: Request) {
         canCreateEvents: hasPermission(role, 'events:create'),
         canCreateNotes: hasPermission(role, 'notes:create'),
         canCreateTransactions,
+        canCreateUsers: hasPermission(role, 'users:create'),
         contextTruncated,
         tasks,
         events,
         notes,
         transactions,
         transactionCategories,
+        users,
       },
       config,
       oidcToken: request.headers.get('x-vercel-oidc-token') ?? undefined,
