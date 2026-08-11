@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { NextRequest } from 'next/server'
 
-const findMany = jest.fn()
+const taskFindMany = jest.fn()
+const eventFindMany = jest.fn()
 
 jest.mock('@arko/db', () => ({
-  prisma: { task: { findMany } },
+  prisma: {
+    task: { findMany: taskFindMany },
+    event: { findMany: eventFindMany },
+  },
 }))
 jest.mock('../../../../../lib/auth', () => ({ auth: jest.fn() }))
 jest.mock('../../../../../server/services/assistant-rate-limit', () => ({
@@ -63,7 +67,8 @@ describe('assistant chat route', () => {
   beforeEach(() => {
     authMock.mockResolvedValue({ user: { id: 'user-1', role: 'USER' } } as any)
     consumeRequestMock.mockResolvedValue({ remaining: 19 })
-    findMany.mockResolvedValue([])
+    taskFindMany.mockResolvedValue([])
+    eventFindMany.mockResolvedValue([])
     generateReplyMock.mockResolvedValue({
       message: 'Ready.',
       action: null,
@@ -98,7 +103,8 @@ describe('assistant chat route', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({ model: 'scope-guard' })
     expect(consumeRequestMock).not.toHaveBeenCalled()
-    expect(findMany).not.toHaveBeenCalled()
+    expect(taskFindMany).not.toHaveBeenCalled()
+    expect(eventFindMany).not.toHaveBeenCalled()
     expect(generateReplyMock).not.toHaveBeenCalled()
   })
 
@@ -108,13 +114,16 @@ describe('assistant chat route', () => {
     const response = await POST(request({ messages: [{ role: 'user', content: 'Help' }] }))
 
     expect(response.status).toBe(200)
-    expect(findMany).not.toHaveBeenCalled()
+    expect(taskFindMany).not.toHaveBeenCalled()
+    expect(eventFindMany).not.toHaveBeenCalled()
     expect(generateReplyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         context: {
           canCreateTasks: false,
+          canCreateEvents: false,
           contextTruncated: false,
           tasks: [],
+          events: [],
         },
       }),
     )
@@ -130,17 +139,18 @@ describe('assistant chat route', () => {
   })
 
   it('loads permitted task context and returns the model response', async () => {
-    findMany.mockResolvedValue([{ id: 'task-1', title: 'Ship', status: 'TODO' }])
+    taskFindMany.mockResolvedValue([{ id: 'task-1', title: 'Ship', status: 'TODO' }])
 
     const response = await POST(request({ messages: [{ role: 'user', content: 'What is next?' }] }))
 
     expect(response.status).toBe(200)
-    expect(findMany).toHaveBeenCalledTimes(1)
+    expect(taskFindMany).toHaveBeenCalledTimes(1)
+    expect(eventFindMany).toHaveBeenCalledTimes(1)
     expect(await response.json()).toMatchObject({ message: 'Ready.' })
   })
 
   it('marks task context when more records are available', async () => {
-    findMany.mockResolvedValue(
+    taskFindMany.mockResolvedValue(
       Array.from({ length: 41 }, (_, index) => ({
         id: `task-${index}`,
         title: `Task ${index}`,

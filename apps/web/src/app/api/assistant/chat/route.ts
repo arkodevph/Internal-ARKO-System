@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@arko/db'
 import { auth } from '../../../../lib/auth'
 import { hasPermission } from '../../../../lib/rbac'
-import { assignedOrCompany } from '../../../../lib/record-scope'
+import { assignedOrCompany, ownedOrCompany } from '../../../../lib/record-scope'
 import {
   assistantMessageSchema,
   generateAssistantReply,
@@ -62,14 +62,31 @@ export async function POST(request: Request) {
       : []
     const contextTruncated = taskRows.length > 40
     const tasks = taskRows.slice(0, 40)
+    const canReadEvents = hasPermission(role, 'events:read')
+    const events = canReadEvents
+      ? await prisma.event.findMany({
+          where: ownedOrCompany(session.user.id, role),
+          orderBy: { date: 'asc' },
+          take: 30,
+          select: {
+            id: true,
+            title: true,
+            date: true,
+            startTime: true,
+            endTime: true,
+          },
+        })
+      : []
     const config = await getAssistantConfig()
 
     const result = await generateAssistantReply({
       messages: input.data.messages,
       context: {
         canCreateTasks: hasPermission(role, 'tasks:create'),
+        canCreateEvents: hasPermission(role, 'events:create'),
         contextTruncated,
         tasks,
+        events,
       },
       config,
       oidcToken: request.headers.get('x-vercel-oidc-token') ?? undefined,
@@ -82,6 +99,7 @@ export async function POST(request: Request) {
         { status: 429 },
       )
     }
+    console.error('Assistant chat failed', error)
     return NextResponse.json(
       { error: 'The assistant is temporarily unavailable.' },
       { status: 503 },

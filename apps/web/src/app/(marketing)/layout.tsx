@@ -4,6 +4,7 @@ import SmoothScrollProvider from './_components/SmoothScrollProvider'
 import Preloader from './_components/Preloader'
 import StickyMobileCta from './_components/StickyMobileCta'
 import MarketingPageTransition from './_components/MarketingPageTransition'
+import FloatingAssistant from './_components/FloatingAssistant'
 
 const TITLE = 'Arko — We build web, mobile, automation and AI'
 const DESCRIPTION =
@@ -80,6 +81,7 @@ export default function MarketingLayout({
           <SiteHeader />
           <main>{children}</main>
         </SmoothScrollProvider>
+        <FloatingAssistant />
         <StickyMobileCta />
       </MarketingPageTransition>
     </div>

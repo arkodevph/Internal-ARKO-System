@@ -10,10 +10,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (!hasPermission(session.user.role, 'tasks:create')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   const action = assistantActionSchema.safeParse(
     await request.json().catch(() => null),
   )
@@ -21,7 +17,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
+  const permission =
+    action.data.type === 'create_task' ? 'tasks:create' : 'events:create'
+  if (!hasPermission(session.user.role, permission)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   try {
+    if (action.data.type === 'create_event') {
+      const date = new Date(`${action.data.date}T00:00:00+08:00`)
+      if (Number.isNaN(date.getTime()) || action.data.endTime <= action.data.startTime) {
+        return NextResponse.json({ error: 'Invalid event date or time' }, { status: 400 })
+      }
+      const event = await prisma.event.create({
+        data: {
+          title: action.data.title,
+          description: action.data.description || undefined,
+          date,
+          startTime: action.data.startTime,
+          endTime: action.data.endTime,
+          userId: session.user.id,
+          scope: 'PERSONAL',
+        },
+        select: { id: true, title: true, date: true },
+      })
+      return NextResponse.json({ event })
+    }
+
     const maxPosition = await prisma.task.findFirst({
       where: { assigneeId: session.user.id, scope: 'PERSONAL' },
       orderBy: { position: 'desc' },
@@ -41,8 +63,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ task })
   } catch {
+    const resource = action.data.type === 'create_event' ? 'event' : 'task'
     return NextResponse.json(
-      { error: 'The task could not be created.' },
+      { error: `The ${resource} could not be created.` },
       { status: 503 },
     )
   }

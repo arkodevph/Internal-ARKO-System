@@ -80,8 +80,10 @@ export async function POST(request: Request) {
       messages: [{ role: 'user', content: 'Show ARKO system help.' }],
       context: {
         canCreateTasks: false,
+        canCreateEvents: false,
         contextTruncated: false,
         tasks: [],
+        events: [],
       },
       config,
       oidcToken: request.headers.get('x-vercel-oidc-token') ?? undefined,

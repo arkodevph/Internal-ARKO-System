@@ -21,13 +21,14 @@ type Message = {
 const STARTER: Message = {
   role: 'assistant',
   content:
-    'Ask me about your current work or tell me what task you want to create. I will always ask before changing anything.',
+    'Ask about your workspace, create a task, or schedule a calendar event. I always ask before writing anything.',
 }
 
 const SUGGESTIONS = [
   'What should I work on next?',
   'Summarize my open tasks',
   'Create a high-priority task to review the landing page',
+  'Schedule a meeting tomorrow at 1 PM',
 ]
 
 export default function AssistantPage() {
@@ -103,6 +104,7 @@ export default function AssistantPage() {
       })
       const data = (await response.json().catch(() => ({}))) as {
         task?: { title: string }
+        event?: { title: string }
         error?: string
       }
       if (!response.ok) throw new Error(data.error)
@@ -111,7 +113,10 @@ export default function AssistantPage() {
         ...current,
         {
           role: 'assistant',
-          content: `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`,
+          content:
+            pendingAction.type === 'create_event'
+              ? `Added “${data.event?.title ?? pendingAction.title}” to Calendar.`
+              : `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`,
         },
       ])
       setPendingAction(null)
@@ -137,7 +142,7 @@ export default function AssistantPage() {
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border-subtle bg-card">
+    <div className="relative mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/40 bg-card/70 shadow-[0_24px_80px_rgba(15,23,18,0.16)] backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.12),transparent_38%)]">
       <header className="flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500 text-[#07110b]">
@@ -172,7 +177,7 @@ export default function AssistantPage() {
               <div
                 className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[78%] ${
                   message.role === 'user'
-                    ? 'rounded-br-md bg-primary-500 text-white'
+                    ? 'rounded-br-md bg-primary-500 text-[#07110b]'
                     : 'rounded-bl-md border border-border-subtle bg-bg-app text-text-primary'
                 }`}
               >
@@ -185,7 +190,7 @@ export default function AssistantPage() {
           ))}
 
           {messages.length === 1 && (
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {SUGGESTIONS.map((suggestion) => (
                 <button
                   key={suggestion}
@@ -213,16 +218,24 @@ export default function AssistantPage() {
                 Confirmation required
               </p>
               <p className="mt-2 text-sm font-semibold text-text-primary">
-                Create task: {pendingAction.title}
+                {pendingAction.type === 'create_event'
+                  ? `Add calendar event: ${pendingAction.title}`
+                  : `Create task: ${pendingAction.title}`}
               </p>
               {pendingAction.description && (
                 <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
                   {pendingAction.description}
                 </p>
               )}
-              <p className="mt-2 text-[11px] font-medium text-text-tertiary">
-                Priority: {pendingAction.priority}
-              </p>
+              {pendingAction.type === 'create_event' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  {pendingAction.date} · {pendingAction.startTime}–{pendingAction.endTime}
+                </p>
+              ) : (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Priority: {pendingAction.priority}
+                </p>
+              )}
               <div className="mt-4 flex flex-col gap-2 min-[400px]:flex-row">
                 <button
                   type="button"
@@ -235,7 +248,9 @@ export default function AssistantPage() {
                   ) : (
                     <Check className="h-4 w-4" />
                   )}
-                  Confirm task
+                  {pendingAction.type === 'create_event'
+                    ? 'Confirm event'
+                    : 'Confirm task'}
                 </button>
                 <button
                   type="button"
@@ -265,7 +280,7 @@ export default function AssistantPage() {
             rows={1}
             maxLength={2_000}
             aria-label="Message Arko Assistant"
-            placeholder="Ask about your workspace or create a task…"
+            placeholder="Ask about ARKO, create a task, or schedule an event…"
             className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-text-primary outline-none placeholder:text-text-tertiary"
           />
           <button
