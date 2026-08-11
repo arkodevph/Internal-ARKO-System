@@ -1,12 +1,15 @@
 'use client'
 
-import { FormEvent, useEffect, useRef, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import {
   Check,
+  History,
   LoaderCircle,
+  Plus,
   Send,
   ShieldCheck,
   Sparkles,
+  Trash2,
   X,
 } from 'lucide-react'
 import type { AssistantAction } from '../../../server/services/assistant'
@@ -20,6 +23,12 @@ import {
 type Message = {
   role: 'user' | 'assistant'
   content: string
+}
+
+type ConversationSummary = {
+  id: string
+  title: string
+  updatedAt: string
 }
 
 const STARTER: Message = {
@@ -43,8 +52,29 @@ export default function AssistantPage() {
   )
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [conversations, setConversations] = useState<ConversationSummary[]>([])
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const reduceMotion = useReducedMotion()
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const response = await fetch('/api/assistant/history')
+      if (!response.ok) return
+      const data = (await response.json()) as {
+        conversations?: ConversationSummary[]
+      }
+      setConversations(data.conversations ?? [])
+    } catch {
+      // The current chat remains usable when history cannot be loaded.
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadHistory()
+  }, [loadHistory])
 
   useEffect(() => {
     setMessages((current) =>
@@ -74,11 +104,15 @@ export default function AssistantPage() {
       const response = await fetch('/api/assistant/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: nextMessages.slice(-20) }),
+        body: JSON.stringify({
+          messages: nextMessages.slice(-20),
+          conversationId: conversationId ?? undefined,
+        }),
       })
       const data = (await response.json().catch(() => ({}))) as {
         message?: string
         action?: AssistantAction | null
+        conversationId?: string
         error?: string
       }
       if (!response.ok) throw new Error(data.error)
@@ -87,7 +121,9 @@ export default function AssistantPage() {
         ...current,
         { role: 'assistant', content: data.message ?? 'How can I help?' },
       ])
+      if (data.conversationId) setConversationId(data.conversationId)
       setPendingAction(data.action ?? null)
+      void loadHistory()
     } catch (error) {
       setMessages((current) => [
         ...current,
@@ -163,9 +199,57 @@ export default function AssistantPage() {
     void sendMessage(input)
   }
 
+  function startNewChat() {
+    setConversationId(null)
+    setMessages([{ role: 'assistant', content: identity.greeting }])
+    setPendingAction(null)
+    setInput('')
+    setHistoryOpen(false)
+  }
+
+  async function openConversation(id: string) {
+    if (historyLoading) return
+    setHistoryLoading(true)
+    try {
+      const response = await fetch(
+        `/api/assistant/history?conversationId=${encodeURIComponent(id)}`,
+      )
+      if (!response.ok) return
+      const data = (await response.json()) as {
+        id: string
+        messages: Array<{ role: string; content: string }>
+      }
+      const savedMessages = data.messages.filter(
+        (message): message is Message =>
+          (message.role === 'user' || message.role === 'assistant') &&
+          Boolean(message.content),
+      )
+      setConversationId(data.id)
+      setMessages([
+        { role: 'assistant', content: identity.greeting },
+        ...savedMessages,
+      ])
+      setPendingAction(null)
+      setHistoryOpen(false)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  async function deleteConversation(id: string) {
+    if (!window.confirm('Delete this chat history? This cannot be undone.')) return
+    const response = await fetch(
+      `/api/assistant/history?conversationId=${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    )
+    if (!response.ok) return
+    if (conversationId === id) startNewChat()
+    setConversations((current) => current.filter((item) => item.id !== id))
+  }
+
   return (
     <div className="relative mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/40 bg-card/70 shadow-[0_24px_80px_rgba(15,23,18,0.16)] backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.12),transparent_38%)]">
-      <header className="flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3 sm:px-5">
+      <header className="relative z-20 flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <NexMascot
             iconStyle={identity.iconStyle}
@@ -180,10 +264,79 @@ export default function AssistantPage() {
             </p>
           </div>
         </div>
-        <span className="hidden items-center gap-1.5 rounded-full border border-border-subtle px-2.5 py-1 text-[11px] font-medium text-text-tertiary sm:flex">
-          <ShieldCheck className="h-3.5 w-3.5 text-pos" /> Confirm before changes
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((open) => !open)}
+            aria-expanded={historyOpen}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border-subtle bg-bg-app/70 px-3 text-xs font-semibold text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          >
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">History</span>
+          </button>
+          <span className="hidden items-center gap-1.5 rounded-full border border-border-subtle px-2.5 py-1 text-[11px] font-medium text-text-tertiary md:flex">
+            <ShieldCheck className="h-3.5 w-3.5 text-pos" /> Confirm before changes
+          </span>
+        </div>
       </header>
+
+      {historyOpen && (
+        <aside className="absolute inset-x-3 top-[76px] z-30 max-h-[min(70vh,34rem)] overflow-hidden rounded-2xl border border-white/20 bg-card/90 shadow-2xl backdrop-blur-2xl sm:left-auto sm:right-4 sm:w-80">
+          <div className="flex items-center justify-between border-b border-border-subtle p-3">
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Chat history</h2>
+              <p className="text-[11px] text-text-tertiary">Private to your account</p>
+            </div>
+            <button
+              type="button"
+              onClick={startNewChat}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-primary-500 px-3 text-xs font-semibold text-[#07110b]"
+            >
+              <Plus className="h-4 w-4" /> New chat
+            </button>
+          </div>
+          <div className="max-h-[calc(min(70vh,34rem)-69px)] overflow-y-auto p-2">
+            {conversations.length === 0 ? (
+              <p className="px-3 py-8 text-center text-xs text-text-tertiary">
+                Your saved conversations will appear here.
+              </p>
+            ) : (
+              conversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className={`group flex items-center gap-1 rounded-xl ${
+                    conversationId === conversation.id
+                      ? 'bg-primary-500/10'
+                      : 'hover:bg-bg-app/70'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => void openConversation(conversation.id)}
+                    disabled={historyLoading}
+                    className="min-h-14 min-w-0 flex-1 px-3 py-2 text-left disabled:opacity-60"
+                  >
+                    <span className="block truncate text-xs font-medium text-text-primary">
+                      {conversation.title}
+                    </span>
+                    <span className="mt-1 block text-[10px] text-text-tertiary">
+                      {new Date(conversation.updatedAt).toLocaleDateString()}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteConversation(conversation.id)}
+                    aria-label={`Delete ${conversation.title}`}
+                    className="mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </aside>
+      )}
 
       <div
         className="flex-1 overflow-y-auto px-3 py-5 sm:px-6"

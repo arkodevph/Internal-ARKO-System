@@ -6,6 +6,9 @@ const eventFindMany = jest.fn()
 const noteFindMany = jest.fn()
 const transactionFindMany = jest.fn()
 const categoryFindMany = jest.fn()
+const conversationFindFirst = jest.fn()
+const conversationCreate = jest.fn()
+const conversationUpdate = jest.fn()
 
 jest.mock('@arko/db', () => ({
   prisma: {
@@ -14,6 +17,11 @@ jest.mock('@arko/db', () => ({
     note: { findMany: noteFindMany },
     transaction: { findMany: transactionFindMany },
     accountCategory: { findMany: categoryFindMany },
+    assistantConversation: {
+      findFirst: conversationFindFirst,
+      create: conversationCreate,
+      update: conversationUpdate,
+    },
   },
 }))
 jest.mock('../../../../../lib/auth', () => ({ auth: jest.fn() }))
@@ -81,6 +89,9 @@ describe('assistant chat route', () => {
     noteFindMany.mockResolvedValue([])
     transactionFindMany.mockResolvedValue([])
     categoryFindMany.mockResolvedValue([])
+    conversationFindFirst.mockResolvedValue({ id: 'conversation-1' })
+    conversationCreate.mockResolvedValue({ id: 'conversation-1' })
+    conversationUpdate.mockResolvedValue({ id: 'conversation-1' })
     generateReplyMock.mockResolvedValue({
       message: 'Ready.',
       action: null,
@@ -120,6 +131,11 @@ describe('assistant chat route', () => {
     expect(noteFindMany).not.toHaveBeenCalled()
     expect(transactionFindMany).not.toHaveBeenCalled()
     expect(generateReplyMock).not.toHaveBeenCalled()
+    expect(conversationCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'user-1' }),
+      }),
+    )
   })
 
   it('does not expose task context to roles without tasks:read', async () => {
@@ -172,6 +188,51 @@ describe('assistant chat route', () => {
     expect(transactionFindMany).toHaveBeenCalledTimes(1)
     expect(categoryFindMany).toHaveBeenCalledTimes(1)
     expect(await response.json()).toMatchObject({ message: 'Ready.' })
+    expect(conversationCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: 'What is next?',
+          messages: {
+            create: [
+              { role: 'user', content: 'What is next?' },
+              { role: 'assistant', content: 'Ready.' },
+            ],
+          },
+        }),
+      }),
+    )
+  })
+
+  it('continues only a conversation owned by the signed-in user', async () => {
+    const response = await POST(
+      request({
+        conversationId: 'cm12345678901234567890123',
+        messages: [{ role: 'user', content: 'Continue' }],
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(conversationFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'cm12345678901234567890123', userId: 'user-1' },
+      }),
+    )
+    expect(conversationUpdate).toHaveBeenCalled()
+  })
+
+  it('rejects a conversation owned by another user', async () => {
+    conversationFindFirst.mockResolvedValue(null)
+
+    const response = await POST(
+      request({
+        conversationId: 'cm12345678901234567890123',
+        messages: [{ role: 'user', content: 'Continue' }],
+      }),
+    )
+
+    expect(response.status).toBe(404)
+    expect(generateReplyMock).not.toHaveBeenCalled()
+    expect(conversationUpdate).not.toHaveBeenCalled()
   })
 
   it('marks task context when more records are available', async () => {

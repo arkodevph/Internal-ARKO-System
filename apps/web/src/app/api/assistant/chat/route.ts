@@ -19,7 +19,44 @@ export const runtime = 'nodejs'
 
 const requestSchema = z.object({
   messages: z.array(assistantMessageSchema).min(1).max(20),
+  conversationId: z.string().cuid().optional(),
 })
+
+async function saveExchange({
+  conversationId,
+  userId,
+  userMessage,
+  assistantMessage,
+}: {
+  conversationId?: string
+  userId: string
+  userMessage: string
+  assistantMessage: string
+}) {
+  const messages = {
+    create: [
+      { role: 'user', content: userMessage },
+      { role: 'assistant', content: assistantMessage },
+    ],
+  }
+
+  if (conversationId) {
+    return prisma.assistantConversation.update({
+      where: { id: conversationId },
+      data: { messages },
+      select: { id: true },
+    })
+  }
+
+  return prisma.assistantConversation.create({
+    data: {
+      userId,
+      title: userMessage.slice(0, 60),
+      messages,
+    },
+    select: { id: true },
+  })
+}
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -32,12 +69,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid chat request' }, { status: 400 })
   }
 
+  const latestUserMessage = [...input.data.messages]
+    .reverse()
+    .find((message) => message.role === 'user')?.content
+  if (!latestUserMessage) {
+    return NextResponse.json({ error: 'Invalid chat request' }, { status: 400 })
+  }
+
+  if (input.data.conversationId) {
+    const conversation = await prisma.assistantConversation.findFirst({
+      where: {
+        id: input.data.conversationId,
+        userId: session.user.id,
+      },
+      select: { id: true },
+    })
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+    }
+  }
+
   if (!isAssistantRequestInScope(input.data.messages)) {
+    const message =
+      'I can only help with the ARKO system and the workspace information available to you.'
+    const conversation = await saveExchange({
+      conversationId: input.data.conversationId,
+      userId: session.user.id,
+      userMessage: latestUserMessage,
+      assistantMessage: message,
+    })
     return NextResponse.json({
-      message:
-        'I can only help with the ARKO system and the workspace information available to you.',
+      message,
       action: null,
       model: 'scope-guard',
+      conversationId: conversation.id,
     })
   }
 
@@ -131,7 +196,13 @@ export async function POST(request: Request) {
       config,
       oidcToken: request.headers.get('x-vercel-oidc-token') ?? undefined,
     })
-    return NextResponse.json(result)
+    const conversation = await saveExchange({
+      conversationId: input.data.conversationId,
+      userId: session.user.id,
+      userMessage: latestUserMessage,
+      assistantMessage: result.message,
+    })
+    return NextResponse.json({ ...result, conversationId: conversation.id })
   } catch (error) {
     if (error instanceof AssistantRateLimitError) {
       return NextResponse.json(
