@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import type { AssistantAction } from '../../../server/services/assistant'
-import { useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { NexMascot } from '../../../components/nex-mascot'
 import {
   DEFAULT_ASSISTANT_IDENTITY,
@@ -43,6 +43,39 @@ const SUGGESTIONS = [
   'Add a note: Send a cold text to clients through WhatsApp',
 ]
 
+function ThinkingIndicator({
+  assistantName,
+  accentColor,
+  reduceMotion,
+}: {
+  assistantName: string
+  accentColor: string
+  reduceMotion: boolean | null
+}) {
+  const label = `${assistantName} is thinking…`
+
+  return (
+    <div className="flex justify-start" role="status" aria-label={label}>
+      <div className="rounded-2xl rounded-bl-md border border-border-subtle bg-bg-app px-4 py-3">
+        {reduceMotion ? (
+          <span className="text-sm font-medium text-text-tertiary">{label}</span>
+        ) : (
+          <motion.span
+            animate={{ backgroundPosition: ['100% center', '-100% center'] }}
+            transition={{ duration: 1.6, ease: 'linear', repeat: Infinity }}
+            className="inline-block bg-[length:250%_100%] bg-clip-text text-sm font-medium text-transparent"
+            style={{
+              backgroundImage: `linear-gradient(90deg, var(--color-text-tertiary) 20%, ${accentColor} 50%, var(--color-text-tertiary) 80%)`,
+            }}
+          >
+            {label}
+          </motion.span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function AssistantPage() {
   const identity = useAssistantIdentity()
   const [messages, setMessages] = useState<Message[]>([STARTER])
@@ -57,7 +90,7 @@ export default function AssistantPage() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [sourcePage, setSourcePage] = useState<string | null>(null)
-  const endRef = useRef<HTMLDivElement>(null)
+  const messageListRef = useRef<HTMLDivElement>(null)
   const reduceMotion = useReducedMotion()
 
   const loadHistory = useCallback(async () => {
@@ -99,7 +132,11 @@ export default function AssistantPage() {
   }, [identity.greeting, sourcePage])
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({
+    const messageList = messageListRef.current
+    if (!messageList) return
+
+    messageList.scrollTo({
+      top: messageList.scrollHeight,
       behavior: reduceMotion ? 'auto' : 'smooth',
     })
   }, [messages, pendingAction, loading, reduceMotion])
@@ -377,8 +414,10 @@ export default function AssistantPage() {
       )}
 
       <div
+        ref={messageListRef}
         className="flex-1 overflow-y-auto px-3 py-5 sm:px-6"
         role="log"
+        aria-label="Conversation"
         aria-live="polite"
         aria-relevant="additions"
       >
@@ -420,10 +459,11 @@ export default function AssistantPage() {
           )}
 
           {loading && (
-            <div className="flex items-center gap-2 text-xs text-text-tertiary">
-              <LoaderCircle className="h-4 w-4 animate-spin text-primary-500" />
-              Checking your workspace…
-            </div>
+            <ThinkingIndicator
+              assistantName={identity.assistantName}
+              accentColor={identity.accentColor}
+              reduceMotion={reduceMotion}
+            />
           )}
 
           {pendingAction && (
@@ -544,7 +584,6 @@ export default function AssistantPage() {
               </div>
             </div>
           )}
-          <div ref={endRef} />
         </div>
       </div>
 
