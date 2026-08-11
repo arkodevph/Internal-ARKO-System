@@ -148,9 +148,15 @@ export async function POST(request: Request) {
           where: ownedOrCompany(session.user.id, role),
           orderBy: { updatedAt: 'desc' },
           take: 30,
-          select: { id: true, title: true, updatedAt: true },
+          select: { id: true, title: true, content: true, updatedAt: true },
         })
       : []
+    const reminders = await prisma.reminder.findMany({
+      where: ownedOrCompany(session.user.id, role),
+      orderBy: { dueAt: 'asc' },
+      take: 30,
+      select: { id: true, title: true, dueAt: true, isDone: true },
+    })
     const canReadTransactions = hasPermission(role, 'transactions:read')
     const transactions = canReadTransactions
       ? await prisma.transaction.findMany({
@@ -192,6 +198,58 @@ export async function POST(request: Request) {
           },
         })
       : []
+    const documents = await prisma.document.findMany({
+      where:
+        role === 'ADMIN'
+          ? {}
+          : role === 'CLIENT'
+            ? { clientId: session.user.id }
+            : { createdById: session.user.id },
+      orderBy: { updatedAt: 'desc' },
+      take: 30,
+      select: { id: true, title: true, status: true, updatedAt: true },
+    })
+    const clientProjects = await prisma.clientProject.findMany({
+      where:
+        role === 'ADMIN'
+          ? {}
+          : role === 'CLIENT'
+            ? { clientId: session.user.id }
+            : { ownerId: session.user.id },
+      orderBy: { updatedAt: 'desc' },
+      take: 30,
+      select: { id: true, name: true, status: true, progress: true, updatedAt: true },
+    })
+    const messages = await prisma.message.findMany({
+      where: {
+        conversation: { participants: { some: { userId: session.user.id } } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        sender: { select: { name: true } },
+      },
+    })
+    const messageParticipants = await prisma.conversationParticipant.findMany({
+      where: { userId: session.user.id },
+      select: { conversationId: true, lastReadAt: true },
+    })
+    const unreadMessageCount = messageParticipants.length
+      ? await prisma.message.count({
+          where: {
+            OR: messageParticipants.map((participant) => ({
+              conversationId: participant.conversationId,
+              senderId: { not: session.user.id },
+              ...(participant.lastReadAt
+                ? { createdAt: { gt: participant.lastReadAt } }
+                : {}),
+            })),
+          },
+        })
+      : 0
     const config = await getAssistantConfig()
 
     const result = await generateAssistantReply({
@@ -202,6 +260,11 @@ export async function POST(request: Request) {
         canCreateNotes: hasPermission(role, 'notes:create'),
         canCreateTransactions,
         canCreateUsers: hasPermission(role, 'users:create'),
+        canUpdateTasks: hasPermission(role, 'tasks:update'),
+        canUpdateEvents: hasPermission(role, 'events:update'),
+        canUpdateNotes: hasPermission(role, 'notes:update'),
+        canUpdateTransactions: hasPermission(role, 'transactions:update'),
+        canCreateReminders: Boolean(role),
         contextTruncated,
         tasks,
         events,
@@ -209,6 +272,16 @@ export async function POST(request: Request) {
         transactions,
         transactionCategories,
         users,
+        reminders,
+        documents,
+        clientProjects,
+        unreadMessageCount,
+        messages: messages.map((message) => ({
+          id: message.id,
+          content: message.content,
+          createdAt: message.createdAt,
+          senderName: message.sender.name,
+        })),
       },
       config,
       oidcToken: request.headers.get('x-vercel-oidc-token') ?? undefined,
@@ -219,6 +292,17 @@ export async function POST(request: Request) {
       userMessage: latestUserMessage,
       assistantMessage: result.message,
     })
+    if (result.action) {
+      await prisma.assistantActivity.create({
+        data: {
+          userId: session.user.id,
+          action: result.action.type,
+          summary: result.message.slice(0, 240),
+          status: 'PROPOSED',
+          details: result.action as any,
+        },
+      }).catch(() => undefined)
+    }
     return NextResponse.json({ ...result, conversationId: conversation.id })
   } catch (error) {
     if (error instanceof AssistantRateLimitError) {

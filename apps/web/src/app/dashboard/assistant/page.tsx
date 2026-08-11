@@ -56,6 +56,7 @@ export default function AssistantPage() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [sourcePage, setSourcePage] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const reduceMotion = useReducedMotion()
 
@@ -77,12 +78,25 @@ export default function AssistantPage() {
   }, [loadHistory])
 
   useEffect(() => {
+    const source = new URLSearchParams(window.location.search).get('from')
+    if (!source) return
+    const label = source.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ')
+    if (!label || label === 'assistant') return
+    setSourcePage(label)
+  }, [])
+
+  useEffect(() => {
     setMessages((current) =>
       current.length === 1 && current[0]?.role === 'assistant'
-        ? [{ role: 'assistant', content: identity.greeting }]
+        ? [{
+            role: 'assistant',
+            content: sourcePage
+              ? `${identity.greeting}\n\nYou came from ${sourcePage}. I can use the relevant ARKO records to help with this page.`
+              : identity.greeting,
+          }]
         : current,
     )
-  }, [identity.greeting])
+  }, [identity.greeting, sourcePage])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({
@@ -159,6 +173,7 @@ export default function AssistantPage() {
         generatedPassword?: string
         message?: { content: string }
         recipient?: { name: string | null; email: string }
+        reminder?: { title: string; dueAt: string; recurrence: string }
         error?: string
       }
       if (!response.ok) throw new Error(data.error)
@@ -179,6 +194,16 @@ export default function AssistantPage() {
                 return `Created ${data.user?.name ?? pendingAction.name} as ${data.user?.role ?? pendingAction.userRole}. Sign-in: ${data.user?.email ?? pendingAction.email}\nTemporary password: ${data.generatedPassword ?? 'Unavailable'}\nShare these credentials securely; the password is shown only once.`
               case 'send_message':
                 return `Message sent to ${data.recipient?.name ?? pendingAction.recipientName}.`
+              case 'complete_task':
+                return `Marked “${data.task?.title ?? pendingAction.title}” complete.`
+              case 'reschedule_event':
+                return `Rescheduled “${data.event?.title ?? pendingAction.title}”.`
+              case 'update_note':
+                return `Updated “${data.note?.title ?? pendingAction.title}”.`
+              case 'update_transaction':
+                return `Updated the ${data.transaction?.type ?? pendingAction.transactionType} entry to ₱${(data.transaction?.amount ?? pendingAction.amount).toLocaleString()}.`
+              case 'create_reminder':
+                return `Created reminder “${data.reminder?.title ?? pendingAction.title}”.`
               default:
                 return `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`
             }
@@ -209,7 +234,12 @@ export default function AssistantPage() {
 
   function startNewChat() {
     setConversationId(null)
-    setMessages([{ role: 'assistant', content: identity.greeting }])
+    setMessages([{
+      role: 'assistant',
+      content: sourcePage
+        ? `${identity.greeting}\n\nYou came from ${sourcePage}. I can use the relevant ARKO records to help with this page.`
+        : identity.greeting,
+    }])
     setPendingAction(null)
     setInput('')
     setHistoryOpen(false)
@@ -414,6 +444,16 @@ export default function AssistantPage() {
                   `Add user: ${pendingAction.name}`}
                 {pendingAction.type === 'send_message' &&
                   `Message ${pendingAction.recipientName}`}
+                {pendingAction.type === 'complete_task' &&
+                  `Complete task: ${pendingAction.title}`}
+                {pendingAction.type === 'reschedule_event' &&
+                  `Reschedule event: ${pendingAction.title}`}
+                {pendingAction.type === 'update_note' &&
+                  `Update note: ${pendingAction.title}`}
+                {pendingAction.type === 'update_transaction' &&
+                  `Update ${pendingAction.transactionType.toLowerCase()}: ₱${pendingAction.amount.toLocaleString()}`}
+                {pendingAction.type === 'create_reminder' &&
+                  `Create reminder: ${pendingAction.title}`}
               </p>
               {'description' in pendingAction && pendingAction.description && (
                 <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
@@ -423,6 +463,11 @@ export default function AssistantPage() {
               {pendingAction.type === 'send_message' && (
                 <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-text-tertiary">
                   “{pendingAction.messageContent}”
+                </p>
+              )}
+              {pendingAction.type === 'update_note' && pendingAction.content && (
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-text-tertiary">
+                  {pendingAction.content}
                 </p>
               )}
               {pendingAction.type === 'create_note' && pendingAction.content && (
@@ -451,6 +496,18 @@ export default function AssistantPage() {
                 <p className="mt-2 text-[11px] font-medium text-text-tertiary">
                   Internal ARKO message · confirmation required
                 </p>
+              ) : pendingAction.type === 'reschedule_event' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  {pendingAction.date} · {pendingAction.startTime}–{pendingAction.endTime}
+                </p>
+              ) : pendingAction.type === 'update_transaction' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Date: {pendingAction.date}
+                </p>
+              ) : pendingAction.type === 'create_reminder' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  {new Date(pendingAction.dueAt).toLocaleString()} · {pendingAction.recurrence.toLowerCase()}
+                </p>
               ) : null}
               <div className="mt-4 flex flex-col gap-2 min-[400px]:flex-row">
                 <button
@@ -471,6 +528,11 @@ export default function AssistantPage() {
                     'Confirm finance entry'}
                   {pendingAction.type === 'create_user' && 'Confirm user'}
                   {pendingAction.type === 'send_message' && 'Send message'}
+                  {pendingAction.type === 'complete_task' && 'Complete task'}
+                  {pendingAction.type === 'reschedule_event' && 'Reschedule event'}
+                  {pendingAction.type === 'update_note' && 'Update note'}
+                  {pendingAction.type === 'update_transaction' && 'Update finance entry'}
+                  {pendingAction.type === 'create_reminder' && 'Create reminder'}
                 </button>
                 <button
                   type="button"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Check, AlertCircle, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LayoutTemplate, Sparkles, Activity, PanelsTopLeft, Clapperboard, BriefcaseBusiness, Route, Mail, PanelBottom, Images, Eye } from 'lucide-react'
+import { Loader2, Check, AlertCircle, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LayoutTemplate, Sparkles, Activity, PanelsTopLeft, Clapperboard, BriefcaseBusiness, Route, Mail, PanelBottom, Images, Eye, BookOpen } from 'lucide-react'
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@arko/ui'
 import { api } from '../../../lib/trpc/client'
 import { DEFAULT_LANDING_CONTENT, type LandingContent } from '../../../lib/landing/content'
@@ -94,6 +94,7 @@ const EDITOR_SECTIONS = [
   { id: 'editor-contact', label: 'Contact', icon: Mail },
   { id: 'editor-footer', label: 'Footer', icon: PanelBottom },
   { id: 'editor-projects', label: 'Projects', icon: Images },
+  { id: 'editor-blogs', label: 'Blogs', icon: BookOpen },
 ]
 
 type Status = 'idle' | 'saving' | 'success' | 'error'
@@ -553,6 +554,45 @@ export function LandingEditor() {
             ))}
             <Button variant="outline" size="sm" onClick={() => update((d) => { d.projects.items.push({ number: String(d.projects.items.length + 1).padStart(2, '0'), title: 'New project', category: 'Uncategorized', type: '', domain: '', href: '', image: '' }) })}>
               <Plus className="mr-1 h-4 w-4" /> Add project
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card id="editor-blogs" className="scroll-mt-6">
+        <CardHeader>
+          <CardTitle>Blogs page</CardTitle>
+          <CardDescription>Add links to Facebook posts or any publishing platform. Posts open on their original platform.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Eyebrow"><Text value={c.blogs.eyebrow} onChange={(v) => update((d) => { d.blogs.eyebrow = v })} /></Field>
+            <Field label="Heading"><Text value={c.blogs.heading} onChange={(v) => update((d) => { d.blogs.heading = v })} /></Field>
+          </div>
+          <Field label="Introduction"><Area value={c.blogs.intro} onChange={(v) => update((d) => { d.blogs.intro = v })} /></Field>
+          <div className="space-y-3">
+            {c.blogs.items.map((post, i) => (
+              <div key={i} className="space-y-3 rounded-xl border border-black/10 p-4 dark:border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-black/45 dark:text-white/45">Post {i + 1}</span>
+                  <RowControls
+                    onUp={() => update((d) => move(d.blogs.items, i, i - 1))}
+                    onDown={() => update((d) => move(d.blogs.items, i, i + 1))}
+                    onRemove={() => update((d) => { d.blogs.items.splice(i, 1) })}
+                  />
+                </div>
+                <Field label="Title"><Text value={post.title} onChange={(v) => update((d) => { d.blogs.items[i].title = v })} /></Field>
+                <Field label="Excerpt"><Area value={post.excerpt} onChange={(v) => update((d) => { d.blogs.items[i].excerpt = v })} /></Field>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Field label="Platform" hint="Facebook, LinkedIn, Medium, or another platform."><Text value={post.platform} onChange={(v) => update((d) => { d.blogs.items[i].platform = v })} /></Field>
+                  <Field label="Published date"><Text value={post.publishedAt} onChange={(v) => update((d) => { d.blogs.items[i].publishedAt = v })} /></Field>
+                </div>
+                <Field label="Post URL"><Text value={post.href} onChange={(v) => update((d) => { d.blogs.items[i].href = v })} /></Field>
+                <Field label="Preview image URL" hint="Optional https:// or /public image path."><Text value={post.image} onChange={(v) => update((d) => { d.blogs.items[i].image = v })} /></Field>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => update((d) => { d.blogs.items.push({ title: 'New post', excerpt: '', platform: 'Facebook', publishedAt: '', href: '', image: '' }) })}>
+              <Plus className="mr-1 h-4 w-4" /> Add blog post
             </Button>
           </div>
         </CardContent>

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { NextRequest } from 'next/server'
 
 const findFirst = jest.fn()
+const findTask = jest.fn()
 const createTask = jest.fn()
 const createEvent = jest.fn()
 const createNote = jest.fn()
@@ -19,13 +20,22 @@ const createMessage = jest.fn()
 const transaction = jest.fn((operations: Array<Promise<unknown>>) =>
   Promise.all(operations),
 )
+const updateTask = jest.fn()
+const findEvent = jest.fn()
+const updateEvent = jest.fn()
+const findNote = jest.fn()
+const updateNote = jest.fn()
+const findTransaction = jest.fn()
+const updateTransaction = jest.fn()
+const createReminder = jest.fn()
+const createActivity = jest.fn()
 
 jest.mock('@arko/db', () => ({
   prisma: {
-    task: { findFirst, create: createTask },
-    event: { create: createEvent },
-    note: { create: createNote },
-    transaction: { create: createTransaction },
+    task: { findFirst, findUnique: findTask, create: createTask, update: updateTask },
+    event: { findUnique: findEvent, create: createEvent, update: updateEvent },
+    note: { findUnique: findNote, create: createNote, update: updateNote },
+    transaction: { findFirst: findTransaction, create: createTransaction, update: updateTransaction },
     accountCategory: { findFirst: findCategory, create: createCategory },
     user: {
       findUnique: findUser,
@@ -39,6 +49,8 @@ jest.mock('@arko/db', () => ({
       update: updateConversation,
     },
     message: { create: createMessage },
+    reminder: { create: createReminder },
+    assistantActivity: { create: createActivity },
     $transaction: transaction,
   },
 }))
@@ -104,10 +116,20 @@ const validMessageAction = {
   messageContent: 'Please review the landing page today.',
 }
 
+const validReminderAction = {
+  type: 'create_reminder',
+  title: 'Review proposal',
+  note: 'Before the client call',
+  dueAt: '2026-08-12T09:00:00+08:00',
+  recurrence: 'WEEKLY',
+  notifyMinutesBefore: 15,
+}
+
 describe('assistant action route', () => {
   beforeEach(() => {
     authMock.mockResolvedValue({ user: { id: 'user-1', role: 'USER' } } as any)
     findFirst.mockResolvedValue({ position: 3 })
+    findTask.mockResolvedValue(null)
     createTask.mockResolvedValue({ id: 'task-1', title: validAction.title })
     createEvent.mockResolvedValue({
       id: 'event-1',
@@ -145,6 +167,13 @@ describe('assistant action route', () => {
       id: 'message-1',
       content: validMessageAction.messageContent,
       conversationId: 'conversation-1',
+    })
+    createActivity.mockResolvedValue({ id: 'activity-1' })
+    createReminder.mockResolvedValue({
+      id: 'reminder-1',
+      title: validReminderAction.title,
+      dueAt: new Date(validReminderAction.dueAt),
+      recurrence: 'WEEKLY',
     })
   })
 
@@ -364,5 +393,78 @@ describe('assistant action route', () => {
 
     expect(response.status).toBe(404)
     expect(createMessage).not.toHaveBeenCalled()
+  })
+
+  it('creates a recurring reminder with notification lead time', async () => {
+    const response = await POST(request(validReminderAction))
+
+    expect(response.status).toBe(200)
+    expect(createReminder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          recurrence: 'WEEKLY',
+          notifyMinutesBefore: 15,
+        }),
+      }),
+    )
+    expect(createActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'COMPLETED' }),
+      }),
+    )
+  })
+
+  it('completes an accessible task only after confirmation', async () => {
+    findTask.mockResolvedValue({ id: 'task-1', title: 'Prepare proposal', assigneeId: 'user-1', blockedBy: [] })
+    updateTask.mockResolvedValue({ id: 'task-1', title: 'Prepare proposal', status: 'DONE' })
+
+    const response = await POST(request({
+      type: 'complete_task',
+      recordId: 'task-1',
+      title: 'Prepare proposal',
+    }))
+
+    expect(response.status).toBe(200)
+    expect(updateTask).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'task-1' },
+      data: { status: 'DONE' },
+    }))
+  })
+
+  it('does not complete a task with unfinished blockers', async () => {
+    findTask.mockResolvedValue({
+      id: 'task-1',
+      title: 'Prepare proposal',
+      assigneeId: 'user-1',
+      blockedBy: [{ blocking: { status: 'IN_PROGRESS' } }],
+    })
+
+    const response = await POST(request({
+      type: 'complete_task',
+      recordId: 'task-1',
+      title: 'Prepare proposal',
+    }))
+
+    expect(response.status).toBe(409)
+    expect(updateTask).not.toHaveBeenCalled()
+  })
+
+  it('does not let a non-admin complete another user\'s task', async () => {
+    findTask.mockResolvedValue({
+      id: 'task-1',
+      title: 'Prepare proposal',
+      assigneeId: 'user-2',
+      blockedBy: [],
+    })
+
+    const response = await POST(request({
+      type: 'complete_task',
+      recordId: 'task-1',
+      title: 'Prepare proposal',
+    }))
+
+    expect(response.status).toBe(404)
+    expect(updateTask).not.toHaveBeenCalled()
   })
 })

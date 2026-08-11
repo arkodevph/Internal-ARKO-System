@@ -5,6 +5,7 @@ import { prisma } from '@arko/db'
 import { auth } from '../../../../lib/auth'
 import { avatarConfigToJson, generateAvatarSeed } from '../../../../lib/avatar'
 import { hasPermission } from '../../../../lib/rbac'
+import { canManageOwnedRecord } from '../../../../lib/record-scope'
 import { assistantActionSchema } from '../../../../server/services/assistant'
 
 const ACTION_PERMISSIONS = {
@@ -14,6 +15,11 @@ const ACTION_PERMISSIONS = {
   create_transaction: 'transactions:create',
   create_user: 'users:create',
   send_message: null,
+  complete_task: 'tasks:update',
+  reschedule_event: 'events:update',
+  update_note: 'notes:update',
+  update_transaction: 'transactions:update',
+  create_reminder: null,
 } as const
 
 const TRANSACTION_CATEGORY_TYPES = {
@@ -43,10 +49,154 @@ export async function POST(request: Request) {
 
   const permission = ACTION_PERMISSIONS[action.data.type]
   if (permission && !hasPermission(session.user.role, permission)) {
+    await prisma.assistantActivity.create({
+      data: {
+        userId: session.user.id,
+        action: action.data.type,
+        summary: 'Action rejected by role permissions.',
+        status: 'REJECTED',
+        details: action.data as any,
+      },
+    }).catch(() => undefined)
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  const success = async (payload: object, summary: string) => {
+    await prisma.assistantActivity.create({
+      data: {
+        userId: session.user.id,
+        action: action.data.type,
+        summary,
+        status: 'COMPLETED',
+        details: action.data as any,
+      },
+    }).catch(() => undefined)
+    return NextResponse.json(payload)
+  }
+  const rejected = async (error: string, status: number) => {
+    await prisma.assistantActivity.create({
+      data: {
+        userId: session.user.id,
+        action: action.data.type,
+        summary: error,
+        status: 'REJECTED',
+        details: action.data as any,
+      },
+    }).catch(() => undefined)
+    return NextResponse.json({ error }, { status })
+  }
+
   try {
+    if (action.data.type === 'complete_task') {
+      const task = await prisma.task.findUnique({
+        where: { id: action.data.recordId },
+        select: {
+          id: true,
+          title: true,
+          assigneeId: true,
+          blockedBy: { select: { blocking: { select: { status: true } } } },
+        },
+      })
+      if (
+        !task ||
+        (task.assigneeId &&
+          task.assigneeId !== session.user.id &&
+          session.user.role !== 'ADMIN')
+      ) {
+        return rejected('Task not found.', 404)
+      }
+      if (task.blockedBy.some((item) => item.blocking.status !== 'DONE')) {
+        return rejected('Complete the blocking tasks first.', 409)
+      }
+      const updatedTask = await prisma.task.update({
+        where: { id: task.id },
+        data: { status: 'DONE' },
+        select: { id: true, title: true, status: true },
+      })
+      return success({ task: updatedTask }, `Completed task “${task.title}”.`)
+    }
+
+    if (action.data.type === 'reschedule_event') {
+      const event = await prisma.event.findUnique({ where: { id: action.data.recordId } })
+      if (!event || !canManageOwnedRecord(event.userId, session.user.id, session.user.role)) {
+        return rejected('Event not found.', 404)
+      }
+      if (action.data.endTime <= action.data.startTime) {
+        return rejected('Invalid event time range.', 400)
+      }
+      const updatedEvent = await prisma.event.update({
+        where: { id: event.id },
+        data: {
+          date: new Date(`${action.data.date}T00:00:00+08:00`),
+          startTime: action.data.startTime,
+          endTime: action.data.endTime,
+        },
+        select: { id: true, title: true, date: true, startTime: true, endTime: true },
+      })
+      return success({ event: updatedEvent }, `Rescheduled event “${event.title}”.`)
+    }
+
+    if (action.data.type === 'update_note') {
+      const note = await prisma.note.findUnique({ where: { id: action.data.recordId } })
+      if (!note || !canManageOwnedRecord(note.userId, session.user.id, session.user.role)) {
+        return rejected('Note not found.', 404)
+      }
+      const updatedNote = await prisma.note.update({
+        where: { id: note.id },
+        data: { title: action.data.title, content: action.data.content },
+        select: { id: true, title: true },
+      })
+      return success({ note: updatedNote }, `Updated note “${updatedNote.title}”.`)
+    }
+
+    if (action.data.type === 'update_transaction') {
+      const existingTransaction = await prisma.transaction.findFirst({
+        where: { id: action.data.recordId, userId: session.user.id, scope: 'PERSONAL' },
+      })
+      if (!existingTransaction) {
+        return rejected('Finance entry not found.', 404)
+      }
+      const allowedTypes = TRANSACTION_CATEGORY_TYPES[action.data.transactionType]
+      const category = await prisma.accountCategory.findFirst({
+        where: {
+          id: action.data.categoryId,
+          scope: 'PERSONAL',
+          OR: [{ userId: null }, { userId: session.user.id }],
+          type: { in: [...allowedTypes] },
+        },
+        select: { id: true },
+      })
+      if (!category) return rejected('Invalid finance category.', 400)
+      const updatedTransaction = await prisma.transaction.update({
+        where: { id: existingTransaction.id },
+        data: {
+          amount: action.data.amount,
+          description: action.data.description || null,
+          type: action.data.transactionType,
+          categoryId: category.id,
+          date: new Date(`${action.data.date}T00:00:00+08:00`),
+        },
+        select: { id: true, amount: true, type: true },
+      })
+      return success({ transaction: updatedTransaction }, 'Updated a personal finance entry.')
+    }
+
+    if (action.data.type === 'create_reminder') {
+      const reminder = await prisma.reminder.create({
+        data: {
+          title: action.data.title,
+          note: action.data.note || null,
+          dueAt: new Date(action.data.dueAt),
+          recurrence: action.data.recurrence,
+          notifyMinutesBefore: action.data.notifyMinutesBefore,
+          userId: session.user.id,
+          scope: 'PERSONAL',
+        },
+        select: { id: true, title: true, dueAt: true, recurrence: true },
+      })
+      return success({ reminder }, `Created reminder “${reminder.title}”.`)
+    }
+
     if (action.data.type === 'send_message') {
       const recipient = await prisma.user.findFirst({
         where: {
@@ -57,10 +207,7 @@ export async function POST(request: Request) {
         select: { id: true, name: true, email: true },
       })
       if (!recipient) {
-        return NextResponse.json(
-          { error: 'The recipient is unavailable.' },
-          { status: 404 },
-        )
+        return rejected('The recipient is unavailable.', 404)
       }
 
       const participantIds = [session.user.id, recipient.id]
@@ -109,7 +256,7 @@ export async function POST(request: Request) {
           data: { updatedAt: new Date() },
         }),
       ])
-      return NextResponse.json({ message, recipient })
+      return success({ message, recipient }, `Sent an internal message to ${recipient.name ?? recipient.email}.`)
     }
 
     if (action.data.type === 'create_user') {
@@ -126,10 +273,7 @@ export async function POST(request: Request) {
           email = `${slug}${suffix}@arko.app`
         }
       } else if (await prisma.user.findUnique({ where: { email } })) {
-        return NextResponse.json(
-          { error: 'A user with this email already exists.' },
-          { status: 409 },
-        )
+        return rejected('A user with this email already exists.', 409)
       }
 
       const generatedPassword = `${randomBytes(12).toString('base64url')}Aa1!`
@@ -149,7 +293,7 @@ export async function POST(request: Request) {
           avatar: avatarConfigToJson(generateAvatarSeed(user.id)) as any,
         },
       })
-      return NextResponse.json({ user, generatedPassword })
+      return success({ user, generatedPassword }, `Created user “${user.name ?? user.email}”.`)
     }
 
     if (action.data.type === 'create_note') {
@@ -162,7 +306,7 @@ export async function POST(request: Request) {
         },
         select: { id: true, title: true },
       })
-      return NextResponse.json({ note })
+      return success({ note }, `Created note “${note.title}”.`)
     }
 
     if (action.data.type === 'create_transaction') {
@@ -198,13 +342,13 @@ export async function POST(request: Request) {
         },
         select: { id: true, amount: true, type: true },
       })
-      return NextResponse.json({ transaction })
+      return success({ transaction }, 'Created a personal finance entry.')
     }
 
     if (action.data.type === 'create_event') {
       const date = new Date(`${action.data.date}T00:00:00+08:00`)
       if (Number.isNaN(date.getTime()) || action.data.endTime <= action.data.startTime) {
-        return NextResponse.json({ error: 'Invalid event date or time' }, { status: 400 })
+        return rejected('Invalid event date or time.', 400)
       }
       const event = await prisma.event.create({
         data: {
@@ -218,7 +362,7 @@ export async function POST(request: Request) {
         },
         select: { id: true, title: true, date: true },
       })
-      return NextResponse.json({ event })
+      return success({ event }, `Created event “${event.title}”.`)
     }
 
     const maxPosition = await prisma.task.findFirst({
@@ -238,7 +382,7 @@ export async function POST(request: Request) {
       select: { id: true, title: true },
     })
 
-    return NextResponse.json({ task })
+    return success({ task }, `Created task “${task.title}”.`)
   } catch {
     const resource = {
       create_task: 'task',
@@ -247,9 +391,30 @@ export async function POST(request: Request) {
       create_transaction: 'transaction',
       create_user: 'user',
       send_message: 'message',
+      complete_task: 'task',
+      reschedule_event: 'event',
+      update_note: 'note',
+      update_transaction: 'transaction',
+      create_reminder: 'reminder',
     }[action.data.type]
+    const operation = {
+      complete_task: 'completed',
+      reschedule_event: 'rescheduled',
+      update_note: 'updated',
+      update_transaction: 'updated',
+      send_message: 'sent',
+    }[action.data.type as 'complete_task' | 'reschedule_event' | 'update_note' | 'update_transaction' | 'send_message'] ?? 'created'
+    await prisma.assistantActivity.create({
+      data: {
+        userId: session.user.id,
+        action: action.data.type,
+        summary: `The ${resource} action failed.`,
+        status: 'FAILED',
+        details: action.data as any,
+      },
+    }).catch(() => undefined)
     return NextResponse.json(
-      { error: `The ${resource} could not be created.` },
+      { error: `The ${resource} could not be ${operation}.` },
       { status: 503 },
     )
   }

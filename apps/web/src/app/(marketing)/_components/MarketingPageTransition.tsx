@@ -128,7 +128,7 @@ export default function MarketingPageTransition({
 
       revealTimerRef.current = setTimeout(() => {
         setPhase('revealing')
-      }, 2000)
+      }, 800)
       return
     }
 
@@ -155,14 +155,10 @@ export default function MarketingPageTransition({
         initial={false}
         animate={{ x: curtainX, skewX: -12 }}
         onAnimationComplete={handleAnimationComplete}
-        transition={{ duration: 0.48, ease: [0.76, 0, 0.24, 1] }}
+        transition={{ duration: 0.22, ease: [0.76, 0, 0.24, 1] }}
         className={`fixed inset-y-0 -left-[15vw] z-[9999] w-[130vw] origin-center bg-acid ${phase === 'idle' ? 'pointer-events-none' : 'pointer-events-auto will-change-transform'}`}
       >
-        <div className="flex h-full skew-x-[12deg] items-center justify-center">
-          <span className="display text-[clamp(3.5rem,13vw,10rem)] leading-none text-ink">
-            ARKO
-          </span>
-        </div>
+        <div className="h-full skew-x-[12deg]" />
       </motion.div>
     </PageTransitionContext.Provider>
   )

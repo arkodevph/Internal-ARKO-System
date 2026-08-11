@@ -28,6 +28,7 @@ import {
   BriefcaseBusiness,
   Palette,
   Bot,
+  ClipboardList,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
@@ -85,6 +86,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/dashboard/client-portal', icon: BriefcaseBusiness, label: 'Client Portal', adminOnly: true },
       { to: '/dashboard/users', icon: Users, label: 'Users' },
       { to: '/dashboard/landing', icon: Palette, label: 'Landing', adminOnly: true },
+      { to: '/dashboard/assistant-activity', icon: ClipboardList, label: 'AI Activity', adminOnly: true },
     ],
   },
 ]
@@ -482,7 +484,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       {pathname !== '/dashboard/assistant' && (
         <Link
-          href="/dashboard/assistant"
+          href={`/dashboard/assistant?from=${encodeURIComponent(pathname)}`}
           aria-label={`Open ${assistantIdentity.assistantName} assistant`}
           title={`Open ${assistantIdentity.assistantName} assistant`}
           className="fixed bottom-16 right-4 z-40 grid h-12 w-12 place-items-center rounded-2xl border border-white/25 bg-card/80 shadow-[0_16px_45px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-transform hover:scale-105 md:bottom-6 md:right-6"

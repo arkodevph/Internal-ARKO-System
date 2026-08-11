@@ -1,21 +1,24 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { router, protectedProcedure } from '../trpc'
+import { materializeReminderNotifications } from '../../services/reminder-notifications'
 
 export const notificationsRouter = router({
-  list: protectedProcedure.query(({ ctx }) =>
-    ctx.prisma.notification.findMany({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    await materializeReminderNotifications(ctx.prisma, ctx.user.id!)
+    return ctx.prisma.notification.findMany({
       where: { userId: ctx.user.id! },
       orderBy: { createdAt: 'desc' },
       take: 100,
-    }),
-  ),
+    })
+  }),
 
-  unreadCount: protectedProcedure.query(({ ctx }) =>
-    ctx.prisma.notification.count({
+  unreadCount: protectedProcedure.query(async ({ ctx }) => {
+    await materializeReminderNotifications(ctx.prisma, ctx.user.id!)
+    return ctx.prisma.notification.count({
       where: { userId: ctx.user.id!, read: false },
-    }),
-  ),
+    })
+  }),
 
   markRead: protectedProcedure
     .input(z.object({ id: z.string() }))

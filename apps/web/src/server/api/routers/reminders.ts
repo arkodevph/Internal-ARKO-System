@@ -18,6 +18,8 @@ export const remindersRouter = router({
         title: z.string().min(1).max(200),
         note: z.string().max(2000).optional(),
         dueAt: z.string().datetime().or(z.date()),
+        recurrence: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']).default('NONE'),
+        notifyMinutesBefore: z.number().int().min(0).max(43_200).default(15),
         scope: recordScopeSchema.default('PERSONAL'),
       }),
     )
@@ -32,6 +34,8 @@ export const remindersRouter = router({
           dueAt,
           userId,
           scope: input.scope,
+          recurrence: input.recurrence,
+          notifyMinutesBefore: input.notifyMinutesBefore,
         },
       })
     }),

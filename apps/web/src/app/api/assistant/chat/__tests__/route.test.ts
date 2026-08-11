@@ -7,6 +7,13 @@ const noteFindMany = jest.fn()
 const transactionFindMany = jest.fn()
 const categoryFindMany = jest.fn()
 const userFindMany = jest.fn()
+const reminderFindMany = jest.fn()
+const documentFindMany = jest.fn()
+const projectFindMany = jest.fn()
+const messageFindMany = jest.fn()
+const messageCount = jest.fn()
+const participantFindMany = jest.fn()
+const activityCreate = jest.fn()
 const conversationFindFirst = jest.fn()
 const conversationCreate = jest.fn()
 const conversationUpdate = jest.fn()
@@ -19,6 +26,12 @@ jest.mock('@arko/db', () => ({
     transaction: { findMany: transactionFindMany },
     accountCategory: { findMany: categoryFindMany },
     user: { findMany: userFindMany },
+    reminder: { findMany: reminderFindMany },
+    document: { findMany: documentFindMany },
+    clientProject: { findMany: projectFindMany },
+    message: { findMany: messageFindMany, count: messageCount },
+    conversationParticipant: { findMany: participantFindMany },
+    assistantActivity: { create: activityCreate },
     assistantConversation: {
       findFirst: conversationFindFirst,
       create: conversationCreate,
@@ -92,6 +105,13 @@ describe('assistant chat route', () => {
     transactionFindMany.mockResolvedValue([])
     categoryFindMany.mockResolvedValue([])
     userFindMany.mockResolvedValue([])
+    reminderFindMany.mockResolvedValue([])
+    documentFindMany.mockResolvedValue([])
+    projectFindMany.mockResolvedValue([])
+    messageFindMany.mockResolvedValue([])
+    messageCount.mockResolvedValue(0)
+    participantFindMany.mockResolvedValue([])
+    activityCreate.mockResolvedValue({ id: 'activity-1' })
     conversationFindFirst.mockResolvedValue({ id: 'conversation-1' })
     conversationCreate.mockResolvedValue({ id: 'conversation-1' })
     conversationUpdate.mockResolvedValue({ id: 'conversation-1' })
@@ -154,7 +174,7 @@ describe('assistant chat route', () => {
     expect(categoryFindMany).not.toHaveBeenCalled()
     expect(generateReplyMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        context: {
+        context: expect.objectContaining({
           canCreateTasks: false,
           canCreateEvents: false,
           canCreateNotes: false,
@@ -167,7 +187,7 @@ describe('assistant chat route', () => {
           transactions: [],
           transactionCategories: [],
           users: [],
-        },
+        }),
       }),
     )
   })
@@ -262,5 +282,28 @@ describe('assistant chat route', () => {
     )
     const context = generateReplyMock.mock.calls[0]?.[0].context
     expect(context.tasks).toHaveLength(40)
+  })
+
+  it('supplies the exact unread message count for daily briefings', async () => {
+    participantFindMany.mockResolvedValue([{
+      conversationId: 'conversation-1',
+      lastReadAt: new Date('2026-08-11T08:00:00Z'),
+    }])
+    messageCount.mockResolvedValue(3)
+
+    await POST(request({ messages: [{ role: 'user', content: 'Give me my daily briefing' }] }))
+
+    expect(messageCount).toHaveBeenCalledWith({
+      where: {
+        OR: [{
+          conversationId: 'conversation-1',
+          senderId: { not: 'user-1' },
+          createdAt: { gt: new Date('2026-08-11T08:00:00Z') },
+        }],
+      },
+    })
+    expect(generateReplyMock).toHaveBeenCalledWith(expect.objectContaining({
+      context: expect.objectContaining({ unreadMessageCount: 3 }),
+    }))
   })
 })

@@ -115,6 +115,27 @@ describe('landing router', () => {
         expect(landingContentSchema.safeParse(withHref(bad)).success).toBe(false)
       }
     })
+
+    it('accepts only web URLs for external blog posts', () => {
+      const withBlogHref = (href: string) => ({
+        ...DEFAULT_LANDING_CONTENT,
+        blogs: {
+          ...DEFAULT_LANDING_CONTENT.blogs,
+          items: [{
+            title: 'Launch update',
+            excerpt: '',
+            platform: 'Facebook',
+            publishedAt: '',
+            href,
+            image: '',
+          }],
+        },
+      })
+
+      expect(landingContentSchema.safeParse(withBlogHref('https://facebook.com/arko/post')).success).toBe(true)
+      expect(landingContentSchema.safeParse(withBlogHref('javascript:alert(1)')).success).toBe(false)
+      expect(landingContentSchema.safeParse(withBlogHref('')).success).toBe(false)
+    })
   })
 
   describe('stored project migration', () => {
