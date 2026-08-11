@@ -21,14 +21,14 @@ type Message = {
 const STARTER: Message = {
   role: 'assistant',
   content:
-    'Ask about your workspace, create a task, or schedule a calendar event. I always ask before writing anything.',
+    'I’m NEX. Ask about your ARKO workspace or create tasks, events, notes, and finance entries. I always ask before writing anything.',
 }
 
 const SUGGESTIONS = [
-  'What should I work on next?',
-  'Summarize my open tasks',
+  'What can you do?',
   'Create a high-priority task to review the landing page',
-  'Schedule a meeting tomorrow at 1 PM',
+  'Record an income of 1,000 pesos',
+  'Add a note: Send a cold text to clients through WhatsApp',
 ]
 
 export default function AssistantPage() {
@@ -105,6 +105,8 @@ export default function AssistantPage() {
       const data = (await response.json().catch(() => ({}))) as {
         task?: { title: string }
         event?: { title: string }
+        note?: { title: string }
+        transaction?: { amount: number; type: string }
         error?: string
       }
       if (!response.ok) throw new Error(data.error)
@@ -113,10 +115,18 @@ export default function AssistantPage() {
         ...current,
         {
           role: 'assistant',
-          content:
-            pendingAction.type === 'create_event'
-              ? `Added “${data.event?.title ?? pendingAction.title}” to Calendar.`
-              : `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`,
+          content: (() => {
+            switch (pendingAction.type) {
+              case 'create_event':
+                return `Added “${data.event?.title ?? pendingAction.title}” to Calendar.`
+              case 'create_note':
+                return `Saved “${data.note?.title ?? pendingAction.title}” in Notes.`
+              case 'create_transaction':
+                return `Recorded ${data.transaction?.type ?? pendingAction.transactionType} of ₱${(data.transaction?.amount ?? pendingAction.amount).toLocaleString()}.`
+              default:
+                return `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`
+            }
+          })(),
         },
       ])
       setPendingAction(null)
@@ -128,7 +138,7 @@ export default function AssistantPage() {
           content:
             error instanceof Error && error.message
               ? error.message
-              : 'I could not create that task.',
+              : 'I could not complete that action.',
         },
       ])
     } finally {
@@ -218,24 +228,38 @@ export default function AssistantPage() {
                 Confirmation required
               </p>
               <p className="mt-2 text-sm font-semibold text-text-primary">
-                {pendingAction.type === 'create_event'
-                  ? `Add calendar event: ${pendingAction.title}`
-                  : `Create task: ${pendingAction.title}`}
+                {pendingAction.type === 'create_event' &&
+                  `Add calendar event: ${pendingAction.title}`}
+                {pendingAction.type === 'create_task' &&
+                  `Create task: ${pendingAction.title}`}
+                {pendingAction.type === 'create_note' &&
+                  `Save note: ${pendingAction.title}`}
+                {pendingAction.type === 'create_transaction' &&
+                  `Record ${pendingAction.transactionType.toLowerCase()}: ₱${pendingAction.amount.toLocaleString()}`}
               </p>
-              {pendingAction.description && (
+              {'description' in pendingAction && pendingAction.description && (
                 <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
                   {pendingAction.description}
+                </p>
+              )}
+              {pendingAction.type === 'create_note' && pendingAction.content && (
+                <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
+                  {pendingAction.content}
                 </p>
               )}
               {pendingAction.type === 'create_event' ? (
                 <p className="mt-2 text-[11px] font-medium text-text-tertiary">
                   {pendingAction.date} · {pendingAction.startTime}–{pendingAction.endTime}
                 </p>
-              ) : (
+              ) : pendingAction.type === 'create_task' ? (
                 <p className="mt-2 text-[11px] font-medium text-text-tertiary">
                   Priority: {pendingAction.priority}
                 </p>
-              )}
+              ) : pendingAction.type === 'create_transaction' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Date: {pendingAction.date}
+                </p>
+              ) : null}
               <div className="mt-4 flex flex-col gap-2 min-[400px]:flex-row">
                 <button
                   type="button"
@@ -248,9 +272,11 @@ export default function AssistantPage() {
                   ) : (
                     <Check className="h-4 w-4" />
                   )}
-                  {pendingAction.type === 'create_event'
-                    ? 'Confirm event'
-                    : 'Confirm task'}
+                  {pendingAction.type === 'create_event' && 'Confirm event'}
+                  {pendingAction.type === 'create_task' && 'Confirm task'}
+                  {pendingAction.type === 'create_note' && 'Confirm note'}
+                  {pendingAction.type === 'create_transaction' &&
+                    'Confirm finance entry'}
                 </button>
                 <button
                   type="button"
@@ -280,7 +306,7 @@ export default function AssistantPage() {
             rows={1}
             maxLength={2_000}
             aria-label="Message NEX"
-            placeholder="Ask about ARKO, create a task, or schedule an event…"
+            placeholder="Ask NEX about ARKO or create workspace data…"
             className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-text-primary outline-none placeholder:text-text-tertiary"
           />
           <button

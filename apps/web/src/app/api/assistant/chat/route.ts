@@ -77,6 +77,41 @@ export async function POST(request: Request) {
           },
         })
       : []
+    const canReadNotes = hasPermission(role, 'notes:read')
+    const notes = canReadNotes
+      ? await prisma.note.findMany({
+          where: ownedOrCompany(session.user.id, role),
+          orderBy: { updatedAt: 'desc' },
+          take: 30,
+          select: { id: true, title: true, updatedAt: true },
+        })
+      : []
+    const canReadTransactions = hasPermission(role, 'transactions:read')
+    const transactions = canReadTransactions
+      ? await prisma.transaction.findMany({
+          where: { userId: session.user.id, scope: 'PERSONAL' },
+          orderBy: { date: 'desc' },
+          take: 30,
+          select: {
+            id: true,
+            amount: true,
+            description: true,
+            type: true,
+            date: true,
+          },
+        })
+      : []
+    const canCreateTransactions = hasPermission(role, 'transactions:create')
+    const transactionCategories = canCreateTransactions
+      ? await prisma.accountCategory.findMany({
+          where: {
+            scope: 'PERSONAL',
+            OR: [{ userId: null }, { userId: session.user.id }],
+          },
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true, type: true },
+        })
+      : []
     const config = await getAssistantConfig()
 
     const result = await generateAssistantReply({
@@ -84,9 +119,14 @@ export async function POST(request: Request) {
       context: {
         canCreateTasks: hasPermission(role, 'tasks:create'),
         canCreateEvents: hasPermission(role, 'events:create'),
+        canCreateNotes: hasPermission(role, 'notes:create'),
+        canCreateTransactions,
         contextTruncated,
         tasks,
         events,
+        notes,
+        transactions,
+        transactionCategories,
       },
       config,
       oidcToken: request.headers.get('x-vercel-oidc-token') ?? undefined,

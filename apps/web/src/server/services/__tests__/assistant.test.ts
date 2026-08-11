@@ -15,7 +15,7 @@ import {
 } from '../assistant'
 
 const config = {
-  assistantName: 'Arko Assistant',
+  assistantName: 'NEX',
   personality: 'Calm, concise, practical, and direct.',
   projectId: 'test-project',
   location: 'global',
@@ -41,6 +41,10 @@ describe('assistant service', () => {
           date: '',
           startTime: '',
           endTime: '',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
         },
       }),
     })
@@ -54,6 +58,8 @@ describe('assistant service', () => {
       context: {
         canCreateTasks: true,
         canCreateEvents: true,
+        canCreateNotes: true,
+        canCreateTransactions: true,
         contextTruncated: false,
         tasks: [
           {
@@ -65,6 +71,9 @@ describe('assistant service', () => {
           },
         ],
         events: [],
+        notes: [],
+        transactions: [],
+        transactionCategories: [],
       },
       config,
     })
@@ -91,6 +100,10 @@ describe('assistant service', () => {
           date: '',
           startTime: '',
           endTime: '',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
         },
       }),
     })
@@ -101,9 +114,14 @@ describe('assistant service', () => {
         context: {
           canCreateTasks: false,
           canCreateEvents: false,
+          canCreateNotes: false,
+          canCreateTransactions: false,
           contextTruncated: false,
           tasks: [],
           events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
         },
         config,
       }),
@@ -123,6 +141,10 @@ describe('assistant service', () => {
           date: '',
           startTime: '',
           endTime: '',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
         },
       }),
     })
@@ -133,9 +155,14 @@ describe('assistant service', () => {
         context: {
           canCreateTasks: false,
           canCreateEvents: false,
+          canCreateNotes: false,
+          canCreateTransactions: false,
           contextTruncated: false,
           tasks: [],
           events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
         },
         config,
       }),
@@ -170,6 +197,25 @@ describe('assistant service', () => {
     ).toBe(true)
   })
 
+  it('recognizes NEX identity and capability questions as system help', () => {
+    expect(
+      isAssistantRequestInScope([{ role: 'user', content: 'Who are you?' }]),
+    ).toBe(true)
+    expect(
+      isAssistantRequestInScope([
+        { role: 'user', content: 'What else can you do?' },
+      ]),
+    ).toBe(true)
+    expect(
+      isAssistantRequestInScope([
+        {
+          role: 'user',
+          content: 'Can you add a notes send a cold text to clients thru WhatsApp',
+        },
+      ]),
+    ).toBe(true)
+  })
+
   it('returns a role-permitted calendar action for a scheduling request', async () => {
     generateContent.mockResolvedValue({
       text: JSON.stringify({
@@ -183,6 +229,10 @@ describe('assistant service', () => {
           date: '2026-08-12',
           startTime: '13:00',
           endTime: '14:00',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
         },
       }),
     })
@@ -195,9 +245,14 @@ describe('assistant service', () => {
         context: {
           canCreateTasks: true,
           canCreateEvents: true,
+          canCreateNotes: true,
+          canCreateTransactions: true,
           contextTruncated: false,
           tasks: [],
           events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
         },
         config,
       }),
@@ -207,6 +262,108 @@ describe('assistant service', () => {
         date: '2026-08-12',
         startTime: '13:00',
         endTime: '14:00',
+      },
+    })
+  })
+
+  it('returns a permitted finance action using an available category', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        scope: 'system',
+        reply: 'I can record that income after you confirm.',
+        action: {
+          type: 'create_transaction',
+          title: '',
+          description: 'Income',
+          priority: 'MEDIUM',
+          date: '2026-08-11',
+          startTime: '',
+          endTime: '',
+          content: '',
+          amount: 1000,
+          transactionType: 'INCOME',
+          categoryId: 'income-category',
+        },
+      }),
+    })
+
+    await expect(
+      generateAssistantReply({
+        messages: [
+          { role: 'user', content: 'Add finance income of 1000 pesos' },
+        ],
+        context: {
+          canCreateTasks: true,
+          canCreateEvents: true,
+          canCreateNotes: true,
+          canCreateTransactions: true,
+          contextTruncated: false,
+          tasks: [],
+          events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [
+            { id: 'income-category', name: 'Income', type: 'INVESTMENT' },
+          ],
+        },
+        config,
+      }),
+    ).resolves.toMatchObject({
+      action: {
+        type: 'create_transaction',
+        amount: 1000,
+        categoryId: 'income-category',
+      },
+    })
+  })
+
+  it('derives a note title when Vertex leaves it blank', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        scope: 'system',
+        reply: 'I can save that note after you confirm.',
+        action: {
+          type: 'create_note',
+          title: '',
+          description: '',
+          priority: 'MEDIUM',
+          date: '',
+          startTime: '',
+          endTime: '',
+          content: 'Send a cold text to clients through WhatsApp',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
+        },
+      }),
+    })
+
+    await expect(
+      generateAssistantReply({
+        messages: [
+          {
+            role: 'user',
+            content: 'Add a note: send a cold text to clients through WhatsApp',
+          },
+        ],
+        context: {
+          canCreateTasks: true,
+          canCreateEvents: true,
+          canCreateNotes: true,
+          canCreateTransactions: true,
+          contextTruncated: false,
+          tasks: [],
+          events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
+        },
+        config,
+      }),
+    ).resolves.toMatchObject({
+      action: {
+        type: 'create_note',
+        title: 'Send a cold text to clients through WhatsApp',
       },
     })
   })

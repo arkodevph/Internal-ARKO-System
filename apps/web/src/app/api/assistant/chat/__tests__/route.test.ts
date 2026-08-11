@@ -3,11 +3,17 @@ import { NextRequest } from 'next/server'
 
 const taskFindMany = jest.fn()
 const eventFindMany = jest.fn()
+const noteFindMany = jest.fn()
+const transactionFindMany = jest.fn()
+const categoryFindMany = jest.fn()
 
 jest.mock('@arko/db', () => ({
   prisma: {
     task: { findMany: taskFindMany },
     event: { findMany: eventFindMany },
+    note: { findMany: noteFindMany },
+    transaction: { findMany: transactionFindMany },
+    accountCategory: { findMany: categoryFindMany },
   },
 }))
 jest.mock('../../../../../lib/auth', () => ({ auth: jest.fn() }))
@@ -26,7 +32,7 @@ jest.mock('../../../../../server/services/assistant', () => ({
 jest.mock('../../../../../server/services/assistant-config', () => ({
   getAssistantConfig: jest.fn(() =>
     Promise.resolve({
-      assistantName: 'Arko Assistant',
+      assistantName: 'NEX',
       personality: 'Calm and practical.',
       projectId: 'test-project',
       location: 'global',
@@ -69,6 +75,9 @@ describe('assistant chat route', () => {
     consumeRequestMock.mockResolvedValue({ remaining: 19 })
     taskFindMany.mockResolvedValue([])
     eventFindMany.mockResolvedValue([])
+    noteFindMany.mockResolvedValue([])
+    transactionFindMany.mockResolvedValue([])
+    categoryFindMany.mockResolvedValue([])
     generateReplyMock.mockResolvedValue({
       message: 'Ready.',
       action: null,
@@ -105,6 +114,8 @@ describe('assistant chat route', () => {
     expect(consumeRequestMock).not.toHaveBeenCalled()
     expect(taskFindMany).not.toHaveBeenCalled()
     expect(eventFindMany).not.toHaveBeenCalled()
+    expect(noteFindMany).not.toHaveBeenCalled()
+    expect(transactionFindMany).not.toHaveBeenCalled()
     expect(generateReplyMock).not.toHaveBeenCalled()
   })
 
@@ -116,14 +127,22 @@ describe('assistant chat route', () => {
     expect(response.status).toBe(200)
     expect(taskFindMany).not.toHaveBeenCalled()
     expect(eventFindMany).not.toHaveBeenCalled()
+    expect(noteFindMany).not.toHaveBeenCalled()
+    expect(transactionFindMany).not.toHaveBeenCalled()
+    expect(categoryFindMany).not.toHaveBeenCalled()
     expect(generateReplyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         context: {
           canCreateTasks: false,
           canCreateEvents: false,
+          canCreateNotes: false,
+          canCreateTransactions: false,
           contextTruncated: false,
           tasks: [],
           events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
         },
       }),
     )
@@ -146,6 +165,9 @@ describe('assistant chat route', () => {
     expect(response.status).toBe(200)
     expect(taskFindMany).toHaveBeenCalledTimes(1)
     expect(eventFindMany).toHaveBeenCalledTimes(1)
+    expect(noteFindMany).toHaveBeenCalledTimes(1)
+    expect(transactionFindMany).toHaveBeenCalledTimes(1)
+    expect(categoryFindMany).toHaveBeenCalledTimes(1)
     expect(await response.json()).toMatchObject({ message: 'Ready.' })
   })
 

@@ -4,11 +4,18 @@ import { NextRequest } from 'next/server'
 const findFirst = jest.fn()
 const createTask = jest.fn()
 const createEvent = jest.fn()
+const createNote = jest.fn()
+const createTransaction = jest.fn()
+const findCategory = jest.fn()
+const createCategory = jest.fn()
 
 jest.mock('@arko/db', () => ({
   prisma: {
     task: { findFirst, create: createTask },
     event: { create: createEvent },
+    note: { create: createNote },
+    transaction: { create: createTransaction },
+    accountCategory: { findFirst: findCategory, create: createCategory },
   },
 }))
 jest.mock('../../../../../lib/auth', () => ({ auth: jest.fn() }))
@@ -42,6 +49,21 @@ const validEventAction = {
   endTime: '14:00',
 }
 
+const validNoteAction = {
+  type: 'create_note',
+  title: 'Client outreach',
+  content: 'Send a cold text to clients through WhatsApp',
+}
+
+const validTransactionAction = {
+  type: 'create_transaction',
+  description: 'Income',
+  amount: 1000,
+  transactionType: 'INCOME',
+  categoryId: 'income-category',
+  date: '2026-08-11',
+}
+
 describe('assistant action route', () => {
   beforeEach(() => {
     authMock.mockResolvedValue({ user: { id: 'user-1', role: 'USER' } } as any)
@@ -51,6 +73,14 @@ describe('assistant action route', () => {
       id: 'event-1',
       title: validEventAction.title,
       date: new Date('2026-08-12T00:00:00+08:00'),
+    })
+    createNote.mockResolvedValue({ id: 'note-1', title: validNoteAction.title })
+    findCategory.mockResolvedValue({ id: 'income-category' })
+    createCategory.mockResolvedValue({ id: 'new-income-category' })
+    createTransaction.mockResolvedValue({
+      id: 'transaction-1',
+      amount: 1000,
+      type: 'INCOME',
     })
   })
 
@@ -142,5 +172,67 @@ describe('assistant action route', () => {
       ).status,
     ).toBe(400)
     expect(createEvent).not.toHaveBeenCalled()
+  })
+
+  it('creates a personal note without performing outside actions', async () => {
+    const response = await POST(request(validNoteAction))
+
+    expect(response.status).toBe(200)
+    expect(createNote).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          scope: 'PERSONAL',
+          content: validNoteAction.content,
+        }),
+      }),
+    )
+  })
+
+  it('creates a personal finance entry with an accessible category', async () => {
+    const response = await POST(request(validTransactionAction))
+
+    expect(response.status).toBe(200)
+    expect(findCategory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'income-category',
+          scope: 'PERSONAL',
+        }),
+      }),
+    )
+    expect(createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          amount: 1000,
+          type: 'INCOME',
+          scope: 'PERSONAL',
+        }),
+      }),
+    )
+  })
+
+  it('creates a personal fallback category when no compatible one exists', async () => {
+    findCategory.mockResolvedValue(null)
+
+    const response = await POST(request(validTransactionAction))
+
+    expect(response.status).toBe(200)
+    expect(createCategory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: 'Income',
+          type: 'INVESTMENT',
+          userId: 'user-1',
+          scope: 'PERSONAL',
+        }),
+      }),
+    )
+    expect(createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ categoryId: 'new-income-category' }),
+      }),
+    )
   })
 })
