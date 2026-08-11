@@ -23,6 +23,13 @@ const serverEnvSchema = z
     S3_SECRET_ACCESS_KEY: z.string().optional(),
     S3_REGION: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
+    GOOGLE_CLOUD_PROJECT: z.string().optional(),
+    GOOGLE_CLOUD_LOCATION: z.string().optional(),
+    GOOGLE_VERTEX_MODEL: z.string().optional(),
+    GCP_PROJECT_NUMBER: z.string().optional(),
+    GCP_SERVICE_ACCOUNT_EMAIL: z.string().email().optional(),
+    GCP_WORKLOAD_IDENTITY_POOL_ID: z.string().optional(),
+    GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID: z.string().optional(),
   })
   .refine((e) => Boolean(e.AUTH_SECRET || e.NEXTAUTH_SECRET), {
     message: 'AUTH_SECRET (or NEXTAUTH_SECRET) is required — session signing secret',

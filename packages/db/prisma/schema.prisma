@@ -56,6 +56,19 @@ model User {
   docsCreated           Document[]                @relation("CreatedDocs")
   clientDocs            Document[]                @relation("DocClient")
   landingEdits          LandingContent[]          @relation("LandingEditor")
+  assistantRateLimits   AssistantRateLimit[]
+}
+
+model AssistantRateLimit {
+  id          String   @id @default(cuid())
+  userId      String
+  windowStart DateTime
+  count       Int      @default(1)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, windowStart])
+  @@index([windowStart])
 }
 
 model Account {

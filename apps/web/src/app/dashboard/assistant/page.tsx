@@ -1,0 +1,286 @@
+'use client'
+
+import { FormEvent, useEffect, useRef, useState } from 'react'
+import {
+  Bot,
+  Check,
+  LoaderCircle,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  X,
+} from 'lucide-react'
+import type { AssistantAction } from '../../../server/services/assistant'
+import { useReducedMotion } from 'motion/react'
+
+type Message = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+const STARTER: Message = {
+  role: 'assistant',
+  content:
+    'Ask me about your current work or tell me what task you want to create. I will always ask before changing anything.',
+}
+
+const SUGGESTIONS = [
+  'What should I work on next?',
+  'Summarize my open tasks',
+  'Create a high-priority task to review the landing page',
+]
+
+export default function AssistantPage() {
+  const [messages, setMessages] = useState<Message[]>([STARTER])
+  const [input, setInput] = useState('')
+  const [pendingAction, setPendingAction] = useState<AssistantAction | null>(
+    null,
+  )
+  const [loading, setLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+  const endRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    })
+  }, [messages, pendingAction, loading, reduceMotion])
+
+  async function sendMessage(content: string) {
+    const text = content.trim()
+    if (!text || loading) return
+
+    const nextMessages = [...messages, { role: 'user' as const, content: text }]
+    setMessages(nextMessages)
+    setInput('')
+    setPendingAction(null)
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/assistant/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: nextMessages.slice(-20) }),
+      })
+      const data = (await response.json().catch(() => ({}))) as {
+        message?: string
+        action?: AssistantAction | null
+        error?: string
+      }
+      if (!response.ok) throw new Error(data.error)
+
+      setMessages((current) => [
+        ...current,
+        { role: 'assistant', content: data.message ?? 'How can I help?' },
+      ])
+      setPendingAction(data.action ?? null)
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content:
+            error instanceof Error && error.message
+              ? error.message
+              : 'The assistant is temporarily unavailable.',
+        },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function confirmAction() {
+    if (!pendingAction || actionLoading) return
+    setActionLoading(true)
+
+    try {
+      const response = await fetch('/api/assistant/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingAction),
+      })
+      const data = (await response.json().catch(() => ({}))) as {
+        task?: { title: string }
+        error?: string
+      }
+      if (!response.ok) throw new Error(data.error)
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content: `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`,
+        },
+      ])
+      setPendingAction(null)
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content:
+            error instanceof Error && error.message
+              ? error.message
+              : 'I could not create that task.',
+        },
+      ])
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    void sendMessage(input)
+  }
+
+  return (
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border-subtle bg-card">
+      <header className="flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500 text-[#07110b]">
+            <Bot className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-semibold text-text-primary">
+              Arko Assistant
+            </h1>
+            <p className="truncate text-xs text-text-tertiary">
+              Vertex AI · connected to your workspace
+            </p>
+          </div>
+        </div>
+        <span className="hidden items-center gap-1.5 rounded-full border border-border-subtle px-2.5 py-1 text-[11px] font-medium text-text-tertiary sm:flex">
+          <ShieldCheck className="h-3.5 w-3.5 text-pos" /> Confirm before changes
+        </span>
+      </header>
+
+      <div
+        className="flex-1 overflow-y-auto px-3 py-5 sm:px-6"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
+        <div className="mx-auto flex max-w-3xl flex-col gap-4">
+          {messages.map((message, index) => (
+            <div
+              key={`${message.role}-${index}`}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[78%] ${
+                  message.role === 'user'
+                    ? 'rounded-br-md bg-primary-500 text-white'
+                    : 'rounded-bl-md border border-border-subtle bg-bg-app text-text-primary'
+                }`}
+              >
+                <span className="sr-only">
+                  {message.role === 'user' ? 'You' : 'Arko Assistant'}:{' '}
+                </span>
+                {message.content}
+              </div>
+            </div>
+          ))}
+
+          {messages.length === 1 && (
+            <div className="grid gap-2 sm:grid-cols-3">
+              {SUGGESTIONS.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => void sendMessage(suggestion)}
+                  className="rounded-xl border border-border-subtle bg-bg-app px-3 py-3 text-left text-xs leading-relaxed text-text-secondary transition-colors hover:border-primary-500/40 hover:text-text-primary"
+                >
+                  <Sparkles className="mb-2 h-4 w-4 text-primary-500" />
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex items-center gap-2 text-xs text-text-tertiary">
+              <LoaderCircle className="h-4 w-4 animate-spin text-primary-500" />
+              Checking your workspace…
+            </div>
+          )}
+
+          {pendingAction && (
+            <div className="rounded-2xl border border-primary-500/30 bg-primary-500/[0.06] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">
+                Confirmation required
+              </p>
+              <p className="mt-2 text-sm font-semibold text-text-primary">
+                Create task: {pendingAction.title}
+              </p>
+              {pendingAction.description && (
+                <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
+                  {pendingAction.description}
+                </p>
+              )}
+              <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                Priority: {pendingAction.priority}
+              </p>
+              <div className="mt-4 flex flex-col gap-2 min-[400px]:flex-row">
+                <button
+                  type="button"
+                  onClick={() => void confirmAction()}
+                  disabled={actionLoading}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 text-xs font-semibold text-[#07110b] disabled:opacity-60"
+                >
+                  {actionLoading ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  Confirm task
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingAction(null)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border-subtle px-4 text-xs font-semibold text-text-secondary"
+                >
+                  <X className="h-4 w-4" /> Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="border-t border-border-subtle p-3 sm:p-4">
+        <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-border-subtle bg-bg-app p-2 focus-within:border-primary-500/50">
+          <textarea
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault()
+                void sendMessage(input)
+              }
+            }}
+            rows={1}
+            maxLength={2_000}
+            aria-label="Message Arko Assistant"
+            placeholder="Ask about your workspace or create a task…"
+            className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-text-primary outline-none placeholder:text-text-tertiary"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || loading}
+            aria-label="Send message"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-500 text-[#07110b] transition-opacity disabled:opacity-40"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="mx-auto mt-2 max-w-3xl text-center text-xs text-text-secondary">
+          AI can make mistakes. Review every proposed action before confirming.
+        </p>
+      </form>
+    </div>
+  )
+}

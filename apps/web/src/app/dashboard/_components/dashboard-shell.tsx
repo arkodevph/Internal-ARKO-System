@@ -27,6 +27,7 @@ import {
   PanelsTopLeft,
   BriefcaseBusiness,
   Palette,
+  Bot,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
@@ -54,6 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
       { to: '/dashboard/finance', icon: TrendingUp, label: 'Analytics' },
+      { to: '/dashboard/assistant', icon: Bot, label: 'AI Assistant' },
     ],
   },
   {
