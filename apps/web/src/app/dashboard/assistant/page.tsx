@@ -150,7 +150,7 @@ export default function AssistantPage() {
           </span>
           <div className="min-w-0">
             <h1 className="truncate text-base font-semibold text-text-primary">
-              Arko Assistant
+              NEX
             </h1>
             <p className="truncate text-xs text-text-tertiary">
               Vertex AI · connected to your workspace
@@ -182,7 +182,7 @@ export default function AssistantPage() {
                 }`}
               >
                 <span className="sr-only">
-                  {message.role === 'user' ? 'You' : 'Arko Assistant'}:{' '}
+                  {message.role === 'user' ? 'You' : 'NEX'}:{' '}
                 </span>
                 {message.content}
               </div>
@@ -279,7 +279,7 @@ export default function AssistantPage() {
             }}
             rows={1}
             maxLength={2_000}
-            aria-label="Message Arko Assistant"
+            aria-label="Message NEX"
             placeholder="Ask about ARKO, create a task, or schedule an event…"
             className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-text-primary outline-none placeholder:text-text-tertiary"
           />

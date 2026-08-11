@@ -74,7 +74,7 @@ model AssistantRateLimit {
 
 model AssistantConfiguration {
   id                         String   @id @default("system")
-  assistantName              String   @default("Arko Assistant")
+  assistantName              String   @default("NEX")
   personality                String   @default("Calm, concise, practical, and direct.")
   projectId                  String
   location                   String   @default("global")

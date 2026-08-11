@@ -395,7 +395,7 @@ function VertexAssistantForm() {
         setConfig(data)
       })
       .catch(() =>
-        setStatus({ status: 'error', message: 'Could not load Vertex AI settings' }),
+        setStatus({ status: 'error', message: 'Could not load NEX settings' }),
       )
   }, [])
 
@@ -411,7 +411,7 @@ function VertexAssistantForm() {
       const data = (await response.json()) as VertexConfig & { error?: string }
       if (!response.ok) throw new Error(data.error)
       setConfig((current) => (current ? { ...current, ...data } : data))
-      setStatus({ status: 'success', message: 'Vertex AI settings saved' })
+      setStatus({ status: 'success', message: 'NEX settings saved' })
     } catch (error) {
       setStatus({
         status: 'error',
@@ -440,8 +440,8 @@ function VertexAssistantForm() {
 
   return (
     <SectionCard
-      title="Vertex AI system identity"
-      description="Admin-only connection and personality controls. Google credentials stay in Vercel and Google Cloud."
+      title="NEX assistant settings"
+      description="Admin-only name, personality, model, and connection controls. Google credentials stay in Vercel and Google Cloud."
     >
       <StatusBanner status={status} />
       {!config ? (
@@ -523,7 +523,7 @@ function VertexAssistantForm() {
               disabled={status?.status === 'saving'}
               className="min-h-11 rounded-lg bg-primary-500 px-4 text-sm font-semibold text-[#07110b] disabled:opacity-50"
             >
-              Save system identity
+              Save NEX settings
             </button>
           </div>
         </div>

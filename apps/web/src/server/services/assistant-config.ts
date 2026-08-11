@@ -41,7 +41,7 @@ export async function getAssistantConfig(): Promise<AssistantConfig> {
   })
 
   return {
-    assistantName: saved?.assistantName ?? 'Arko Assistant',
+    assistantName: saved?.assistantName ?? 'NEX',
     personality:
       saved?.personality ?? 'Calm, concise, practical, and direct.',
     projectId: saved?.projectId ?? process.env.GOOGLE_CLOUD_PROJECT ?? '',

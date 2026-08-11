@@ -55,7 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
       { to: '/dashboard/finance', icon: TrendingUp, label: 'Analytics' },
-      { to: '/dashboard/assistant', icon: Bot, label: 'AI Assistant' },
+      { to: '/dashboard/assistant', icon: Bot, label: 'NEX Assistant' },
     ],
   },
   {
@@ -467,6 +467,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </div>
+
+      {pathname !== '/dashboard/assistant' && (
+        <Link
+          href="/dashboard/assistant"
+          aria-label="Open NEX assistant"
+          title="Open NEX assistant"
+          className="fixed bottom-16 right-4 z-40 grid h-12 w-12 place-items-center rounded-2xl border border-white/25 bg-primary-500/85 text-[#07110b] shadow-[0_16px_45px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-transform hover:scale-105 md:bottom-6 md:right-6"
+        >
+          <Bot className="h-5 w-5" />
+          <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-bg-app bg-pos" />
+        </Link>
+      )}
     </div>
   )
 }
