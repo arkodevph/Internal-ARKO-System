@@ -60,7 +60,7 @@ const modelResponseSchema = z.object({
 })
 
 const SYSTEM_SCOPE =
-  /\b(arko|dashboard|workspace|task|work|calendar|event|reminder|note|idea|document|message|workflow|analytic|setting|project|client|finance|transaction|account|budget|invoice|notification|resource|journal|team|profile|password|priority|status|assign|due|create|open|show|find|navigate|system help)\b/i
+  /\b(arko|dashboard|workspace|task|work|calendar|event|meeting|schedule|reminder|note|idea|document|message|workflow|analytic|setting|project|client|finance|transaction|account|budget|invoice|notification|resource|journal|team|profile|password|priority|status|assign|due|create|open|show|find|navigate|system help)\b/i
 const FOLLOW_UP = /^(yes|no|ok|okay|continue|cancel|confirm|why|how|when|which|them|that|it|more|next)[?.! ]*$/i
 const SCOPE_OVERRIDE =
   /\b(ignore|bypass|override|reveal|repeat|translate|summarize)\b.{0,40}\b(rule|instruction|prompt|policy|scope)|\b(search|browse)\b.{0,20}\b(web|internet)\b/i

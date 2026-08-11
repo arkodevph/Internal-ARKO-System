@@ -159,6 +159,17 @@ describe('assistant service', () => {
     ).toBe(false)
   })
 
+  it('recognizes natural-language meeting requests as ARKO calendar work', () => {
+    expect(
+      isAssistantRequestInScope([
+        {
+          role: 'user',
+          content: 'Schedule a meeting tomorrow at 1 PM',
+        },
+      ]),
+    ).toBe(true)
+  })
+
   it('returns a role-permitted calendar action for a scheduling request', async () => {
     generateContent.mockResolvedValue({
       text: JSON.stringify({
