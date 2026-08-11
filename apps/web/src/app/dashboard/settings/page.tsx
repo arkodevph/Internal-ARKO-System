@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Loader2, Check, AlertCircle } from 'lucide-react'
+import { Loader2, Check, AlertCircle, Cloud, ShieldCheck } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
 import type { AvatarConfigJson } from '../../../lib/avatar'
@@ -369,9 +369,174 @@ function NotificationsForm() {
   )
 }
 
+type VertexConfig = {
+  assistantName: string
+  personality: string
+  projectId: string
+  location: string
+  model: string
+  gcpProjectNumber: string
+  serviceAccountEmail: string
+  workloadIdentityPoolId: string
+  workloadIdentityProviderId: string
+  identity?: string
+  authMode?: string
+}
+
+function VertexAssistantForm() {
+  const [config, setConfig] = useState<VertexConfig | null>(null)
+  const [status, setStatus] = useState<FormStatus | null>(null)
+
+  useEffect(() => {
+    void fetch('/api/assistant/settings')
+      .then(async (response) => {
+        const data = (await response.json()) as VertexConfig & { error?: string }
+        if (!response.ok) throw new Error(data.error)
+        setConfig(data)
+      })
+      .catch(() =>
+        setStatus({ status: 'error', message: 'Could not load Vertex AI settings' }),
+      )
+  }, [])
+
+  async function save() {
+    if (!config) return
+    setStatus({ status: 'saving' })
+    try {
+      const response = await fetch('/api/assistant/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      })
+      const data = (await response.json()) as VertexConfig & { error?: string }
+      if (!response.ok) throw new Error(data.error)
+      setConfig((current) => (current ? { ...current, ...data } : data))
+      setStatus({ status: 'success', message: 'Vertex AI settings saved' })
+    } catch (error) {
+      setStatus({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Save failed',
+      })
+    }
+  }
+
+  async function testConnection() {
+    setStatus({ status: 'saving', message: 'Testing Vertex AI connection…' })
+    try {
+      const response = await fetch('/api/assistant/settings', { method: 'POST' })
+      const data = (await response.json()) as { model?: string; error?: string }
+      if (!response.ok) throw new Error(data.error)
+      setStatus({
+        status: 'success',
+        message: `Connected successfully with ${data.model}`,
+      })
+    } catch (error) {
+      setStatus({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Connection failed',
+      })
+    }
+  }
+
+  return (
+    <SectionCard
+      title="Vertex AI system identity"
+      description="Admin-only connection and personality controls. Google credentials stay in Vercel and Google Cloud."
+    >
+      <StatusBanner status={status} />
+      {!config ? (
+        <div className="flex items-center gap-2 text-sm text-text-tertiary">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading secure connection…
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <div className="grid gap-3 rounded-xl border border-border-subtle bg-bg-app p-4 sm:grid-cols-2">
+            <div className="flex items-start gap-3">
+              <Cloud className="mt-0.5 h-5 w-5 text-primary-500" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Authentication</p>
+                <p className="mt-1 text-sm font-medium text-text-primary">{config.authMode}</p>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-start gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 text-primary-500" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Google identity</p>
+                <p className="mt-1 truncate text-sm font-medium text-text-primary" title={config.identity}>{config.identity}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              ['Assistant name', 'assistantName'],
+              ['Google Cloud project', 'projectId'],
+              ['Vertex location', 'location'],
+              ['Vertex model', 'model'],
+              ['GCP project number', 'gcpProjectNumber'],
+              ['Service account', 'serviceAccountEmail'],
+              ['Identity pool', 'workloadIdentityPoolId'],
+              ['OIDC provider', 'workloadIdentityProviderId'],
+            ].map(([label, key]) => (
+              <label key={key} className="block text-sm font-medium text-text-secondary">
+                {label}
+                <input
+                  value={config[key as keyof VertexConfig] ?? ''}
+                  onChange={(event) =>
+                    setConfig({ ...config, [key]: event.target.value })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border-subtle bg-card px-3 py-2.5 text-base text-text-primary outline-none focus:border-primary-500 sm:text-sm"
+                />
+              </label>
+            ))}
+          </div>
+
+          <label className="block text-sm font-medium text-text-secondary">
+            Personality
+            <textarea
+              value={config.personality}
+              onChange={(event) =>
+                setConfig({ ...config, personality: event.target.value })
+              }
+              maxLength={500}
+              rows={4}
+              className="mt-1 w-full resize-y rounded-lg border border-border-subtle bg-card px-3 py-2.5 text-base text-text-primary outline-none focus:border-primary-500 sm:text-sm"
+            />
+          </label>
+
+          <div className="rounded-lg border border-primary-500/20 bg-primary-500/[0.05] px-4 py-3 text-xs leading-relaxed text-text-secondary">
+            Scope is locked: the assistant can only discuss ARKO and authenticated workspace data. Personality cannot override this rule.
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => void testConnection()}
+              disabled={status?.status === 'saving'}
+              className="min-h-11 rounded-lg border border-border-subtle px-4 text-sm font-semibold text-text-secondary disabled:opacity-50"
+            >
+              Test connection
+            </button>
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={status?.status === 'saving'}
+              className="min-h-11 rounded-lg bg-primary-500 px-4 text-sm font-semibold text-[#07110b] disabled:opacity-50"
+            >
+              Save system identity
+            </button>
+          </div>
+        </div>
+      )}
+    </SectionCard>
+  )
+}
+
 // ── Page ────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
+
   return (
     <div className="space-y-6 py-4">
       <div>
@@ -380,6 +545,7 @@ export default function SettingsPage() {
       </div>
 
       <ProfileForm />
+      {session?.user?.role === 'ADMIN' && <VertexAssistantForm />}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <NotificationsForm />
         <PasswordForm />

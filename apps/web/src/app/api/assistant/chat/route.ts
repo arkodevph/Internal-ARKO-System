@@ -7,11 +7,13 @@ import { assignedOrCompany } from '../../../../lib/record-scope'
 import {
   assistantMessageSchema,
   generateAssistantReply,
+  isAssistantRequestInScope,
 } from '../../../../server/services/assistant'
 import {
   AssistantRateLimitError,
   consumeAssistantRequest,
 } from '../../../../server/services/assistant-rate-limit'
+import { getAssistantConfig } from '../../../../server/services/assistant-config'
 
 export const runtime = 'nodejs'
 
@@ -28,6 +30,15 @@ export async function POST(request: Request) {
   const input = requestSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
     return NextResponse.json({ error: 'Invalid chat request' }, { status: 400 })
+  }
+
+  if (!isAssistantRequestInScope(input.data.messages)) {
+    return NextResponse.json({
+      message:
+        'I can only help with the ARKO system and the workspace information available to you.',
+      action: null,
+      model: 'scope-guard',
+    })
   }
 
   const role = session.user.role
@@ -51,6 +62,7 @@ export async function POST(request: Request) {
       : []
     const contextTruncated = taskRows.length > 40
     const tasks = taskRows.slice(0, 40)
+    const config = await getAssistantConfig()
 
     const result = await generateAssistantReply({
       messages: input.data.messages,
@@ -59,6 +71,7 @@ export async function POST(request: Request) {
         contextTruncated,
         tasks,
       },
+      config,
       oidcToken: request.headers.get('x-vercel-oidc-token') ?? undefined,
     })
     return NextResponse.json(result)

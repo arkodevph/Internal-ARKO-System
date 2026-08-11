@@ -17,10 +17,29 @@ jest.mock('../../../../../server/services/assistant', () => ({
     content: jest.requireActual('zod').z.string().trim().min(1).max(2_000),
   }),
   generateAssistantReply: jest.fn(),
+  isAssistantRequestInScope: jest.fn(() => true),
+}))
+jest.mock('../../../../../server/services/assistant-config', () => ({
+  getAssistantConfig: jest.fn(() =>
+    Promise.resolve({
+      assistantName: 'Arko Assistant',
+      personality: 'Calm and practical.',
+      projectId: 'test-project',
+      location: 'global',
+      model: 'gemini-2.5-flash',
+      gcpProjectNumber: '787644651015',
+      serviceAccountEmail: 'vertex@test-project.iam.gserviceaccount.com',
+      workloadIdentityPoolId: 'vercel',
+      workloadIdentityProviderId: 'vercel',
+    }),
+  ),
 }))
 
 import { auth } from '../../../../../lib/auth'
-import { generateAssistantReply } from '../../../../../server/services/assistant'
+import {
+  generateAssistantReply,
+  isAssistantRequestInScope,
+} from '../../../../../server/services/assistant'
 import {
   AssistantRateLimitError,
   consumeAssistantRequest,
@@ -30,6 +49,7 @@ import { POST } from '../route'
 const authMock = jest.mocked(auth)
 const generateReplyMock = jest.mocked(generateAssistantReply)
 const consumeRequestMock = jest.mocked(consumeAssistantRequest)
+const scopeMock = jest.mocked(isAssistantRequestInScope)
 
 function request(body: unknown) {
   return new NextRequest('http://localhost/api/assistant/chat', {
@@ -49,6 +69,7 @@ describe('assistant chat route', () => {
       action: null,
       model: 'gemini-2.5-flash',
     })
+    scopeMock.mockReturnValue(true)
   })
 
   it('requires authentication', async () => {
@@ -65,6 +86,20 @@ describe('assistant chat route', () => {
 
     expect(response.status).toBe(400)
     expect(consumeRequestMock).not.toHaveBeenCalled()
+  })
+
+  it('refuses outside requests before querying data or using Vertex quota', async () => {
+    scopeMock.mockReturnValue(false)
+
+    const response = await POST(
+      request({ messages: [{ role: 'user', content: 'Who won the game?' }] }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ model: 'scope-guard' })
+    expect(consumeRequestMock).not.toHaveBeenCalled()
+    expect(findMany).not.toHaveBeenCalled()
+    expect(generateReplyMock).not.toHaveBeenCalled()
   })
 
   it('does not expose task context to roles without tasks:read', async () => {

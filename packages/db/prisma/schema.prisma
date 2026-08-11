@@ -57,6 +57,7 @@ model User {
   clientDocs            Document[]                @relation("DocClient")
   landingEdits          LandingContent[]          @relation("LandingEditor")
   assistantRateLimits   AssistantRateLimit[]
+  assistantConfigEdits  AssistantConfiguration[]  @relation("AssistantConfigEditor")
 }
 
 model AssistantRateLimit {
@@ -69,6 +70,24 @@ model AssistantRateLimit {
 
   @@unique([userId, windowStart])
   @@index([windowStart])
+}
+
+model AssistantConfiguration {
+  id                         String   @id @default("system")
+  assistantName              String   @default("Arko Assistant")
+  personality                String   @default("Calm, concise, practical, and direct.")
+  projectId                  String
+  location                   String   @default("global")
+  model                      String   @default("gemini-2.5-flash")
+  gcpProjectNumber           String   @default("")
+  serviceAccountEmail        String   @default("")
+  workloadIdentityPoolId     String   @default("vercel")
+  workloadIdentityProviderId String   @default("vercel")
+  updatedById                String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  updatedBy User? @relation("AssistantConfigEditor", fields: [updatedById], references: [id], onDelete: SetNull)
 }
 
 model Account {
