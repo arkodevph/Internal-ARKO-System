@@ -814,3 +814,8 @@ model LandingContent {
   viewCount    Int       @default(0)
   lastViewedAt DateTime?
 }
+
+model LandingVisitDaily {
+  date      DateTime @id
+  viewCount Int      @default(0)
+}

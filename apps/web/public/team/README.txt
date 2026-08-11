@@ -1,6 +1,4 @@
-Drop your team photo here as: arko-team.jpg
+Team portraits used by the landing page's TeamSection component.
 
-- Landscape orientation works best (roughly 4:3).
-- The site references /team/arko-team.jpg in TeamSection.tsx.
-- If you use a different filename or format (e.g. .webp), update TEAM_PHOTO
-  in apps/web/src/app/(marketing)/_components/TeamSection.tsx to match.
+Keep portraits in WebP format and update the TEAM entries in TeamSection.tsx
+when adding, removing, or renaming a member.

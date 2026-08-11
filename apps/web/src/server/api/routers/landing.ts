@@ -11,6 +11,7 @@ import {
   mergeLandingContent,
 } from '../../../lib/landing/content'
 import { LANDING_CACHE_TAG } from '../../../lib/landing/get-content'
+import { getLandingTrafficStats } from '../../services/landing-analytics'
 
 export const landingRouter = router({
   // Public: the marketing page and the admin form both read the current content.
@@ -21,16 +22,9 @@ export const landingRouter = router({
     return mergeLandingContent(row?.content)
   }),
 
-  stats: protectedProcedure.query(async ({ ctx }) => {
-    const row = await ctx.prisma.landingContent.findFirst({
-      where: { singleton: true },
-      select: { viewCount: true, lastViewedAt: true },
-    })
-    return {
-      viewCount: row?.viewCount ?? 0,
-      lastViewedAt: row?.lastViewedAt ?? null,
-    }
-  }),
+  stats: protectedProcedure.query(({ ctx }) =>
+    getLandingTrafficStats(ctx.prisma),
+  ),
 
   // Admin-only: replace the full landing content, then revalidate the public page.
   update: protectedProcedure

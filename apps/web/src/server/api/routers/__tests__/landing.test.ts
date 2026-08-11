@@ -23,6 +23,9 @@ const ctx = (over: any = {}) => {
           return Promise.resolve(row)
         }),
       },
+      landingVisitDaily: {
+        findMany: jest.fn().mockImplementation(() => Promise.resolve(over.dailyRows ?? [])),
+      },
     },
   } as any
 }
@@ -65,6 +68,34 @@ describe('landing router', () => {
       }
       await expect(landingRouter.createCaller(c).update(malicious)).rejects.toBeTruthy()
       expect(c.prisma.landingContent.upsert).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('stats', () => {
+    it('returns a complete 30-day series and visit totals', async () => {
+      const today = new Date()
+      today.setUTCHours(0, 0, 0, 0)
+      const yesterday = new Date(today)
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+      const c = ctx({
+        _row: { viewCount: 42, lastViewedAt: today },
+        dailyRows: [
+          { date: yesterday, viewCount: 3 },
+          { date: today, viewCount: 5 },
+        ],
+      })
+
+      const result = await landingRouter.createCaller(c).stats()
+
+      expect(result.viewCount).toBe(42)
+      expect(result.todayViews).toBe(5)
+      expect(result.last7Days).toBe(8)
+      expect(result.last30Days).toBe(8)
+      expect(result.history).toHaveLength(30)
+      expect(result.history.at(-1)).toEqual({
+        date: today.toISOString().slice(0, 10),
+        views: 5,
+      })
     })
   })
 

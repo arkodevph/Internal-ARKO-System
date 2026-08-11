@@ -18,9 +18,11 @@ import {
   Users,
   Wallet,
   Eye,
+  Activity,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import { PerformanceChart } from './performance-chart'
+import { LandingTrafficChart } from './landing-traffic-chart'
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-PH', {
@@ -292,6 +294,44 @@ export default function DashboardContent() {
             />
           </div>
 
+          <Card className="dashboard-panel overflow-hidden">
+            <CardHeader className="flex-row items-start justify-between gap-4 p-5 pb-2">
+              <div>
+                <CardTitle className="text-base font-medium">
+                  Landing page traffic
+                </CardTitle>
+                <p className="mt-1 text-xs text-text-tertiary">
+                  Session visits recorded over the last 30 days
+                </p>
+              </div>
+              <Activity className="h-4 w-4 shrink-0 text-primary-400" />
+            </CardHeader>
+            <CardContent className="p-5 pt-2">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <TrafficStat
+                  label="Today"
+                  value={landingStats?.todayViews ?? 0}
+                />
+                <TrafficStat
+                  label="Last 7 days"
+                  value={landingStats?.last7Days ?? 0}
+                />
+                <TrafficStat
+                  label="Last 30 days"
+                  value={landingStats?.last30Days ?? 0}
+                />
+              </div>
+              <div className="mt-4 h-[190px]">
+                <LandingTrafficChart data={landingStats?.history ?? []} />
+              </div>
+              <p className="mt-2 text-xs text-text-tertiary">
+                {landingStats?.previous7Days
+                  ? `${Math.round((((landingStats.last7Days ?? 0) - landingStats.previous7Days) / landingStats.previous7Days) * 100)}% vs. the previous 7 days`
+                  : 'Comparison will appear after a prior week of traffic.'}
+              </p>
+            </CardContent>
+          </Card>
+
           <Card className="dashboard-panel flex h-[300px] flex-col overflow-hidden">
             <CardHeader className="flex-row items-center justify-between p-5 pb-1">
               <div>
@@ -433,6 +473,17 @@ export default function DashboardContent() {
           </Card>
         </div>
       </div>
+    </div>
+  )
+}
+
+function TrafficStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 sm:p-4">
+      <p className="text-[11px] text-text-tertiary sm:text-xs">{label}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums text-text-primary sm:text-2xl">
+        {new Intl.NumberFormat('en-US').format(value)}
+      </p>
     </div>
   )
 }

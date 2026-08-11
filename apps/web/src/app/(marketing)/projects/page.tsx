@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import ProjectGallery from "./ProjectGallery";
 import Breadcrumbs from "../_components/Breadcrumbs";
+import ContactForm from "../_components/ContactForm";
 import { getLandingContent } from "../../../lib/landing/get-content";
 
 const TITLE = "Projects — Arko Software Studio";
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProjectsPage() {
-  const { projects } = await getLandingContent();
+  const { projects, contact } = await getLandingContent();
   return (
     <div id="top" className="min-h-screen bg-ink pb-16 text-white md:pb-0">
       <section
@@ -58,22 +58,32 @@ export default async function ProjectsPage() {
       </section>
 
       <section
-        data-bg="light"
-        className="border-t-4 border-ink bg-acid px-4 py-14 text-ink md:px-10 md:py-28"
+        id="contact"
+        className="relative overflow-hidden border-t-4 border-acid bg-ink px-4 py-20 text-white md:px-10 md:py-28"
       >
-        <div className="mx-auto flex max-w-[90rem] flex-col items-start justify-between gap-8 md:flex-row md:items-end">
-          <div>
-            <p className="eyebrow text-ink/55">{projects.ctaEyebrow}</p>
-            <h2 className="display mt-4 text-[clamp(3rem,9vw,7rem)]">
+        <div
+          aria-hidden
+          className="display pointer-events-none absolute -bottom-8 left-0 select-none text-[25vw] leading-none text-white/[0.025]"
+        >
+          START
+        </div>
+        <div className="relative mx-auto grid max-w-[90rem] gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <p className="eyebrow text-acid">{projects.ctaEyebrow}</p>
+            <h2 className="display mt-4 text-[clamp(3rem,8vw,6.5rem)] text-acid">
               {projects.ctaHeading}
             </h2>
+            <p className="mt-6 max-w-md text-base font-medium leading-relaxed text-white/65 md:text-lg">
+              {contact.paragraph}
+            </p>
+            <a
+              href={`mailto:${contact.email}`}
+              className="eyebrow mt-8 inline-flex min-h-11 items-center text-white/45 underline underline-offset-4 transition-colors hover:text-acid focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid"
+            >
+              {contact.email}
+            </a>
           </div>
-          <Link
-            href="/#contact"
-            className="mono border-4 border-ink bg-ink px-7 py-4 text-xs font-bold uppercase tracking-[0.16em] text-acid transition-transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-ink/30"
-          >
-            {projects.ctaLabel}
-          </Link>
+          <ContactForm />
         </div>
       </section>
     </div>

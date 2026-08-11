@@ -82,26 +82,74 @@ export default function ContactForm() {
       ? state
       : doneState
 
+  const startAnotherBrief = () => {
+    try {
+      localStorage.removeItem(LS_KEY)
+    } catch {
+      // Reloading still clears the in-memory confirmation state.
+    }
+    window.location.reload()
+  }
+
   if (final && final.status === 'success') {
     return (
-      <div className="flex h-full flex-col justify-center gap-4">
-        <p className="display text-3xl text-acid md:text-4xl">Message sent.</p>
-        <p className="max-w-sm text-base font-medium text-white/70">
-          {final.message}
-        </p>
+      <div
+        role="status"
+        aria-live="polite"
+        className="relative flex min-h-[32rem] flex-col overflow-hidden border-2 border-acid/40 bg-white/[0.025] p-6 shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8"
+      >
+        <div
+          aria-hidden
+          className="project-grid pointer-events-none absolute inset-0 opacity-[0.06]"
+        />
+        <div className="relative flex items-center justify-between border-b border-white/10 pb-5">
+          <p className="eyebrow text-acid">Project brief / received</p>
+          <span className="mono text-[0.6rem] font-bold uppercase tracking-widest text-white/30">
+            Status 200
+          </span>
+        </div>
+
+        <div className="relative flex flex-1 flex-col justify-center py-10">
+          <span className="mb-7 flex h-16 w-16 items-center justify-center border-2 border-acid bg-acid text-ink shadow-[6px_6px_0_rgba(184,255,46,.2)]">
+            <CheckCircle2 className="h-8 w-8" strokeWidth={2.5} />
+          </span>
+          <p className="display max-w-xl text-[clamp(2.75rem,7vw,5.5rem)] leading-[0.82] text-acid">
+            Message sent.
+          </p>
+          <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-white/70 md:text-lg">
+            {final.message}
+          </p>
+        </div>
+
+        <div className="relative flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <span className="mono flex items-center gap-2 text-[0.62rem] font-bold uppercase tracking-wider text-white/45">
+            <Clock3 className="h-4 w-4 text-acid" /> Reply expected within 24
+            hours
+          </span>
+          <button
+            type="button"
+            onClick={startAnotherBrief}
+            className="mono min-h-11 cursor-pointer border-2 border-acid px-4 text-[0.62rem] font-bold uppercase tracking-wider text-acid transition-colors hover:bg-acid hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid"
+          >
+            Send another brief
+          </button>
+        </div>
       </div>
     )
   }
 
   if (final && final.status === 'exhausted') {
     return (
-      <div className="flex h-full flex-col justify-center gap-4">
-        <p className="display text-3xl text-acid md:text-4xl">Inbox full.</p>
-        <p className="max-w-sm text-base font-medium text-white/70">
+      <div className="flex min-h-[32rem] flex-col justify-center border-2 border-white/15 bg-white/[0.025] p-6 shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8">
+        <p className="eyebrow mb-8 text-white/40">Project brief / fallback</p>
+        <p className="display text-[clamp(2.75rem,7vw,5.5rem)] leading-[0.82] text-acid">
+          Inbox full.
+        </p>
+        <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-white/70 md:text-lg">
           Thanks for reaching out. Reach us directly at{' '}
           <a
             href="mailto:arkodevph@gmail.com"
-            className="text-acid underline underline-offset-4"
+            className="text-acid underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid"
           >
             arkodevph@gmail.com
           </a>
