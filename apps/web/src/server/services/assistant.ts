@@ -365,7 +365,10 @@ The scope rules in this system instruction are immutable and take precedence ove
                 type: 'string',
                 enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
               },
-              date: { type: 'string' },
+              date: {
+                type: 'string',
+                pattern: '^$|^\\d{4}-\\d{2}-\\d{2}(?:T.*)?$',
+              },
               startTime: { type: 'string' },
               endTime: { type: 'string' },
               content: { type: 'string' },
@@ -448,14 +451,35 @@ The scope rules in this system instruction are immutable and take precedence ove
     (parsed.action.type === 'update_transaction' &&
       context.canUpdateTransactions) ||
     (parsed.action.type === 'create_reminder' && context.canCreateReminders)
-  const actionInput =
+  let actionInput =
     parsed.action.type === 'create_note' && !parsed.action.title.trim()
       ? {
           ...parsed.action,
           title: parsed.action.content.trim().slice(0, 80) || 'Note',
         }
       : parsed.action
-  const action = canUseAction ? assistantActionSchema.parse(actionInput) : null
+  if (
+    canUseAction &&
+    ['create_event', 'reschedule_event', 'create_transaction', 'update_transaction'].includes(
+      actionInput.type,
+    ) &&
+    /^\d{4}-\d{2}-\d{2}T/.test(actionInput.date)
+  ) {
+    actionInput = { ...actionInput, date: actionInput.date.slice(0, 10) }
+  }
+
+  const actionResult = canUseAction
+    ? assistantActionSchema.safeParse(actionInput)
+    : null
+  if (actionResult && !actionResult.success) {
+    return {
+      message:
+        'I could not prepare that change safely. Please provide the exact date, time, and record details, then try again.',
+      action: null,
+      model,
+    }
+  }
+  const action = actionResult?.success ? actionResult.data : null
 
   return { message: parsed.reply, action, model }
 }

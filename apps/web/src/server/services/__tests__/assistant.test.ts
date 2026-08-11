@@ -271,6 +271,93 @@ describe('assistant service', () => {
     })
   })
 
+  it('normalizes a Vertex ISO timestamp before validating a calendar action', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        scope: 'system',
+        reply: 'I can add that event after you confirm.',
+        action: {
+          type: 'create_event',
+          title: 'Meeting',
+          description: '',
+          priority: 'MEDIUM',
+          date: '2026-08-12T00:00:00+08:00',
+          startTime: '15:00',
+          endTime: '16:00',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
+        },
+      }),
+    })
+
+    await expect(
+      generateAssistantReply({
+        messages: [{ role: 'user', content: 'Create a meeting tomorrow at 3pm' }],
+        context: {
+          canCreateTasks: true,
+          canCreateEvents: true,
+          canCreateNotes: true,
+          canCreateTransactions: true,
+          contextTruncated: false,
+          tasks: [],
+          events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
+        },
+        config,
+      }),
+    ).resolves.toMatchObject({
+      action: { type: 'create_event', date: '2026-08-12' },
+    })
+  })
+
+  it('returns a clarification instead of throwing when Vertex proposes an invalid action', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        scope: 'system',
+        reply: 'I can add that event after you confirm.',
+        action: {
+          type: 'create_event',
+          title: 'Meeting',
+          description: '',
+          priority: 'MEDIUM',
+          date: 'tomorrow',
+          startTime: '15:00',
+          endTime: '16:00',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
+        },
+      }),
+    })
+
+    await expect(
+      generateAssistantReply({
+        messages: [{ role: 'user', content: 'Create a meeting tomorrow at 3pm' }],
+        context: {
+          canCreateTasks: true,
+          canCreateEvents: true,
+          canCreateNotes: true,
+          canCreateTransactions: true,
+          contextTruncated: false,
+          tasks: [],
+          events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
+        },
+        config,
+      }),
+    ).resolves.toEqual(expect.objectContaining({
+      action: null,
+      message: expect.stringContaining('exact date'),
+    }))
+  })
+
   it('returns a permitted finance action using an available category', async () => {
     generateContent.mockResolvedValue({
       text: JSON.stringify({
