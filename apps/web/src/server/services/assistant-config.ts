@@ -8,6 +8,9 @@ export const assistantConfigSchema = z.object({
     .min(2)
     .max(40)
     .regex(/^[\p{L}\p{N} .'-]+$/u),
+  iconStyle: z.enum(['BOT', 'SPARK', 'ORBIT', 'BRAIN']),
+  accentColor: z.enum(['#22C55E', '#22D3EE', '#A78BFA', '#FBBF24']),
+  greeting: z.string().trim().min(10).max(180),
   personality: z.string().trim().min(10).max(500),
   projectId: z.string().trim().regex(/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/),
   location: z.string().trim().regex(/^[a-z0-9-]{2,30}$/),
@@ -29,6 +32,9 @@ export async function getAssistantConfig(): Promise<AssistantConfig> {
     where: { id: 'system' },
     select: {
       assistantName: true,
+      iconStyle: true,
+      accentColor: true,
+      greeting: true,
       personality: true,
       projectId: true,
       location: true,
@@ -42,6 +48,12 @@ export async function getAssistantConfig(): Promise<AssistantConfig> {
 
   return {
     assistantName: saved?.assistantName ?? 'NEX',
+    iconStyle: (saved?.iconStyle ?? 'BOT') as AssistantConfig['iconStyle'],
+    accentColor: (saved?.accentColor ??
+      '#22C55E') as AssistantConfig['accentColor'],
+    greeting:
+      saved?.greeting ??
+      'I’m NEX. Ask about your ARKO workspace or create workspace data. I always ask before writing anything.',
     personality:
       saved?.personality ?? 'Calm, concise, practical, and direct.',
     projectId: saved?.projectId ?? process.env.GOOGLE_CLOUD_PROJECT ?? '',

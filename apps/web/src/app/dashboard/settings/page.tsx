@@ -6,6 +6,15 @@ import { Loader2, Check, AlertCircle, Cloud, ShieldCheck } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
 import type { AvatarConfigJson } from '../../../lib/avatar'
+import {
+  NEX_COLOR_OPTIONS,
+  NEX_ICON_OPTIONS,
+  NexMascot,
+} from '../../../components/nex-mascot'
+import {
+  publishAssistantIdentity,
+  type AssistantIdentity,
+} from '../../../lib/use-assistant-identity'
 
 const OpenPeepsAvatar = dynamic(() =>
   import('../../../components/open-peeps-avatar').then((m) => ({ default: m.OpenPeepsAvatar })),
@@ -371,6 +380,9 @@ function NotificationsForm() {
 
 type VertexConfig = {
   assistantName: string
+  iconStyle: AssistantIdentity['iconStyle']
+  accentColor: AssistantIdentity['accentColor']
+  greeting: string
   personality: string
   projectId: string
   location: string
@@ -411,6 +423,12 @@ function VertexAssistantForm() {
       const data = (await response.json()) as VertexConfig & { error?: string }
       if (!response.ok) throw new Error(data.error)
       setConfig((current) => (current ? { ...current, ...data } : data))
+      publishAssistantIdentity({
+        assistantName: data.assistantName,
+        iconStyle: data.iconStyle,
+        accentColor: data.accentColor,
+        greeting: data.greeting,
+      })
       setStatus({ status: 'success', message: 'NEX settings saved' })
     } catch (error) {
       setStatus({
@@ -450,6 +468,138 @@ function VertexAssistantForm() {
         </div>
       ) : (
         <div className="space-y-5">
+          <div className="grid overflow-hidden rounded-2xl border border-border-subtle bg-bg-app lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="relative flex min-h-64 flex-col items-center justify-center overflow-hidden border-b border-border-subtle bg-[#070b09] p-6 text-center lg:border-b-0 lg:border-r">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20"
+                style={{
+                  background: `radial-gradient(circle at 50% 35%, ${config.accentColor}, transparent 45%)`,
+                }}
+              />
+              <div className="relative">
+                <NexMascot
+                  iconStyle={config.iconStyle}
+                  accentColor={config.accentColor}
+                  size="lg"
+                />
+              </div>
+              <p className="relative mt-4 text-lg font-bold text-white">
+                {config.assistantName || 'NEX'}
+              </p>
+              <p className="relative mt-1 max-w-xs text-xs leading-relaxed text-white/60">
+                {config.greeting}
+              </p>
+              <span className="relative mt-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-medium text-white/70">
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: config.accentColor }}
+                />
+                Live mascot preview
+              </span>
+            </div>
+
+            <div className="space-y-5 p-4 sm:p-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-medium text-text-secondary">
+                  Assistant name
+                  <input
+                    value={config.assistantName}
+                    maxLength={40}
+                    onChange={(event) =>
+                      setConfig({ ...config, assistantName: event.target.value })
+                    }
+                    className="mt-1 min-h-11 w-full rounded-lg border border-border-subtle bg-card px-3 text-base text-text-primary outline-none focus:border-primary-500 sm:text-sm"
+                  />
+                </label>
+                <label className="block text-sm font-medium text-text-secondary sm:col-span-2">
+                  Greeting
+                  <textarea
+                    value={config.greeting}
+                    maxLength={180}
+                    rows={3}
+                    onChange={(event) =>
+                      setConfig({ ...config, greeting: event.target.value })
+                    }
+                    className="mt-1 w-full resize-y rounded-lg border border-border-subtle bg-card px-3 py-2.5 text-base leading-relaxed text-text-primary outline-none focus:border-primary-500 sm:text-sm"
+                  />
+                  <span className="mt-1 block text-xs text-text-tertiary">
+                    Shown when a user opens the full assistant.
+                  </span>
+                </label>
+              </div>
+
+              <fieldset>
+                <legend className="text-sm font-medium text-text-secondary">
+                  Mascot icon
+                </legend>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {NEX_ICON_OPTIONS.map((option) => {
+                    const Icon = option.icon
+                    const selected = config.iconStyle === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() =>
+                          setConfig({ ...config, iconStyle: option.value })
+                        }
+                        className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                          selected
+                            ? 'border-primary-500 bg-primary-500/10 text-text-primary'
+                            : 'border-border-subtle bg-card text-text-tertiary hover:text-text-primary'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" /> {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend className="text-sm font-medium text-text-secondary">
+                  Accent signal
+                </legend>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {NEX_COLOR_OPTIONS.map((option) => {
+                    const selected = config.accentColor === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() =>
+                          setConfig({ ...config, accentColor: option.value })
+                        }
+                        className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                          selected
+                            ? 'border-text-primary/30 bg-card text-text-primary'
+                            : 'border-border-subtle bg-card text-text-tertiary hover:text-text-primary'
+                        }`}
+                      >
+                        <span
+                          className="h-4 w-4 shrink-0 rounded-full border border-black/10"
+                          style={{ backgroundColor: option.value }}
+                        />
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </fieldset>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-text-primary">
+              Personality and connection
+            </p>
+            <p className="mt-0.5 text-xs text-text-tertiary">
+              Personality changes tone only. ARKO scope and role permissions remain locked.
+            </p>
+          </div>
+
           <div className="grid gap-3 rounded-xl border border-border-subtle bg-bg-app p-4 sm:grid-cols-2">
             <div className="flex items-start gap-3">
               <Cloud className="mt-0.5 h-5 w-5 text-primary-500" />
@@ -469,7 +619,6 @@ function VertexAssistantForm() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {[
-              ['Assistant name', 'assistantName'],
               ['Google Cloud project', 'projectId'],
               ['Vertex location', 'location'],
               ['Vertex model', 'model'],

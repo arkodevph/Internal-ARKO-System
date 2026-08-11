@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import {
-  Bot,
   Check,
   LoaderCircle,
   Send,
@@ -12,6 +11,11 @@ import {
 } from 'lucide-react'
 import type { AssistantAction } from '../../../server/services/assistant'
 import { useReducedMotion } from 'motion/react'
+import { NexMascot } from '../../../components/nex-mascot'
+import {
+  DEFAULT_ASSISTANT_IDENTITY,
+  useAssistantIdentity,
+} from '../../../lib/use-assistant-identity'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -20,8 +24,7 @@ type Message = {
 
 const STARTER: Message = {
   role: 'assistant',
-  content:
-    'I’m NEX. Ask about your ARKO workspace or create tasks, events, notes, and finance entries. I always ask before writing anything.',
+  content: DEFAULT_ASSISTANT_IDENTITY.greeting,
 }
 
 const SUGGESTIONS = [
@@ -32,6 +35,7 @@ const SUGGESTIONS = [
 ]
 
 export default function AssistantPage() {
+  const identity = useAssistantIdentity()
   const [messages, setMessages] = useState<Message[]>([STARTER])
   const [input, setInput] = useState('')
   const [pendingAction, setPendingAction] = useState<AssistantAction | null>(
@@ -41,6 +45,14 @@ export default function AssistantPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const reduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    setMessages((current) =>
+      current.length === 1 && current[0]?.role === 'assistant'
+        ? [{ role: 'assistant', content: identity.greeting }]
+        : current,
+    )
+  }, [identity.greeting])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({
@@ -155,12 +167,13 @@ export default function AssistantPage() {
     <div className="relative mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/40 bg-card/70 shadow-[0_24px_80px_rgba(15,23,18,0.16)] backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.12),transparent_38%)]">
       <header className="flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500 text-[#07110b]">
-            <Bot className="h-5 w-5" />
-          </span>
+          <NexMascot
+            iconStyle={identity.iconStyle}
+            accentColor={identity.accentColor}
+          />
           <div className="min-w-0">
             <h1 className="truncate text-base font-semibold text-text-primary">
-              NEX
+              {identity.assistantName}
             </h1>
             <p className="truncate text-xs text-text-tertiary">
               Vertex AI · connected to your workspace
@@ -192,7 +205,7 @@ export default function AssistantPage() {
                 }`}
               >
                 <span className="sr-only">
-                  {message.role === 'user' ? 'You' : 'NEX'}:{' '}
+                  {message.role === 'user' ? 'You' : identity.assistantName}:{' '}
                 </span>
                 {message.content}
               </div>
@@ -305,8 +318,8 @@ export default function AssistantPage() {
             }}
             rows={1}
             maxLength={2_000}
-            aria-label="Message NEX"
-            placeholder="Ask NEX about ARKO or create workspace data…"
+            aria-label={`Message ${identity.assistantName}`}
+            placeholder={`Ask ${identity.assistantName} about ARKO or create workspace data…`}
             className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-text-primary outline-none placeholder:text-text-tertiary"
           />
           <button

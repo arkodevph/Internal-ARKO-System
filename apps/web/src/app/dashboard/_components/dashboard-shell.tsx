@@ -31,6 +31,8 @@ import {
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
+import { NexMascot } from '../../../components/nex-mascot'
+import { useAssistantIdentity } from '../../../lib/use-assistant-identity'
 
 const OpenPeepsAvatar = dynamic(
   () => import('../../../components/open-peeps-avatar').then((m) => ({ default: m.OpenPeepsAvatar })),
@@ -264,6 +266,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [showDrawer, setShowDrawer] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const unread = useUnreadCounts()
+  const assistantIdentity = useAssistantIdentity()
 
   useEffect(() => {
     if (showSearch && searchRef.current) searchRef.current.focus()
@@ -292,7 +295,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     ? [{ label: 'Portal', items: CLIENT_CATEGORIES }]
     : NAV_GROUPS.map((g) => ({
         label: g.label,
-        items: g.items.filter((it) => !it.adminOnly || isAdmin),
+        items: g.items
+          .filter((it) => !it.adminOnly || isAdmin)
+          .map((item) =>
+            item.to === '/dashboard/assistant'
+              ? {
+                  ...item,
+                  label: `${assistantIdentity.assistantName} Assistant`,
+                }
+              : item,
+          ),
       })).filter((g) => g.items.length > 0)
   const categories = navGroups.flatMap((g) => g.items)
   const currentCategory = categories.find((c) => isActivePath(pathname, c))
@@ -471,11 +483,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {pathname !== '/dashboard/assistant' && (
         <Link
           href="/dashboard/assistant"
-          aria-label="Open NEX assistant"
-          title="Open NEX assistant"
-          className="fixed bottom-16 right-4 z-40 grid h-12 w-12 place-items-center rounded-2xl border border-white/25 bg-primary-500/85 text-[#07110b] shadow-[0_16px_45px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-transform hover:scale-105 md:bottom-6 md:right-6"
+          aria-label={`Open ${assistantIdentity.assistantName} assistant`}
+          title={`Open ${assistantIdentity.assistantName} assistant`}
+          className="fixed bottom-16 right-4 z-40 grid h-12 w-12 place-items-center rounded-2xl border border-white/25 bg-card/80 shadow-[0_16px_45px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-transform hover:scale-105 md:bottom-6 md:right-6"
         >
-          <Bot className="h-5 w-5" />
+          <NexMascot
+            iconStyle={assistantIdentity.iconStyle}
+            accentColor={assistantIdentity.accentColor}
+            size="sm"
+          />
           <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-bg-app bg-pos" />
         </Link>
       )}

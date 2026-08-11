@@ -33,6 +33,9 @@ jest.mock('../../../../../server/services/assistant-config', () => ({
   getAssistantConfig: jest.fn(() =>
     Promise.resolve({
       assistantName: 'NEX',
+      iconStyle: 'BOT',
+      accentColor: '#22C55E',
+      greeting: 'Ask NEX about your ARKO workspace.',
       personality: 'Calm and practical.',
       projectId: 'test-project',
       location: 'global',

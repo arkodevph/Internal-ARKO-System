@@ -51,6 +51,9 @@ export async function PUT(request: Request) {
     update: { ...input.data, updatedById: session.user.id },
     select: {
       assistantName: true,
+      iconStyle: true,
+      accentColor: true,
+      greeting: true,
       personality: true,
       projectId: true,
       location: true,

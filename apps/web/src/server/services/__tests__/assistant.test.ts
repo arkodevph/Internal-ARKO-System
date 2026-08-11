@@ -16,6 +16,9 @@ import {
 
 const config = {
   assistantName: 'NEX',
+  iconStyle: 'BOT' as const,
+  accentColor: '#22C55E' as const,
+  greeting: 'Ask NEX about your ARKO workspace.',
   personality: 'Calm, concise, practical, and direct.',
   projectId: 'test-project',
   location: 'global',

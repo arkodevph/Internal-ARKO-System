@@ -75,6 +75,9 @@ model AssistantRateLimit {
 model AssistantConfiguration {
   id                         String   @id @default("system")
   assistantName              String   @default("NEX")
+  iconStyle                  String   @default("BOT")
+  accentColor                String   @default("#22C55E")
+  greeting                   String   @default("I’m NEX. Ask about your ARKO workspace or create workspace data. I always ask before writing anything.")
   personality                String   @default("Calm, concise, practical, and direct.")
   projectId                  String
   location                   String   @default("global")

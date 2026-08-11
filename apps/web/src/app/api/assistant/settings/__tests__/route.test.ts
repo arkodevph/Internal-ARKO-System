@@ -29,6 +29,9 @@ const getConfigMock = jest.mocked(getAssistantConfig)
 
 const config = {
   assistantName: 'Arko Assistant',
+  iconStyle: 'BOT',
+  accentColor: '#22C55E',
+  greeting: 'Ask NEX about your ARKO workspace.',
   personality: 'Calm, concise, practical, and direct.',
   projectId: 'project-c7724978-a9d8',
   location: 'global',
