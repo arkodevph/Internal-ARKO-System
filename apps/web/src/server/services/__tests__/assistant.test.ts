@@ -428,6 +428,75 @@ describe('assistant service', () => {
     })
   })
 
+  it('returns an internal message action for a visible user', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        scope: 'system',
+        reply: 'I can send that to Maria after you confirm.',
+        action: {
+          type: 'send_message',
+          title: '',
+          description: '',
+          priority: 'MEDIUM',
+          date: '',
+          startTime: '',
+          endTime: '',
+          content: '',
+          amount: 0,
+          transactionType: 'INCOME',
+          categoryId: '',
+          name: '',
+          email: '',
+          userRole: 'MEMBER',
+          userTitle: '',
+          recipientId: 'user-maria',
+          recipientName: 'Maria Santos',
+          messageContent: 'Please review the landing page today.',
+        },
+      }),
+    })
+
+    await expect(
+      generateAssistantReply({
+        messages: [
+          {
+            role: 'user',
+            content: 'Tell Maria to review the landing page today',
+          },
+        ],
+        context: {
+          canCreateTasks: true,
+          canCreateEvents: true,
+          canCreateNotes: true,
+          canCreateTransactions: true,
+          contextTruncated: false,
+          tasks: [],
+          events: [],
+          notes: [],
+          transactions: [],
+          transactionCategories: [],
+          users: [
+            {
+              id: 'user-maria',
+              name: 'Maria Santos',
+              email: 'maria@example.com',
+              role: 'MEMBER',
+              status: 'ACTIVE',
+              title: 'Designer',
+            },
+          ],
+        },
+        config,
+      }),
+    ).resolves.toMatchObject({
+      action: {
+        type: 'send_message',
+        recipientId: 'user-maria',
+        messageContent: 'Please review the landing page today.',
+      },
+    })
+  })
+
   it('blocks mixed prompt-injection requests locally', () => {
     expect(
       isAssistantRequestInScope([

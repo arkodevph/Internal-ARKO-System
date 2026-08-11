@@ -157,6 +157,8 @@ export default function AssistantPage() {
         transaction?: { amount: number; type: string }
         user?: { name: string | null; email: string; role: string }
         generatedPassword?: string
+        message?: { content: string }
+        recipient?: { name: string | null; email: string }
         error?: string
       }
       if (!response.ok) throw new Error(data.error)
@@ -175,6 +177,8 @@ export default function AssistantPage() {
                 return `Recorded ${data.transaction?.type ?? pendingAction.transactionType} of ₱${(data.transaction?.amount ?? pendingAction.amount).toLocaleString()}.`
               case 'create_user':
                 return `Created ${data.user?.name ?? pendingAction.name} as ${data.user?.role ?? pendingAction.userRole}. Sign-in: ${data.user?.email ?? pendingAction.email}\nTemporary password: ${data.generatedPassword ?? 'Unavailable'}\nShare these credentials securely; the password is shown only once.`
+              case 'send_message':
+                return `Message sent to ${data.recipient?.name ?? pendingAction.recipientName}.`
               default:
                 return `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`
             }
@@ -408,10 +412,17 @@ export default function AssistantPage() {
                   `Record ${pendingAction.transactionType.toLowerCase()}: ₱${pendingAction.amount.toLocaleString()}`}
                 {pendingAction.type === 'create_user' &&
                   `Add user: ${pendingAction.name}`}
+                {pendingAction.type === 'send_message' &&
+                  `Message ${pendingAction.recipientName}`}
               </p>
               {'description' in pendingAction && pendingAction.description && (
                 <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
                   {pendingAction.description}
+                </p>
+              )}
+              {pendingAction.type === 'send_message' && (
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-text-tertiary">
+                  “{pendingAction.messageContent}”
                 </p>
               )}
               {pendingAction.type === 'create_note' && pendingAction.content && (
@@ -436,6 +447,10 @@ export default function AssistantPage() {
                   Role: {pendingAction.userRole}
                   {pendingAction.email ? ` · ${pendingAction.email}` : ' · Email auto-generated'}
                 </p>
+              ) : pendingAction.type === 'send_message' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Internal ARKO message · confirmation required
+                </p>
               ) : null}
               <div className="mt-4 flex flex-col gap-2 min-[400px]:flex-row">
                 <button
@@ -455,6 +470,7 @@ export default function AssistantPage() {
                   {pendingAction.type === 'create_transaction' &&
                     'Confirm finance entry'}
                   {pendingAction.type === 'create_user' && 'Confirm user'}
+                  {pendingAction.type === 'send_message' && 'Send message'}
                 </button>
                 <button
                   type="button"

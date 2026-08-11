@@ -11,6 +11,14 @@ const createCategory = jest.fn()
 const findUser = jest.fn()
 const createUser = jest.fn()
 const updateUser = jest.fn()
+const findRecipient = jest.fn()
+const findConversation = jest.fn()
+const upsertConversation = jest.fn()
+const updateConversation = jest.fn()
+const createMessage = jest.fn()
+const transaction = jest.fn((operations: Array<Promise<unknown>>) =>
+  Promise.all(operations),
+)
 
 jest.mock('@arko/db', () => ({
   prisma: {
@@ -19,7 +27,19 @@ jest.mock('@arko/db', () => ({
     note: { create: createNote },
     transaction: { create: createTransaction },
     accountCategory: { findFirst: findCategory, create: createCategory },
-    user: { findUnique: findUser, create: createUser, update: updateUser },
+    user: {
+      findUnique: findUser,
+      findFirst: findRecipient,
+      create: createUser,
+      update: updateUser,
+    },
+    conversation: {
+      findFirst: findConversation,
+      upsert: upsertConversation,
+      update: updateConversation,
+    },
+    message: { create: createMessage },
+    $transaction: transaction,
   },
 }))
 jest.mock('../../../../../lib/auth', () => ({ auth: jest.fn() }))
@@ -77,6 +97,13 @@ const validUserAction = {
   userTitle: 'Designer',
 }
 
+const validMessageAction = {
+  type: 'send_message',
+  recipientId: 'user-maria',
+  recipientName: 'Maria Santos',
+  messageContent: 'Please review the landing page today.',
+}
+
 describe('assistant action route', () => {
   beforeEach(() => {
     authMock.mockResolvedValue({ user: { id: 'user-1', role: 'USER' } } as any)
@@ -103,6 +130,22 @@ describe('assistant action route', () => {
       role: validUserAction.userRole,
     })
     updateUser.mockResolvedValue({ id: 'new-user-1' })
+    findRecipient.mockResolvedValue({
+      id: 'user-maria',
+      name: 'Maria Santos',
+      email: 'maria@example.com',
+    })
+    findConversation.mockResolvedValue({ id: 'conversation-1', dmKey: 'user-1:user-maria' })
+    upsertConversation.mockResolvedValue({
+      id: 'conversation-1',
+      dmKey: 'user-1:user-maria',
+    })
+    updateConversation.mockResolvedValue({ id: 'conversation-1' })
+    createMessage.mockResolvedValue({
+      id: 'message-1',
+      content: validMessageAction.messageContent,
+      conversationId: 'conversation-1',
+    })
   })
 
   it('requires authentication', async () => {
@@ -285,5 +328,41 @@ describe('assistant action route', () => {
 
     expect(response.status).toBe(403)
     expect(createUser).not.toHaveBeenCalled()
+  })
+
+  it('sends a confirmed internal message to an active user', async () => {
+    const response = await POST(request(validMessageAction))
+
+    expect(response.status).toBe(200)
+    expect(findRecipient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'user-maria',
+          status: 'ACTIVE',
+        }),
+      }),
+    )
+    expect(createMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          conversationId: 'conversation-1',
+          senderId: 'user-1',
+          content: validMessageAction.messageContent,
+        },
+      }),
+    )
+    expect(await response.json()).toMatchObject({
+      recipient: { id: 'user-maria' },
+      message: { id: 'message-1' },
+    })
+  })
+
+  it('rejects unavailable message recipients', async () => {
+    findRecipient.mockResolvedValue(null)
+
+    const response = await POST(request(validMessageAction))
+
+    expect(response.status).toBe(404)
+    expect(createMessage).not.toHaveBeenCalled()
   })
 })

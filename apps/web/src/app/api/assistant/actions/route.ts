@@ -13,6 +13,7 @@ const ACTION_PERMISSIONS = {
   create_note: 'notes:create',
   create_transaction: 'transactions:create',
   create_user: 'users:create',
+  send_message: null,
 } as const
 
 const TRANSACTION_CATEGORY_TYPES = {
@@ -41,11 +42,76 @@ export async function POST(request: Request) {
   }
 
   const permission = ACTION_PERMISSIONS[action.data.type]
-  if (!hasPermission(session.user.role, permission)) {
+  if (permission && !hasPermission(session.user.role, permission)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
+    if (action.data.type === 'send_message') {
+      const recipient = await prisma.user.findFirst({
+        where: {
+          id: action.data.recipientId,
+          status: 'ACTIVE',
+          NOT: { id: session.user.id },
+        },
+        select: { id: true, name: true, email: true },
+      })
+      if (!recipient) {
+        return NextResponse.json(
+          { error: 'The recipient is unavailable.' },
+          { status: 404 },
+        )
+      }
+
+      const participantIds = [session.user.id, recipient.id]
+      const dmKey = [...participantIds].sort().join(':')
+      const existing = await prisma.conversation.findFirst({
+        where: {
+          AND: [
+            { participants: { some: { userId: session.user.id } } },
+            { participants: { some: { userId: recipient.id } } },
+            { participants: { none: { userId: { notIn: participantIds } } } },
+          ],
+        },
+        select: { id: true, dmKey: true },
+      })
+      const conversation =
+        existing ??
+        (await prisma.conversation.upsert({
+          where: { dmKey },
+          update: {},
+          create: {
+            dmKey,
+            participants: {
+              createMany: { data: participantIds.map((userId) => ({ userId })) },
+            },
+          },
+          select: { id: true, dmKey: true },
+        }))
+      if (existing && !existing.dmKey) {
+        await prisma.conversation.update({
+          where: { id: existing.id },
+          data: { dmKey },
+        }).catch(() => undefined)
+      }
+
+      const [message] = await prisma.$transaction([
+        prisma.message.create({
+          data: {
+            conversationId: conversation.id,
+            senderId: session.user.id,
+            content: action.data.messageContent,
+          },
+          select: { id: true, content: true, conversationId: true },
+        }),
+        prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { updatedAt: new Date() },
+        }),
+      ])
+      return NextResponse.json({ message, recipient })
+    }
+
     if (action.data.type === 'create_user') {
       const slug =
         action.data.name
@@ -180,6 +246,7 @@ export async function POST(request: Request) {
       create_note: 'note',
       create_transaction: 'transaction',
       create_user: 'user',
+      send_message: 'message',
     }[action.data.type]
     return NextResponse.json(
       { error: `The ${resource} could not be created.` },
