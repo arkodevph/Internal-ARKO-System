@@ -16,6 +16,10 @@ const ctx = (rows: any[] = [], over: any = {}) =>
         delete: jest.fn().mockResolvedValue({ id: 'n1' }),
         ...(over.notification ?? {}),
       },
+      reminder: {
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
     },
   }) as any
 

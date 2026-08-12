@@ -27,9 +27,13 @@ import {
   PanelsTopLeft,
   BriefcaseBusiness,
   Palette,
+  Bot,
+  ClipboardList,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
+import { useAssistantIdentity } from '../../../lib/use-assistant-identity'
+import { FloatingNexChat } from './floating-nex-chat'
 
 const OpenPeepsAvatar = dynamic(
   () => import('../../../components/open-peeps-avatar').then((m) => ({ default: m.OpenPeepsAvatar })),
@@ -54,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
       { to: '/dashboard/finance', icon: TrendingUp, label: 'Analytics' },
+      { to: '/dashboard/assistant', icon: Bot, label: 'NEX Assistant' },
     ],
   },
   {
@@ -81,6 +86,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/dashboard/client-portal', icon: BriefcaseBusiness, label: 'Client Portal', adminOnly: true },
       { to: '/dashboard/users', icon: Users, label: 'Users' },
       { to: '/dashboard/landing', icon: Palette, label: 'Landing', adminOnly: true },
+      { to: '/dashboard/assistant-activity', icon: ClipboardList, label: 'AI Activity', adminOnly: true },
     ],
   },
 ]
@@ -262,6 +268,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [showDrawer, setShowDrawer] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const unread = useUnreadCounts()
+  const assistantIdentity = useAssistantIdentity()
 
   useEffect(() => {
     if (showSearch && searchRef.current) searchRef.current.focus()
@@ -290,7 +297,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     ? [{ label: 'Portal', items: CLIENT_CATEGORIES }]
     : NAV_GROUPS.map((g) => ({
         label: g.label,
-        items: g.items.filter((it) => !it.adminOnly || isAdmin),
+        items: g.items
+          .filter((it) => !it.adminOnly || isAdmin)
+          .map((item) =>
+            item.to === '/dashboard/assistant'
+              ? {
+                  ...item,
+                  label: `${assistantIdentity.assistantName} Assistant`,
+                }
+              : item,
+          ),
       })).filter((g) => g.items.length > 0)
   const categories = navGroups.flatMap((g) => g.items)
   const currentCategory = categories.find((c) => isActivePath(pathname, c))
@@ -465,6 +481,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </div>
+
+      {pathname !== '/dashboard/assistant' && (
+        <FloatingNexChat identity={assistantIdentity} pathname={pathname} />
+      )}
     </div>
   )
 }

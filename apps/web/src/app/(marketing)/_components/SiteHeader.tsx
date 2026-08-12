@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BriefcaseBusiness, FolderKanban, Home, LogIn, MessageCircle } from "lucide-react";
+import { BookOpen, FolderKanban, Home, LogIn, MessageCircle } from "lucide-react";
 import StarBorder from "./StarBorder";
 
 const NAV = [
   { label: "Work", href: "/#work" },
   { label: "Projects", href: "/projects" },
+  { label: "Blogs", href: "/blogs" },
   { label: "Services", href: "/#services" },
   { label: "Process", href: "/#process" },
   { label: "Contact", href: "/#contact" },
@@ -107,12 +108,12 @@ export default function SiteHeader() {
       <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
         {[
           { label: 'Home', href: '/', icon: Home },
-          { label: 'Work', href: '/#work', icon: BriefcaseBusiness },
           { label: 'Projects', href: '/projects', icon: FolderKanban },
+          { label: 'Blogs', href: '/blogs', icon: BookOpen },
           { label: 'Contact', href: '/#contact', icon: MessageCircle },
           { label: 'Login', href: '/auth/login', icon: LogIn },
         ].map(({ label, href, icon: Icon }) => (
-          <Link key={label} href={href} aria-current={(label === 'Home' && pathname === '/') || (label === 'Projects' && pathname.startsWith('/projects')) ? 'page' : undefined} className={`flex min-h-16 flex-col items-center justify-center gap-1 transition-colors active:bg-white/5 ${(label === 'Home' && pathname === '/') || (label === 'Projects' && pathname.startsWith('/projects')) ? 'text-acid' : 'text-white/45 active:text-acid'}`}>
+          <Link key={label} href={href} aria-current={(label === 'Home' && pathname === '/') || (label === 'Projects' && pathname.startsWith('/projects')) || (label === 'Blogs' && pathname.startsWith('/blogs')) ? 'page' : undefined} className={`flex min-h-16 flex-col items-center justify-center gap-1 transition-colors active:bg-white/5 ${(label === 'Home' && pathname === '/') || (label === 'Projects' && pathname.startsWith('/projects')) || (label === 'Blogs' && pathname.startsWith('/blogs')) ? 'text-acid' : 'text-white/45 active:text-acid'}`}>
             <Icon className="h-4 w-4" />
             <span className="mono text-[0.5rem] uppercase tracking-wider">{label}</span>
           </Link>

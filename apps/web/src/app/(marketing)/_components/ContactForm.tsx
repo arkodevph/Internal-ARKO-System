@@ -1,10 +1,10 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { CheckCircle2, Clock3, ShieldCheck } from 'lucide-react'
 import { type ContactState, sendContact } from '../actions/contact'
 import StarBorder from './StarBorder'
+import { useMarketingPageTransition } from './MarketingPageTransition'
 
 const LS_KEY = 'arko_submitted'
 const initial: ContactState = { status: 'idle' }
@@ -43,7 +43,7 @@ function persist(st: ContactState) {
 }
 
 export default function ContactForm() {
-  const router = useRouter()
+  const navigate = useMarketingPageTransition()
   const [doneState, setDoneState] = useState<ContactState | null>(null)
   const [message, setMessage] = useState('')
   const [state, formAction, pending] = useActionState(sendContact, initial)
@@ -71,9 +71,9 @@ export default function ContactForm() {
     // Send successful submissions to the dedicated thank-you page
     // (dedicated URL for analytics conversion tracking).
     if (state.status === 'success') {
-      router.push('/thank-you')
+      navigate('/thank-you')
     }
-  }, [state, router])
+  }, [state, navigate])
 
   // — render —
   // Use live state if done, otherwise fall back to persisted state
@@ -96,7 +96,7 @@ export default function ContactForm() {
       <div
         role="status"
         aria-live="polite"
-        className="relative flex min-h-[32rem] flex-col overflow-hidden border-2 border-acid/40 bg-white/[0.025] p-6 shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8"
+        className="relative flex min-h-[26rem] w-full min-w-0 flex-col overflow-hidden border-2 border-acid/40 bg-white/[0.025] p-4 shadow-[6px_6px_0_rgba(184,255,46,.12)] sm:min-h-[32rem] sm:p-6 sm:shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8"
       >
         <div
           aria-hidden
@@ -113,7 +113,7 @@ export default function ContactForm() {
           <span className="mb-7 flex h-16 w-16 items-center justify-center border-2 border-acid bg-acid text-ink shadow-[6px_6px_0_rgba(184,255,46,.2)]">
             <CheckCircle2 className="h-8 w-8" strokeWidth={2.5} />
           </span>
-          <p className="display max-w-xl text-[clamp(2.75rem,7vw,5.5rem)] leading-[0.82] text-acid">
+          <p className="display max-w-xl text-[clamp(2.35rem,12vw,5.5rem)] leading-[0.82] text-acid">
             Message sent.
           </p>
           <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-white/70 md:text-lg">
@@ -140,9 +140,9 @@ export default function ContactForm() {
 
   if (final && final.status === 'exhausted') {
     return (
-      <div className="flex min-h-[32rem] flex-col justify-center border-2 border-white/15 bg-white/[0.025] p-6 shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8">
+      <div className="flex min-h-[26rem] w-full min-w-0 flex-col justify-center border-2 border-white/15 bg-white/[0.025] p-4 shadow-[6px_6px_0_rgba(184,255,46,.12)] sm:min-h-[32rem] sm:p-6 sm:shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8">
         <p className="eyebrow mb-8 text-white/40">Project brief / fallback</p>
-        <p className="display text-[clamp(2.75rem,7vw,5.5rem)] leading-[0.82] text-acid">
+        <p className="display text-[clamp(2.35rem,12vw,5.5rem)] leading-[0.82] text-acid">
           Inbox full.
         </p>
         <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-white/70 md:text-lg">
@@ -163,7 +163,7 @@ export default function ContactForm() {
     <form
       id="contact-form"
       action={formAction}
-      className="relative flex flex-col gap-6 border-2 border-white/15 bg-white/[0.025] p-5 shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8"
+      className="relative flex w-full min-w-0 flex-col gap-6 border-2 border-white/15 bg-white/[0.025] p-4 shadow-[6px_6px_0_rgba(184,255,46,.12)] sm:p-5 sm:shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8"
     >
       <div className="border-b border-white/10 pb-5">
         <p className="eyebrow text-acid">Project brief / 01</p>
@@ -176,7 +176,7 @@ export default function ContactForm() {
         <legend className="eyebrow mb-3 text-white/50">
           What can we build for you?
         </legend>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
           {PROJECT_TYPES.map((type) => (
             <label key={type} className="group cursor-pointer">
               <input
@@ -245,7 +245,7 @@ export default function ContactForm() {
               maxLength={3}
               pattern="[A-Za-z]{3}"
               title="Enter a 3-letter currency code, such as PHP, USD, or EUR"
-              className="w-[4.75rem] shrink-0 border-r border-white/10 bg-ink px-2 text-xs font-semibold text-acid outline-none"
+              className="w-16 shrink-0 border-r border-white/10 bg-ink px-2 text-base font-semibold text-acid outline-none sm:w-[4.75rem] sm:text-xs"
             />
             <datalist id="budget-currencies">
               <option value="PHP" />
@@ -263,7 +263,7 @@ export default function ContactForm() {
               step="1"
               inputMode="numeric"
               placeholder="Enter an amount"
-              className="min-w-0 flex-1 bg-transparent px-4 text-sm font-medium text-white outline-none placeholder:text-white/20"
+              className="min-w-0 flex-1 bg-transparent px-3 text-base font-medium text-white outline-none placeholder:text-white/20 sm:px-4 sm:text-sm"
             />
           </span>
         </label>
@@ -273,7 +273,7 @@ export default function ContactForm() {
             name="timeline"
             type="text"
             placeholder="e.g. Start in June, launch in August"
-            className="min-h-12 border border-white/15 bg-ink px-4 text-sm font-medium text-white outline-none placeholder:text-white/20 hover:border-white/30 focus:border-acid"
+            className="min-h-12 border border-white/15 bg-ink px-4 text-base font-medium text-white outline-none placeholder:text-white/20 hover:border-white/30 focus:border-acid sm:text-sm"
           />
         </label>
       </div>
@@ -293,7 +293,11 @@ export default function ContactForm() {
             <ShieldCheck className="h-3 w-3 text-acid" /> No pressure
           </span>
         </div>
-        <StarBorder as="button" disabled={pending} className="shrink-0">
+        <StarBorder
+          as="button"
+          disabled={pending}
+          className="w-full sm:w-auto sm:shrink-0"
+        >
           {pending ? 'Sending brief...' : 'Start the conversation →'}
         </StarBorder>
       </div>

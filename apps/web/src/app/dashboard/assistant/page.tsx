@@ -1,0 +1,622 @@
+'use client'
+
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Check,
+  History,
+  LoaderCircle,
+  Plus,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  X,
+} from 'lucide-react'
+import type { AssistantAction } from '../../../server/services/assistant'
+import { motion, useReducedMotion } from 'motion/react'
+import { NexMascot } from '../../../components/nex-mascot'
+import {
+  DEFAULT_ASSISTANT_IDENTITY,
+  useAssistantIdentity,
+} from '../../../lib/use-assistant-identity'
+
+type Message = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+type ConversationSummary = {
+  id: string
+  title: string
+  updatedAt: string
+}
+
+const STARTER: Message = {
+  role: 'assistant',
+  content: DEFAULT_ASSISTANT_IDENTITY.greeting,
+}
+
+const SUGGESTIONS = [
+  'What can you do?',
+  'Create a high-priority task to review the landing page',
+  'Record an income of 1,000 pesos',
+  'Add a note: Send a cold text to clients through WhatsApp',
+]
+
+function ThinkingIndicator({
+  assistantName,
+  accentColor,
+  reduceMotion,
+}: {
+  assistantName: string
+  accentColor: string
+  reduceMotion: boolean | null
+}) {
+  const label = `${assistantName} is thinking…`
+
+  return (
+    <div className="flex justify-start" role="status" aria-label={label}>
+      <div className="rounded-2xl rounded-bl-md border border-border-subtle bg-bg-app px-4 py-3">
+        {reduceMotion ? (
+          <span className="text-sm font-medium text-text-tertiary">{label}</span>
+        ) : (
+          <motion.span
+            animate={{ backgroundPosition: ['100% center', '-100% center'] }}
+            transition={{ duration: 1.6, ease: 'linear', repeat: Infinity }}
+            className="inline-block bg-[length:250%_100%] bg-clip-text text-sm font-medium text-transparent"
+            style={{
+              backgroundImage: `linear-gradient(90deg, var(--color-text-tertiary) 20%, ${accentColor} 50%, var(--color-text-tertiary) 80%)`,
+            }}
+          >
+            {label}
+          </motion.span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function AssistantPage() {
+  const identity = useAssistantIdentity()
+  const [messages, setMessages] = useState<Message[]>([STARTER])
+  const [input, setInput] = useState('')
+  const [pendingAction, setPendingAction] = useState<AssistantAction | null>(
+    null,
+  )
+  const [loading, setLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [conversations, setConversations] = useState<ConversationSummary[]>([])
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [sourcePage, setSourcePage] = useState<string | null>(null)
+  const messageListRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const response = await fetch('/api/assistant/history')
+      if (!response.ok) return
+      const data = (await response.json()) as {
+        conversations?: ConversationSummary[]
+      }
+      setConversations(data.conversations ?? [])
+    } catch {
+      // The current chat remains usable when history cannot be loaded.
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadHistory()
+  }, [loadHistory])
+
+  useEffect(() => {
+    const source = new URLSearchParams(window.location.search).get('from')
+    if (!source) return
+    const label = source.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ')
+    if (!label || label === 'assistant') return
+    setSourcePage(label)
+  }, [])
+
+  useEffect(() => {
+    setMessages((current) =>
+      current.length === 1 && current[0]?.role === 'assistant'
+        ? [{
+            role: 'assistant',
+            content: sourcePage
+              ? `${identity.greeting}\n\nYou came from ${sourcePage}. I can use the relevant ARKO records to help with this page.`
+              : identity.greeting,
+          }]
+        : current,
+    )
+  }, [identity.greeting, sourcePage])
+
+  useEffect(() => {
+    const messageList = messageListRef.current
+    if (!messageList) return
+
+    messageList.scrollTo({
+      top: messageList.scrollHeight,
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    })
+  }, [messages, pendingAction, loading, reduceMotion])
+
+  async function sendMessage(content: string) {
+    const text = content.trim()
+    if (!text || loading) return
+
+    const nextMessages = [...messages, { role: 'user' as const, content: text }]
+    setMessages(nextMessages)
+    setInput('')
+    setPendingAction(null)
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/assistant/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: nextMessages.slice(-20),
+          conversationId: conversationId ?? undefined,
+        }),
+      })
+      const data = (await response.json().catch(() => ({}))) as {
+        message?: string
+        action?: AssistantAction | null
+        conversationId?: string
+        error?: string
+      }
+      if (!response.ok) throw new Error(data.error)
+
+      setMessages((current) => [
+        ...current,
+        { role: 'assistant', content: data.message ?? 'How can I help?' },
+      ])
+      if (data.conversationId) setConversationId(data.conversationId)
+      setPendingAction(data.action ?? null)
+      void loadHistory()
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content:
+            error instanceof Error && error.message
+              ? error.message
+              : 'The assistant is temporarily unavailable.',
+        },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function confirmAction() {
+    if (!pendingAction || actionLoading) return
+    setActionLoading(true)
+
+    try {
+      const response = await fetch('/api/assistant/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingAction),
+      })
+      const data = (await response.json().catch(() => ({}))) as {
+        task?: { title: string }
+        event?: { title: string }
+        note?: { title: string }
+        transaction?: { amount: number; type: string }
+        user?: { name: string | null; email: string; role: string }
+        generatedPassword?: string
+        message?: { content: string }
+        recipient?: { name: string | null; email: string }
+        reminder?: { title: string; dueAt: string; recurrence: string }
+        error?: string
+      }
+      if (!response.ok) throw new Error(data.error)
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content: (() => {
+            switch (pendingAction.type) {
+              case 'create_event':
+                return `Added “${data.event?.title ?? pendingAction.title}” to Calendar.`
+              case 'create_note':
+                return `Saved “${data.note?.title ?? pendingAction.title}” in Notes.`
+              case 'create_transaction':
+                return `Recorded ${data.transaction?.type ?? pendingAction.transactionType} of ₱${(data.transaction?.amount ?? pendingAction.amount).toLocaleString()}.`
+              case 'create_user':
+                return `Created ${data.user?.name ?? pendingAction.name} as ${data.user?.role ?? pendingAction.userRole}. Sign-in: ${data.user?.email ?? pendingAction.email}\nTemporary password: ${data.generatedPassword ?? 'Unavailable'}\nShare these credentials securely; the password is shown only once.`
+              case 'send_message':
+                return `Message sent to ${data.recipient?.name ?? pendingAction.recipientName}.`
+              case 'complete_task':
+                return `Marked “${data.task?.title ?? pendingAction.title}” complete.`
+              case 'reschedule_event':
+                return `Rescheduled “${data.event?.title ?? pendingAction.title}”.`
+              case 'update_note':
+                return `Updated “${data.note?.title ?? pendingAction.title}”.`
+              case 'update_transaction':
+                return `Updated the ${data.transaction?.type ?? pendingAction.transactionType} entry to ₱${(data.transaction?.amount ?? pendingAction.amount).toLocaleString()}.`
+              case 'create_reminder':
+                return `Created reminder “${data.reminder?.title ?? pendingAction.title}”.`
+              default:
+                return `Created “${data.task?.title ?? pendingAction.title}” in Tasks.`
+            }
+          })(),
+        },
+      ])
+      setPendingAction(null)
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content:
+            error instanceof Error && error.message
+              ? error.message
+              : 'I could not complete that action.',
+        },
+      ])
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    void sendMessage(input)
+  }
+
+  function startNewChat() {
+    setConversationId(null)
+    setMessages([{
+      role: 'assistant',
+      content: sourcePage
+        ? `${identity.greeting}\n\nYou came from ${sourcePage}. I can use the relevant ARKO records to help with this page.`
+        : identity.greeting,
+    }])
+    setPendingAction(null)
+    setInput('')
+    setHistoryOpen(false)
+  }
+
+  async function openConversation(id: string) {
+    if (historyLoading) return
+    setHistoryLoading(true)
+    try {
+      const response = await fetch(
+        `/api/assistant/history?conversationId=${encodeURIComponent(id)}`,
+      )
+      if (!response.ok) return
+      const data = (await response.json()) as {
+        id: string
+        messages: Array<{ role: string; content: string }>
+      }
+      const savedMessages = data.messages.filter(
+        (message): message is Message =>
+          (message.role === 'user' || message.role === 'assistant') &&
+          Boolean(message.content),
+      )
+      setConversationId(data.id)
+      setMessages([
+        { role: 'assistant', content: identity.greeting },
+        ...savedMessages,
+      ])
+      setPendingAction(null)
+      setHistoryOpen(false)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  async function deleteConversation(id: string) {
+    if (!window.confirm('Delete this chat history? This cannot be undone.')) return
+    const response = await fetch(
+      `/api/assistant/history?conversationId=${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    )
+    if (!response.ok) return
+    if (conversationId === id) startNewChat()
+    setConversations((current) => current.filter((item) => item.id !== id))
+  }
+
+  return (
+    <div className="relative mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/40 bg-card/70 shadow-[0_24px_80px_rgba(15,23,18,0.16)] backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.12),transparent_38%)]">
+      <header className="relative z-20 flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <NexMascot
+            iconStyle={identity.iconStyle}
+            accentColor={identity.accentColor}
+          />
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-semibold text-text-primary">
+              {identity.assistantName}
+            </h1>
+            <p className="truncate text-xs text-text-tertiary">
+              Vertex AI · connected to your workspace
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((open) => !open)}
+            aria-expanded={historyOpen}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border-subtle bg-bg-app/70 px-3 text-xs font-semibold text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          >
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">History</span>
+          </button>
+          <span className="hidden items-center gap-1.5 rounded-full border border-border-subtle px-2.5 py-1 text-[11px] font-medium text-text-tertiary md:flex">
+            <ShieldCheck className="h-3.5 w-3.5 text-pos" /> Confirm before changes
+          </span>
+        </div>
+      </header>
+
+      {historyOpen && (
+        <aside className="absolute inset-x-3 top-[76px] z-30 max-h-[min(70vh,34rem)] overflow-hidden rounded-2xl border border-white/20 bg-card/90 shadow-2xl backdrop-blur-2xl sm:left-auto sm:right-4 sm:w-80">
+          <div className="flex items-center justify-between border-b border-border-subtle p-3">
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Chat history</h2>
+              <p className="text-[11px] text-text-tertiary">Private to your account</p>
+            </div>
+            <button
+              type="button"
+              onClick={startNewChat}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-primary-500 px-3 text-xs font-semibold text-[#07110b]"
+            >
+              <Plus className="h-4 w-4" /> New chat
+            </button>
+          </div>
+          <div className="max-h-[calc(min(70vh,34rem)-69px)] overflow-y-auto p-2">
+            {conversations.length === 0 ? (
+              <p className="px-3 py-8 text-center text-xs text-text-tertiary">
+                Your saved conversations will appear here.
+              </p>
+            ) : (
+              conversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className={`group flex items-center gap-1 rounded-xl ${
+                    conversationId === conversation.id
+                      ? 'bg-primary-500/10'
+                      : 'hover:bg-bg-app/70'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => void openConversation(conversation.id)}
+                    disabled={historyLoading}
+                    className="min-h-14 min-w-0 flex-1 px-3 py-2 text-left disabled:opacity-60"
+                  >
+                    <span className="block truncate text-xs font-medium text-text-primary">
+                      {conversation.title}
+                    </span>
+                    <span className="mt-1 block text-[10px] text-text-tertiary">
+                      {new Date(conversation.updatedAt).toLocaleDateString()}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteConversation(conversation.id)}
+                    aria-label={`Delete ${conversation.title}`}
+                    className="mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </aside>
+      )}
+
+      <div
+        ref={messageListRef}
+        className="flex-1 overflow-y-auto px-3 py-5 sm:px-6"
+        role="log"
+        aria-label="Conversation"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
+        <div className="mx-auto flex max-w-3xl flex-col gap-4">
+          {messages.map((message, index) => (
+            <div
+              key={`${message.role}-${index}`}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[78%] ${
+                  message.role === 'user'
+                    ? 'rounded-br-md bg-primary-500 text-[#07110b]'
+                    : 'rounded-bl-md border border-border-subtle bg-bg-app text-text-primary'
+                }`}
+              >
+                <span className="sr-only">
+                  {message.role === 'user' ? 'You' : identity.assistantName}:{' '}
+                </span>
+                {message.content}
+              </div>
+            </div>
+          ))}
+
+          {messages.length === 1 && (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {SUGGESTIONS.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => void sendMessage(suggestion)}
+                  className="rounded-xl border border-border-subtle bg-bg-app px-3 py-3 text-left text-xs leading-relaxed text-text-secondary transition-colors hover:border-primary-500/40 hover:text-text-primary"
+                >
+                  <Sparkles className="mb-2 h-4 w-4 text-primary-500" />
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {loading && (
+            <ThinkingIndicator
+              assistantName={identity.assistantName}
+              accentColor={identity.accentColor}
+              reduceMotion={reduceMotion}
+            />
+          )}
+
+          {pendingAction && (
+            <div className="rounded-2xl border border-primary-500/30 bg-primary-500/[0.06] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">
+                Confirmation required
+              </p>
+              <p className="mt-2 text-sm font-semibold text-text-primary">
+                {pendingAction.type === 'create_event' &&
+                  `Add calendar event: ${pendingAction.title}`}
+                {pendingAction.type === 'create_task' &&
+                  `Create task: ${pendingAction.title}`}
+                {pendingAction.type === 'create_note' &&
+                  `Save note: ${pendingAction.title}`}
+                {pendingAction.type === 'create_transaction' &&
+                  `Record ${pendingAction.transactionType.toLowerCase()}: ₱${pendingAction.amount.toLocaleString()}`}
+                {pendingAction.type === 'create_user' &&
+                  `Add user: ${pendingAction.name}`}
+                {pendingAction.type === 'send_message' &&
+                  `Message ${pendingAction.recipientName}`}
+                {pendingAction.type === 'complete_task' &&
+                  `Complete task: ${pendingAction.title}`}
+                {pendingAction.type === 'reschedule_event' &&
+                  `Reschedule event: ${pendingAction.title}`}
+                {pendingAction.type === 'update_note' &&
+                  `Update note: ${pendingAction.title}`}
+                {pendingAction.type === 'update_transaction' &&
+                  `Update ${pendingAction.transactionType.toLowerCase()}: ₱${pendingAction.amount.toLocaleString()}`}
+                {pendingAction.type === 'create_reminder' &&
+                  `Create reminder: ${pendingAction.title}`}
+              </p>
+              {'description' in pendingAction && pendingAction.description && (
+                <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
+                  {pendingAction.description}
+                </p>
+              )}
+              {pendingAction.type === 'send_message' && (
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-text-tertiary">
+                  “{pendingAction.messageContent}”
+                </p>
+              )}
+              {pendingAction.type === 'update_note' && pendingAction.content && (
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-text-tertiary">
+                  {pendingAction.content}
+                </p>
+              )}
+              {pendingAction.type === 'create_note' && pendingAction.content && (
+                <p className="mt-1 text-xs leading-relaxed text-text-tertiary">
+                  {pendingAction.content}
+                </p>
+              )}
+              {pendingAction.type === 'create_event' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  {pendingAction.date} · {pendingAction.startTime}–{pendingAction.endTime}
+                </p>
+              ) : pendingAction.type === 'create_task' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Priority: {pendingAction.priority}
+                </p>
+              ) : pendingAction.type === 'create_transaction' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Date: {pendingAction.date}
+                </p>
+              ) : pendingAction.type === 'create_user' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Role: {pendingAction.userRole}
+                  {pendingAction.email ? ` · ${pendingAction.email}` : ' · Email auto-generated'}
+                </p>
+              ) : pendingAction.type === 'send_message' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Internal ARKO message · confirmation required
+                </p>
+              ) : pendingAction.type === 'reschedule_event' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  {pendingAction.date} · {pendingAction.startTime}–{pendingAction.endTime}
+                </p>
+              ) : pendingAction.type === 'update_transaction' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  Date: {pendingAction.date}
+                </p>
+              ) : pendingAction.type === 'create_reminder' ? (
+                <p className="mt-2 text-[11px] font-medium text-text-tertiary">
+                  {new Date(pendingAction.dueAt).toLocaleString()} · {pendingAction.recurrence.toLowerCase()}
+                </p>
+              ) : null}
+              <div className="mt-4 flex flex-col gap-2 min-[400px]:flex-row">
+                <button
+                  type="button"
+                  onClick={() => void confirmAction()}
+                  disabled={actionLoading}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 text-xs font-semibold text-[#07110b] disabled:opacity-60"
+                >
+                  {actionLoading ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  {pendingAction.type === 'create_event' && 'Confirm event'}
+                  {pendingAction.type === 'create_task' && 'Confirm task'}
+                  {pendingAction.type === 'create_note' && 'Confirm note'}
+                  {pendingAction.type === 'create_transaction' &&
+                    'Confirm finance entry'}
+                  {pendingAction.type === 'create_user' && 'Confirm user'}
+                  {pendingAction.type === 'send_message' && 'Send message'}
+                  {pendingAction.type === 'complete_task' && 'Complete task'}
+                  {pendingAction.type === 'reschedule_event' && 'Reschedule event'}
+                  {pendingAction.type === 'update_note' && 'Update note'}
+                  {pendingAction.type === 'update_transaction' && 'Update finance entry'}
+                  {pendingAction.type === 'create_reminder' && 'Create reminder'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingAction(null)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border-subtle px-4 text-xs font-semibold text-text-secondary"
+                >
+                  <X className="h-4 w-4" /> Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="border-t border-border-subtle p-3 sm:p-4">
+        <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-border-subtle bg-bg-app p-2 focus-within:border-primary-500/50">
+          <textarea
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault()
+                void sendMessage(input)
+              }
+            }}
+            rows={1}
+            maxLength={2_000}
+            aria-label={`Message ${identity.assistantName}`}
+            placeholder={`Ask ${identity.assistantName} about ARKO or create workspace data…`}
+            className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-text-primary outline-none placeholder:text-text-tertiary"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || loading}
+            aria-label="Send message"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-500 text-[#07110b] transition-opacity disabled:opacity-40"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="mx-auto mt-2 max-w-3xl text-center text-xs text-text-secondary">
+          AI can make mistakes. Review every proposed action before confirming.
+        </p>
+      </form>
+    </div>
+  )
+}

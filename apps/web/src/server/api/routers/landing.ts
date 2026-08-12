@@ -45,6 +45,7 @@ export const landingRouter = router({
       })
       revalidateTag(LANDING_CACHE_TAG)
       revalidatePath('/')
+      revalidatePath('/blogs')
       return mergeLandingContent(saved.content)
     }),
 })

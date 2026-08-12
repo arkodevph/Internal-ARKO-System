@@ -3,6 +3,8 @@ import SiteHeader from './_components/SiteHeader'
 import SmoothScrollProvider from './_components/SmoothScrollProvider'
 import Preloader from './_components/Preloader'
 import StickyMobileCta from './_components/StickyMobileCta'
+import MarketingPageTransition from './_components/MarketingPageTransition'
+import FloatingAssistant from './_components/FloatingAssistant'
 
 const TITLE = 'Arko — We build web, mobile, automation and AI'
 const DESCRIPTION =
@@ -74,11 +76,14 @@ export default function MarketingLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_JSONLD) }}
       />
       <Preloader />
-      <SmoothScrollProvider>
-        <SiteHeader />
-        <main>{children}</main>
-      </SmoothScrollProvider>
-      <StickyMobileCta />
+      <MarketingPageTransition>
+        <SmoothScrollProvider>
+          <SiteHeader />
+          <main>{children}</main>
+        </SmoothScrollProvider>
+        <FloatingAssistant />
+        <StickyMobileCta />
+      </MarketingPageTransition>
     </div>
   )
 }

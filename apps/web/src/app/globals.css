@@ -1,9 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=DM+Sans:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
 @import 'tailwindcss';
 @source "../**/*.{ts,tsx}";
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
 @theme {
+  --font-sora: 'Avenir Next', 'Segoe UI', Arial, sans-serif;
+  --font-figtree: Inter, 'Segoe UI', Arial, sans-serif;
+  --font-poppins: 'Arial Black', 'Avenir Next', Arial, sans-serif;
+  --font-jetbrains: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+
   /* Green primary palette */
   --color-primary-50: #f0fdf4;
   --color-primary-100: #dcfce7;

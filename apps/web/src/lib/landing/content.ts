@@ -45,6 +45,11 @@ const safeUrl = z
   .string()
   .regex(/^$|^(https?:\/\/|\/|#)/, 'Must be an https:// URL, a /relative path, or a #anchor')
 
+const safeExternalUrl = z
+  .string()
+  .url()
+  .regex(/^https?:\/\//i, 'Must be an http:// or https:// URL')
+
 const footerLinkSchema = z.object({ label: z.string(), href: safeUrl })
 
 const projectItemSchema = z.object({
@@ -54,6 +59,15 @@ const projectItemSchema = z.object({
   type: z.string(),
   domain: z.string(),
   href: safeUrl,
+  image: safeUrl,
+})
+
+const blogItemSchema = z.object({
+  title: z.string().trim().min(1).max(180),
+  excerpt: z.string().trim().max(500),
+  platform: z.string().trim().min(1).max(60),
+  publishedAt: z.string().trim().max(40),
+  href: safeExternalUrl,
   image: safeUrl,
 })
 
@@ -129,6 +143,12 @@ export const landingContentSchema = z.object({
     ctaHeading: z.string(),
     ctaLabel: z.string(),
     items: z.array(projectItemSchema),
+  }),
+  blogs: z.object({
+    eyebrow: z.string(),
+    heading: z.string(),
+    intro: z.string(),
+    items: z.array(blogItemSchema),
   }),
 })
 
@@ -374,6 +394,13 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
       },
     ],
   },
+  blogs: {
+    eyebrow: 'Notes / updates / fieldwork',
+    heading: 'Blogs',
+    intro:
+      'Ideas, launches, and behind-the-scenes updates from ARKO across the platforms where we publish.',
+    items: [],
+  },
 }
 
 /**
@@ -405,5 +432,6 @@ export function mergeLandingContent(stored: unknown): LandingContent {
     contact: { ...d.contact, ...s.contact },
     footer: { ...d.footer, ...s.footer },
     projects: { ...d.projects, ...s.projects, items: projectItems },
+    blogs: { ...d.blogs, ...s.blogs, items: s.blogs?.items ?? d.blogs.items },
   }
 }
