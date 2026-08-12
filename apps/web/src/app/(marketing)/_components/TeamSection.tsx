@@ -4,7 +4,7 @@ const TEAM = [
   {
     number: '01',
     name: 'Justine Rhey',
-    image: '/team/justine-rhey.webp',
+    image: '/team/justine-rhey-professional.webp',
     portfolio: 'https://justrhey.github.io/justinerhey/',
     offset: 'lg:mt-0',
     tilt: 'lg:-rotate-2',
@@ -12,7 +12,7 @@ const TEAM = [
   {
     number: '02',
     name: 'Rovic',
-    image: '/team/rovic.webp',
+    image: '/team/rovic-professional.webp',
     portfolio: 'https://ecxiiii.github.io/portfolio/',
     offset: 'sm:mt-6 lg:mt-10',
     tilt: 'lg:rotate-2',
@@ -20,7 +20,7 @@ const TEAM = [
   {
     number: '03',
     name: 'Ralph',
-    image: '/team/ralph.webp',
+    image: '/team/ralph-professional.webp',
     portfolio: 'https://ralphrowel.github.io/',
     offset: 'lg:mt-4',
     tilt: 'lg:-rotate-1',
@@ -28,7 +28,7 @@ const TEAM = [
   {
     number: '04',
     name: 'Justine Cane',
-    image: '/team/justine-cane.webp',
+    image: '/team/justine-cane-professional.webp',
     portfolio: 'https://justinebacurin1927.github.io/My-Portfolio/',
     offset: 'sm:mt-6 lg:mt-14',
     tilt: 'lg:rotate-2',
