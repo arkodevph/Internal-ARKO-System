@@ -19,27 +19,48 @@ export function NexMascot({
   iconStyle,
   accentColor,
   size = 'md',
-}: Pick<AssistantIdentity, 'iconStyle' | 'accentColor'> & {
+}: Pick<AssistantIdentity, 'iconStyle'> & {
+  accentColor: string
   size?: 'sm' | 'md' | 'lg'
 }) {
-  const selected =
-    NEX_ICON_OPTIONS.find((option) => option.value === iconStyle) ??
-    NEX_ICON_OPTIONS[0]
-  const Icon = selected.icon
   const sizes = {
-    sm: 'h-8 w-8 rounded-lg [&_svg]:h-4 [&_svg]:w-4',
-    md: 'h-10 w-10 rounded-xl [&_svg]:h-5 [&_svg]:w-5',
-    lg: 'h-20 w-20 rounded-3xl [&_svg]:h-9 [&_svg]:w-9',
+    sm: 'h-8 w-8 [&_svg]:h-6 [&_svg]:w-6',
+    md: 'h-10 w-10 [&_svg]:h-8 [&_svg]:w-8',
+    lg: 'h-20 w-20 [&_svg]:h-14 [&_svg]:w-14',
   }
 
   return (
     <span
-      className={`relative grid shrink-0 place-items-center text-[#07110b] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] ${sizes[size]}`}
-      style={{ backgroundColor: accentColor }}
+      className={`relative grid shrink-0 place-items-center ${sizes[size]}`}
+      style={{ color: accentColor }}
       aria-hidden="true"
     >
-      <Icon strokeWidth={2} />
-      <span className="absolute right-[12%] top-[12%] h-1.5 w-1.5 rounded-full bg-white/80" />
+      <span
+        className="absolute inset-[8%] rotate-45 border bg-[#090b0a] shadow-[0_0_18px_currentColor]"
+        style={{ borderColor: accentColor }}
+      />
+      <svg viewBox="0 0 32 32" fill="none" className="relative overflow-visible" aria-hidden="true">
+        <path
+          d="M8 22V10l8 9V10h8v12"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
+        <path d="M5 6h5M22 26h5" stroke="currentColor" strokeWidth="1.2" />
+        <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+        <circle cx="25" cy="25" r="1.5" fill="currentColor" />
+        {iconStyle === 'ORBIT' && (
+          <ellipse cx="16" cy="16" rx="14" ry="7" stroke="currentColor" strokeWidth="1" opacity=".65" />
+        )}
+        {iconStyle === 'SPARK' && (
+          <path d="M25 5v5M22.5 7.5h5" stroke="currentColor" strokeWidth="1.4" />
+        )}
+        {iconStyle === 'BRAIN' && (
+          <path d="M12 5h8M12 27h8" stroke="currentColor" strokeWidth="1" opacity=".75" />
+        )}
+      </svg>
+      <span className="absolute right-0 top-0 h-1.5 w-1.5 bg-white shadow-[0_0_8px_currentColor]" />
     </span>
   )
 }

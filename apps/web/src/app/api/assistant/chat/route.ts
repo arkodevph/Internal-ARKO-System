@@ -14,6 +14,7 @@ import {
   consumeAssistantRequest,
 } from '../../../../server/services/assistant-rate-limit'
 import { getAssistantConfig } from '../../../../server/services/assistant-config'
+import { getLandingTrafficStats } from '../../../../server/services/landing-analytics'
 
 export const runtime = 'nodejs'
 
@@ -250,6 +251,8 @@ export async function POST(request: Request) {
           },
         })
       : 0
+    const landingAnalytics =
+      role === 'ADMIN' ? await getLandingTrafficStats(prisma) : undefined
     const config = await getAssistantConfig()
 
     const result = await generateAssistantReply({
@@ -276,6 +279,7 @@ export async function POST(request: Request) {
         documents,
         clientProjects,
         unreadMessageCount,
+        landingAnalytics,
         messages: messages.map((message) => ({
           id: message.id,
           content: message.content,

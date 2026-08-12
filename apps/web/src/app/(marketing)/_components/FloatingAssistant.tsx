@@ -1,64 +1,206 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { X } from 'lucide-react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { ArrowUpRight, Send, X } from 'lucide-react'
 import { NexMascot } from '../../../components/nex-mascot'
 import { useAssistantIdentity } from '../../../lib/use-assistant-identity'
 
+type Message = { role: 'user' | 'assistant'; content: string }
+
 export default function FloatingAssistant() {
   const [open, setOpen] = useState(false)
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loading, setLoading] = useState(false)
   const identity = useAssistantIdentity()
+  const reduceMotion = useReducedMotion()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const messageListRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus()
+  }, [open])
+
+  useEffect(() => {
+    const list = messageListRef.current
+    if (!list) return
+    list.scrollTo({ top: list.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }, [messages, loading, reduceMotion])
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [])
+
+  async function sendMessage(content: string) {
+    const text = content.trim()
+    if (!text || loading) return
+    const nextMessages = [...messages, { role: 'user' as const, content: text }]
+    setMessages(nextMessages)
+    setInput('')
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/assistant/public-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: nextMessages.slice(-8) }),
+      })
+      const data = (await response.json().catch(() => ({}))) as { message?: string; error?: string }
+      if (!response.ok) throw new Error(data.error)
+      setMessages((current) => [
+        ...current,
+        { role: 'assistant', content: data.message ?? 'Ask me about ARKO.' },
+      ])
+    } catch {
+      setMessages((current) => [
+        ...current,
+        { role: 'assistant', content: 'I could not connect just now. You can reach ARKO at arkodevph@gmail.com.' },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    void sendMessage(input)
+  }
 
   return (
     <aside
-      className="fixed bottom-[calc(8.5rem+env(safe-area-inset-bottom))] right-3 z-[45] flex flex-col items-end gap-2 md:bottom-5 md:right-5"
-      aria-label={identity.assistantName}
+      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-3 z-[45] md:bottom-5 md:right-5"
+      aria-label={`${identity.assistantName} assistant`}
     >
-      {open && (
-        <div className="w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden border border-white/20 bg-ink/75 p-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="mono text-[10px] font-bold uppercase tracking-[0.18em] text-acid">
-                {identity.assistantName}
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-white/75">
-                Ask about your workspace, create tasks, or schedule events. Your role controls what it can access.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="grid h-9 w-9 shrink-0 place-items-center border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
-              aria-label="Close assistant"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <Link
-            href="/dashboard/assistant"
-            className="mono mt-4 flex min-h-11 items-center justify-center border border-acid bg-acid px-4 text-[11px] font-bold uppercase tracking-[0.14em] text-ink transition-colors hover:bg-white"
+      <AnimatePresence>
+        {open && (
+          <motion.section
+            id="public-nex-panel"
+            initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
+            transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+            role="dialog"
+            aria-modal="false"
+            aria-labelledby="public-nex-title"
+            className="absolute bottom-[4.5rem] right-0 flex h-[min(32rem,calc(100dvh-7rem))] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden border border-acid/45 bg-ink/95 text-white shadow-[8px_8px_0_rgba(184,255,46,.2),0_28px_80px_rgba(0,0,0,.6)] backdrop-blur-2xl [clip-path:polygon(0_0,calc(100%-1.25rem)_0,100%_1.25rem,100%_100%,0_100%)]"
           >
-            Open assistant <span className="ml-2" aria-hidden>→</span>
-          </Link>
-        </div>
-      )}
+            <div className="h-1 shrink-0 bg-acid" />
+            <header className="relative flex items-center justify-between border-b border-white/15 px-4 py-3">
+              <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(184,255,46,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(184,255,46,.8)_1px,transparent_1px)] [background-size:20px_20px]" />
+              <div className="relative flex items-center gap-3">
+                <NexMascot iconStyle={identity.iconStyle} accentColor="#B8FF2E" size="md" />
+                <div>
+                  <h2 id="public-nex-title" className="display text-xl text-white">{identity.assistantName}</h2>
+                  <p className="mono text-[9px] uppercase tracking-[0.18em] text-acid">Arko studio signal</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="relative grid h-11 w-11 place-items-center border border-white/15 text-white/60 transition-colors hover:border-acid hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
+                aria-label="Close assistant"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
 
-      <button
+            <div ref={messageListRef} className="flex-1 overflow-y-auto overscroll-contain p-4" role="log" aria-label="NEX conversation" aria-live="polite">
+              <div className="flex min-h-full flex-col justify-end gap-3">
+                {messages.length === 0 && (
+                  <div className="border-l-2 border-acid bg-acid/[0.06] p-4">
+                    <p className="mono text-[9px] font-bold uppercase tracking-[0.18em] text-acid">Signal connected</p>
+                    <p className="mt-2 text-sm font-medium leading-relaxed text-white/70">
+                      Ask about ARKO, what we build, project timing, pricing, or how to start.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {['What do you build?', 'How long does a project take?'].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => void sendMessage(suggestion)}
+                          className="min-h-10 border border-white/15 px-3 text-left text-[11px] text-white/65 transition-colors hover:border-acid hover:text-acid"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {messages.map((message, index) => (
+                  <div key={`${message.role}-${index}`} className={message.role === 'user' ? 'ml-8' : 'mr-8'}>
+                    <p className="mono mb-1 text-[8px] uppercase tracking-[0.16em] text-white/35">
+                      {message.role === 'user' ? 'You / input' : `${identity.assistantName} / reply`}
+                    </p>
+                    <div className={message.role === 'user' ? 'border-r-2 border-acid bg-acid px-3 py-2.5 text-sm font-medium leading-relaxed text-ink' : 'border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm leading-relaxed text-white/80'}>
+                      {message.content}
+                    </div>
+                  </div>
+                ))}
+
+                {loading && (
+                  <div className="mr-8 border border-white/15 bg-white/[0.04] px-3 py-2.5" role="status" aria-label={`${identity.assistantName} is thinking`}>
+                    <motion.span
+                      animate={reduceMotion ? undefined : { backgroundPosition: ['100% center', '-100% center'] }}
+                      transition={reduceMotion ? undefined : { duration: 1.5, ease: 'linear', repeat: Infinity }}
+                      className="mono bg-[length:250%_100%] bg-clip-text text-[9px] uppercase tracking-[0.18em] text-transparent"
+                      style={{ backgroundImage: 'linear-gradient(90deg,rgba(255,255,255,.35),#b8ff2e,rgba(255,255,255,.35))' }}
+                    >
+                      Tuning signal…
+                    </motion.span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="border-t border-white/15 bg-black/35 p-3">
+              <label htmlFor="public-nex-input" className="mono mb-2 block text-[8px] uppercase tracking-[0.18em] text-white/40">Ask the studio</label>
+              <div className="flex items-center border border-white/20 bg-black/45 focus-within:border-acid">
+                <input
+                  ref={inputRef}
+                  id="public-nex-input"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  maxLength={500}
+                  placeholder="Type your question…"
+                  className="h-12 min-w-0 flex-1 bg-transparent px-3 text-base text-white outline-none placeholder:text-white/30"
+                />
+                <button type="submit" disabled={!input.trim() || loading} className="mr-1 grid h-10 w-10 place-items-center bg-acid text-ink disabled:opacity-35" aria-label="Send message">
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+              <a href="mailto:arkodevph@gmail.com" className="mono mt-2 inline-flex items-center gap-1 text-[8px] uppercase tracking-[0.15em] text-white/35 hover:text-acid">
+                Human contact <ArrowUpRight className="h-3 w-3" />
+              </a>
+            </form>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      <motion.button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="group flex h-12 items-center gap-2 border border-white/20 bg-ink/75 px-3 text-white shadow-[0_12px_38px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-colors hover:border-acid/70"
+        whileTap={reduceMotion ? undefined : { scale: 0.96 }}
         aria-expanded={open}
+        aria-controls="public-nex-panel"
+        aria-label={`${open ? 'Close' : 'Open'} ${identity.assistantName} assistant`}
+        className="group relative flex h-16 items-center border border-acid/50 bg-ink/95 pl-2 pr-4 text-white shadow-[6px_6px_0_rgba(184,255,46,.22),0_16px_48px_rgba(0,0,0,.5)] backdrop-blur-xl [clip-path:polygon(0_0,calc(100%-12px)_0,100%_12px,100%_100%,0_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
       >
-        <NexMascot
-          iconStyle={identity.iconStyle}
-          accentColor={identity.accentColor}
-          size="sm"
-        />
-        <span className="mono text-[10px] font-bold uppercase tracking-[0.14em]">
-          Ask {identity.assistantName}
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-acid" />
+        <span className="relative">
+          {!reduceMotion && <span className="absolute inset-0 animate-ping border border-acid/40" />}
+          <NexMascot iconStyle={identity.iconStyle} accentColor="#B8FF2E" size="md" />
         </span>
-      </button>
+        <span className="ml-3 text-left">
+          <span className="display block text-base leading-none">Ask {identity.assistantName}</span>
+          <span className="mono mt-1 block text-[8px] uppercase tracking-[0.17em] text-acid">Live studio signal</span>
+        </span>
+      </motion.button>
     </aside>
   )
 }

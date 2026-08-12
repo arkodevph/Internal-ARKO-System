@@ -11,8 +11,11 @@ import {
 } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, useReducedMotion } from 'motion/react'
+import { ROUTE_TIMEOUT } from './marketing-transition'
 
 type Phase = 'idle' | 'covering' | 'covered' | 'revealing'
+
+const WIPE_DURATION = 0.52
 
 const PageTransitionContext = createContext<((href: string) => void) | null>(null)
 
@@ -37,6 +40,7 @@ export default function MarketingPageTransition({
   const [phase, setPhase] = useState<Phase>('idle')
   const destinationRef = useRef<string | null>(null)
   const sourcePathRef = useRef(pathname)
+  const routeReadyRef = useRef(false)
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const navigate = useCallback(
@@ -50,7 +54,9 @@ export default function MarketingPageTransition({
 
       destinationRef.current = href
       sourcePathRef.current = pathname
+      routeReadyRef.current = false
       setPhase('covering')
+      router.push(href)
     },
     [pathname, reduceMotion, router],
   )
@@ -103,6 +109,9 @@ export default function MarketingPageTransition({
   useEffect(() => {
     if (!destinationRef.current || pathname === sourcePathRef.current) return
 
+    routeReadyRef.current = true
+    if (phase !== 'covered') return
+
     let secondFrame = 0
     const firstFrame = requestAnimationFrame(() => {
       secondFrame = requestAnimationFrame(() => setPhase('revealing'))
@@ -112,7 +121,7 @@ export default function MarketingPageTransition({
       cancelAnimationFrame(firstFrame)
       cancelAnimationFrame(secondFrame)
     }
-  }, [pathname])
+  }, [pathname, phase])
 
   useEffect(
     () => () => {
@@ -123,12 +132,17 @@ export default function MarketingPageTransition({
 
   const handleAnimationComplete = () => {
     if (phase === 'covering') {
+      if (routeReadyRef.current) {
+        setPhase('revealing')
+        return
+      }
+
       setPhase('covered')
-      router.push(destinationRef.current ?? '/')
 
       revealTimerRef.current = setTimeout(() => {
+        destinationRef.current = null
         setPhase('revealing')
-      }, 800)
+      }, ROUTE_TIMEOUT)
       return
     }
 
@@ -155,7 +169,7 @@ export default function MarketingPageTransition({
         initial={false}
         animate={{ x: curtainX, skewX: -12 }}
         onAnimationComplete={handleAnimationComplete}
-        transition={{ duration: 0.22, ease: [0.76, 0, 0.24, 1] }}
+        transition={{ duration: WIPE_DURATION, ease: [0.76, 0, 0.24, 1] }}
         className={`fixed inset-y-0 -left-[15vw] z-[9999] w-[130vw] origin-center bg-acid ${phase === 'idle' ? 'pointer-events-none' : 'pointer-events-auto will-change-transform'}`}
       >
         <div className="h-full skew-x-[12deg]" />

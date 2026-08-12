@@ -17,6 +17,7 @@ const activityCreate = jest.fn()
 const conversationFindFirst = jest.fn()
 const conversationCreate = jest.fn()
 const conversationUpdate = jest.fn()
+const getLandingTrafficStats = jest.fn()
 
 jest.mock('@arko/db', () => ({
   prisma: {
@@ -70,6 +71,9 @@ jest.mock('../../../../../server/services/assistant-config', () => ({
     }),
   ),
 }))
+jest.mock('../../../../../server/services/landing-analytics', () => ({
+  getLandingTrafficStats,
+}))
 
 import { auth } from '../../../../../lib/auth'
 import {
@@ -115,6 +119,15 @@ describe('assistant chat route', () => {
     conversationFindFirst.mockResolvedValue({ id: 'conversation-1' })
     conversationCreate.mockResolvedValue({ id: 'conversation-1' })
     conversationUpdate.mockResolvedValue({ id: 'conversation-1' })
+    getLandingTrafficStats.mockResolvedValue({
+      viewCount: 120,
+      lastViewedAt: new Date('2026-08-12T04:00:00Z'),
+      todayViews: 8,
+      last7Days: 45,
+      previous7Days: 30,
+      last30Days: 120,
+      history: [],
+    })
     generateReplyMock.mockResolvedValue({
       message: 'Ready.',
       action: null,
@@ -171,6 +184,7 @@ describe('assistant chat route', () => {
     expect(eventFindMany).not.toHaveBeenCalled()
     expect(noteFindMany).not.toHaveBeenCalled()
     expect(transactionFindMany).not.toHaveBeenCalled()
+    expect(getLandingTrafficStats).not.toHaveBeenCalled()
     expect(categoryFindMany).not.toHaveBeenCalled()
     expect(generateReplyMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -190,6 +204,26 @@ describe('assistant chat route', () => {
         }),
       }),
     )
+  })
+
+  it('supplies aggregate landing analytics to admins', async () => {
+    authMock.mockResolvedValue({ user: { id: 'admin-1', role: 'ADMIN' } } as any)
+
+    await POST(request({
+      messages: [{ role: 'user', content: 'Summarize landing page analytics' }],
+    }))
+
+    expect(getLandingTrafficStats).toHaveBeenCalledTimes(1)
+    expect(generateReplyMock).toHaveBeenCalledWith(expect.objectContaining({
+      context: expect.objectContaining({
+        landingAnalytics: expect.objectContaining({
+          viewCount: 120,
+          todayViews: 8,
+          last7Days: 45,
+          previous7Days: 30,
+        }),
+      }),
+    }))
   })
 
   it('returns 429 when the durable quota is exhausted', async () => {
