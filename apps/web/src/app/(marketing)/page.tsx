@@ -36,7 +36,7 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
             {hero.headingLead}
             <br />
             <span className="mt-2 inline-flex bg-ink px-3 py-1 text-acid">
-              <RotatingText texts={hero.roles} />
+              <RotatingText texts={hero.roles} className="text-[clamp(2.1rem,8.5vw,7rem)]" />
             </span>
           </h1>
           <div className="mt-10 flex flex-col gap-6">
@@ -63,20 +63,6 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
         ARKO
       </div>
     </section>
-  )
-}
-
-function Marquee({ words }: { words: string }) {
-  return (
-    <div className="relative overflow-hidden border-y-4 border-ink bg-ink py-5">
-      <div className="absolute inset-0 opacity-70">
-        <Squares direction="left" speed={0.5} squareSize={46} />
-      </div>
-      <div className="marquee-track display relative z-10 text-4xl text-acid md:text-6xl">
-        <span className="pr-4">{words.repeat(6)}</span>
-        <span className="pr-4">{words.repeat(6)}</span>
-      </div>
-    </div>
   )
 }
 
@@ -316,14 +302,6 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         </div>
       </div>
 
-      {/* ——— marquee separator band ——— */}
-      <div className="relative z-10 overflow-hidden border-y border-white/10 bg-ink-soft py-4">
-        <div className="marquee-track mono text-xs uppercase tracking-[0.2em] text-white/20">
-          <span className="pr-8">Sites · Apps · Systems · Tools · Code · </span>
-          <span className="pr-8">Sites · Apps · Systems · Tools · Code · </span>
-        </div>
-      </div>
-
       {/* ——— bottom stripe ——— */}
       <div className="relative z-10 flex flex-col items-start justify-between gap-3 px-8 py-5 md:flex-row md:items-center md:px-10">
         <p className="mono text-[0.65rem] text-white/25">
@@ -361,7 +339,6 @@ export default async function Home() {
     <main>
       <LandingViewTracker />
       <Hero hero={content.hero} />
-      {content.sections.marquee && <Marquee words={content.marquee.words} />}
       {content.sections.stats && <Stats stats={content.stats} />}
       {content.sections.intro && <Intro intro={content.intro} />}
       {content.sections.services && <ScrollServices {...content.services} />}

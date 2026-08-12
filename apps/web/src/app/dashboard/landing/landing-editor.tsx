@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Check, AlertCircle, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LayoutTemplate, Sparkles, Activity, PanelsTopLeft, Clapperboard, BriefcaseBusiness, Route, Mail, PanelBottom, Images, Eye, BookOpen } from 'lucide-react'
+import { Loader2, Check, AlertCircle, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, LayoutTemplate, Sparkles, PanelsTopLeft, Clapperboard, BriefcaseBusiness, Route, Mail, PanelBottom, Images, Eye, BookOpen } from 'lucide-react'
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@arko/ui'
 import { api } from '../../../lib/trpc/client'
 import { DEFAULT_LANDING_CONTENT, type LandingContent } from '../../../lib/landing/content'
@@ -73,7 +73,6 @@ function move<T>(arr: T[], from: number, to: number) {
 }
 
 const SECTION_TOGGLES: { key: keyof LandingContent['sections']; label: string }[] = [
-  { key: 'marquee', label: 'Marquee' },
   { key: 'stats', label: 'Stats' },
   { key: 'intro', label: 'Intro' },
   { key: 'services', label: 'Services' },
@@ -85,7 +84,6 @@ const SECTION_TOGGLES: { key: keyof LandingContent['sections']; label: string }[
 const EDITOR_SECTIONS = [
   { id: 'editor-visibility', label: 'Page structure', icon: LayoutTemplate },
   { id: 'editor-hero', label: 'Hero', icon: Sparkles },
-  { id: 'editor-marquee', label: 'Marquee', icon: Activity },
   { id: 'editor-stats', label: 'Stats', icon: PanelsTopLeft },
   { id: 'editor-intro', label: 'Introduction', icon: PanelsTopLeft },
   { id: 'editor-services', label: 'Services', icon: Clapperboard },
@@ -264,18 +262,6 @@ export function LandingEditor() {
           </Field>
           <Field label="Paragraph">
             <Area value={c.hero.paragraph} onChange={(v) => update((d) => { d.hero.paragraph = v })} />
-          </Field>
-        </CardContent>
-      </Card>
-
-      {/* Marquee */}
-      <Card id="editor-marquee" className="scroll-mt-6">
-        <CardHeader>
-          <CardTitle>Marquee</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Field label="Words" hint="Repeated across the scrolling band.">
-            <Text value={c.marquee.words} onChange={(v) => update((d) => { d.marquee.words = v })} />
           </Field>
         </CardContent>
       </Card>

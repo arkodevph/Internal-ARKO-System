@@ -14,7 +14,7 @@ export const DEFAULT_ASSISTANT_IDENTITY: AssistantIdentity = {
   iconStyle: 'BOT',
   accentColor: '#22C55E',
   greeting:
-    'I’m NEX. Ask about your ARKO workspace or create workspace data. I always ask before writing anything.',
+    'Hey, y’all! I’m NEX, your ARKO operations guide. Tell me what needs sorting, and I’ll line it up for your approval before changing anything.',
 }
 
 let cachedIdentity: AssistantIdentity | null = null

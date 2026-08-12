@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ComponentType } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -27,13 +27,13 @@ import {
   PanelsTopLeft,
   BriefcaseBusiness,
   Palette,
-  Bot,
   ClipboardList,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
 import { useAssistantIdentity } from '../../../lib/use-assistant-identity'
 import { FloatingNexChat } from './floating-nex-chat'
+import { NexMark } from '../../../components/nex-mascot'
 
 const OpenPeepsAvatar = dynamic(
   () => import('../../../components/open-peeps-avatar').then((m) => ({ default: m.OpenPeepsAvatar })),
@@ -42,7 +42,7 @@ const OpenPeepsAvatar = dynamic(
 
 type NavCategory = {
   to: string
-  icon: typeof LayoutDashboard
+  icon: ComponentType<{ className?: string }>
   label: string
   end?: boolean
   /** Only shown to ADMIN users. */
@@ -58,7 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
       { to: '/dashboard/finance', icon: TrendingUp, label: 'Analytics' },
-      { to: '/dashboard/assistant', icon: Bot, label: 'NEX Assistant' },
+      { to: '/dashboard/assistant', icon: NexMark, label: 'NEX Assistant' },
     ],
   },
   {

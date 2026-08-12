@@ -136,16 +136,6 @@ export default function TeamSection() {
         </p>
       </div>
 
-      <div
-        aria-hidden
-        className="relative -mx-6 mt-8 overflow-hidden border-t-4 border-ink bg-ink py-4 md:-mx-10"
-      >
-        <div className="marquee-track display text-3xl text-acid md:text-5xl">
-          <span className="pr-5">SMALL TEAM · DIRECT ACCESS · ZERO HANDOFFS · </span>
-          <span className="pr-5">SMALL TEAM · DIRECT ACCESS · ZERO HANDOFFS · </span>
-          <span className="pr-5">SMALL TEAM · DIRECT ACCESS · ZERO HANDOFFS · </span>
-        </div>
-      </div>
     </section>
   )
 }

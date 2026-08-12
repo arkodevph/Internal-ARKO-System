@@ -25,9 +25,9 @@ export default function RotatingText({ texts, interval = 2200, className = '' }:
   const letters = useMemo(() => Array.from(texts[index]), [texts, index])
 
   return (
-    <span className={`inline-flex overflow-hidden align-bottom ${className}`}>
-      <AnimatePresence mode="wait">
-        <motion.span key={index} className="inline-flex" aria-label={texts[index]}>
+    <span className={`inline-flex min-h-[1em] max-w-full overflow-hidden align-bottom leading-none ${className}`}>
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.span key={index} className="inline-flex leading-none" aria-label={texts[index]}>
           {letters.map((char, i) => (
             <motion.span
               key={`${index}-${i}`}

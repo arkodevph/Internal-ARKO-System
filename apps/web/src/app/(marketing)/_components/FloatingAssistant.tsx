@@ -1,8 +1,8 @@
 'use client'
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowUpRight, Send, X } from 'lucide-react'
+import { AnimatePresence, motion, useDragControls, useReducedMotion } from 'motion/react'
+import { ArrowUpRight, GripHorizontal, Send, X } from 'lucide-react'
 import { NexMascot } from '../../../components/nex-mascot'
 import { useAssistantIdentity } from '../../../lib/use-assistant-identity'
 
@@ -17,6 +17,7 @@ export default function FloatingAssistant() {
   const reduceMotion = useReducedMotion()
   const inputRef = useRef<HTMLInputElement>(null)
   const messageListRef = useRef<HTMLDivElement>(null)
+  const dragControls = useDragControls()
 
   useEffect(() => {
     if (open) inputRef.current?.focus()
@@ -84,13 +85,20 @@ export default function FloatingAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+            drag
+            dragControls={dragControls}
+            dragListener={false}
+            dragMomentum={false}
             role="dialog"
             aria-modal="false"
             aria-labelledby="public-nex-title"
-            className="absolute bottom-[4.5rem] right-0 flex h-[min(32rem,calc(100dvh-7rem))] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden border border-acid/45 bg-ink/95 text-white shadow-[8px_8px_0_rgba(184,255,46,.2),0_28px_80px_rgba(0,0,0,.6)] backdrop-blur-2xl [clip-path:polygon(0_0,calc(100%-1.25rem)_0,100%_1.25rem,100%_100%,0_100%)]"
+            className="nex-terminal-panel absolute bottom-[4.5rem] right-0 flex h-[min(32rem,calc(100dvh-7rem))] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden text-white"
           >
             <div className="h-1 shrink-0 bg-acid" />
-            <header className="relative flex items-center justify-between border-b border-white/15 px-4 py-3">
+            <header
+              className="nex-terminal-header relative flex cursor-grab touch-none items-center justify-between px-4 py-3 active:cursor-grabbing"
+              onPointerDown={(event) => dragControls.start(event)}
+            >
               <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(184,255,46,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(184,255,46,.8)_1px,transparent_1px)] [background-size:20px_20px]" />
               <div className="relative flex items-center gap-3">
                 <NexMascot iconStyle={identity.iconStyle} accentColor="#B8FF2E" size="md" />
@@ -99,9 +107,11 @@ export default function FloatingAssistant() {
                   <p className="mono text-[9px] uppercase tracking-[0.18em] text-acid">Arko studio signal</p>
                 </div>
               </div>
+              <GripHorizontal className="relative ml-auto mr-2 h-4 w-4 text-white/30" aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
+                onPointerDown={(event) => event.stopPropagation()}
                 className="relative grid h-11 w-11 place-items-center border border-white/15 text-white/60 transition-colors hover:border-acid hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
                 aria-label="Close assistant"
               >
@@ -109,7 +119,7 @@ export default function FloatingAssistant() {
               </button>
             </header>
 
-            <div ref={messageListRef} className="flex-1 overflow-y-auto overscroll-contain p-4" role="log" aria-label="NEX conversation" aria-live="polite">
+            <div ref={messageListRef} className="nex-terminal-screen flex-1 overflow-y-auto overscroll-contain p-4" role="log" aria-label="NEX conversation" aria-live="polite">
               <div className="flex min-h-full flex-col justify-end gap-3">
                 {messages.length === 0 && (
                   <div className="border-l-2 border-acid bg-acid/[0.06] p-4">
@@ -158,7 +168,7 @@ export default function FloatingAssistant() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="border-t border-white/15 bg-black/35 p-3">
+            <form onSubmit={handleSubmit} className="nex-terminal-controls p-3">
               <label htmlFor="public-nex-input" className="mono mb-2 block text-[8px] uppercase tracking-[0.18em] text-white/40">Ask the studio</label>
               <div className="flex items-center border border-white/20 bg-black/45 focus-within:border-acid">
                 <input
@@ -189,7 +199,7 @@ export default function FloatingAssistant() {
         aria-expanded={open}
         aria-controls="public-nex-panel"
         aria-label={`${open ? 'Close' : 'Open'} ${identity.assistantName} assistant`}
-        className="group relative flex h-16 items-center border border-acid/50 bg-ink/95 pl-2 pr-4 text-white shadow-[6px_6px_0_rgba(184,255,46,.22),0_16px_48px_rgba(0,0,0,.5)] backdrop-blur-xl [clip-path:polygon(0_0,calc(100%-12px)_0,100%_12px,100%_100%,0_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
+        className="nex-terminal-trigger group relative flex h-16 items-center pl-2 pr-4 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
       >
         <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-acid" />
         <span className="relative">

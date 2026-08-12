@@ -20,7 +20,7 @@ function publicReply(input: string) {
   }
 
   if (/price|pricing|cost|budget|how much/.test(message)) {
-    return 'Project cost depends on scope. Share your rough budget and brief; ARKO will tell you what is realistic before any commitment.'
+    return 'Happy to help with that. Project cost depends on scope, so share your rough budget and brief and ARKO will map out what is realistic before any commitment.'
   }
   if (/long|timeline|how soon|when|duration/.test(message)) {
     return 'A focused website usually ships in a few weeks. Larger apps and systems take longer, with milestones agreed up front.'
@@ -38,7 +38,7 @@ function publicReply(input: string) {
     return 'Send a short project brief through the contact form or email arkodevph@gmail.com. ARKO usually replies within 24 hours.'
   }
   if (/hello|hey|hi|who are you|what are you/.test(message)) {
-    return 'I’m NEX, ARKO’s studio assistant. Ask me about our services, project timing, pricing approach, ownership, or how to start.'
+    return 'Hey, y’all! I’m NEX, ARKO’s studio operations guide. Ask me about services, timing, pricing, ownership, or how to get your project started.'
   }
 
   return 'I can answer questions about ARKO’s services and project process. For workspace records or actions, sign in to the ARKO system.'

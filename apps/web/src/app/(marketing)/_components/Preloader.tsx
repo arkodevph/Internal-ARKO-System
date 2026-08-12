@@ -59,6 +59,15 @@ export default function Preloader() {
     return () => clearTimeout(exitTimer)
   }, [phase])
 
+  useEffect(() => {
+    if (phase !== 'exiting') return
+
+    // animationend is not guaranteed when animations are cancelled during
+    // hydration, tab suspension, or reduced-motion overrides.
+    const dismissTimer = setTimeout(() => setDismissed(true), 800)
+    return () => clearTimeout(dismissTimer)
+  }, [phase])
+
   if (dismissed) return null
 
   return (

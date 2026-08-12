@@ -1,8 +1,8 @@
 'use client'
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Check, Send, ShieldCheck, X } from 'lucide-react'
+import { AnimatePresence, motion, useDragControls, useReducedMotion } from 'motion/react'
+import { Check, GripHorizontal, Send, ShieldCheck, X } from 'lucide-react'
 import type { AssistantAction } from '../../../server/services/assistant'
 import { NexMascot } from '../../../components/nex-mascot'
 import type { AssistantIdentity } from '../../../lib/use-assistant-identity'
@@ -56,6 +56,7 @@ export function FloatingNexChat({
   const inputRef = useRef<HTMLInputElement>(null)
   const messageListRef = useRef<HTMLDivElement>(null)
   const reduceMotion = useReducedMotion()
+  const dragControls = useDragControls()
   const pageName = pathname.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ') ?? 'dashboard'
 
   useEffect(() => {
@@ -177,13 +178,20 @@ export function FloatingNexChat({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: reduceMotion ? 0 : 0.22, ease: 'easeOut' }}
-            className="absolute bottom-16 right-0 flex h-[min(34rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-1.5rem))] flex-col overflow-hidden border border-primary-500/40 bg-[#090b0a]/95 text-text-primary shadow-[10px_10px_0_rgba(34,197,94,0.16),0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl [clip-path:polygon(0_0,calc(100%-1.25rem)_0,100%_1.25rem,100%_100%,0_100%)]"
+            drag
+            dragControls={dragControls}
+            dragListener={false}
+            dragMomentum={false}
+            className="nex-terminal-panel absolute bottom-16 right-0 flex h-[min(34rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-1.5rem))] flex-col overflow-hidden text-text-primary"
             role="dialog"
             aria-modal="false"
             aria-labelledby="floating-nex-title"
           >
             <div className="h-1 shrink-0 bg-primary-500" />
-            <header className="relative flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <header
+              className="nex-terminal-header relative flex cursor-grab touch-none items-center justify-between px-4 py-3 active:cursor-grabbing"
+              onPointerDown={(event) => dragControls.start(event)}
+            >
               <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(34,197,94,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(34,197,94,.7)_1px,transparent_1px)] [background-size:20px_20px]" />
               <div className="relative flex min-w-0 items-center gap-3">
                 <NexMascot iconStyle={identity.iconStyle} accentColor={identity.accentColor} size="sm" />
@@ -199,9 +207,11 @@ export function FloatingNexChat({
                   </p>
                 </div>
               </div>
+              <GripHorizontal className="relative ml-auto mr-2 h-4 w-4 text-text-tertiary" aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
+                onPointerDown={(event) => event.stopPropagation()}
                 className="relative grid h-11 w-11 place-items-center border border-white/10 text-text-secondary transition-colors hover:border-primary-500/50 hover:text-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                 aria-label="Close assistant"
               >
@@ -209,7 +219,7 @@ export function FloatingNexChat({
               </button>
             </header>
 
-            <div ref={messageListRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-4" role="log" aria-label="NEX conversation" aria-live="polite">
+            <div ref={messageListRef} className="nex-terminal-screen flex-1 overflow-y-auto overscroll-contain px-4 py-4" role="log" aria-label="NEX conversation" aria-live="polite">
               <div className="flex min-h-full flex-col justify-end gap-3">
                 {messages.length === 0 && (
                   <div className="border-l-2 border-primary-500 bg-primary-500/[0.06] p-4">
@@ -272,7 +282,7 @@ export function FloatingNexChat({
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="border-t border-white/10 bg-black/40 p-3">
+            <form onSubmit={handleSubmit} className="nex-terminal-controls p-3">
               <label htmlFor="floating-nex-input" className="mb-2 block font-mono text-[9px] uppercase tracking-[0.14em] text-text-tertiary">
                 Command input
               </label>
@@ -307,7 +317,7 @@ export function FloatingNexChat({
         aria-expanded={open}
         aria-controls="floating-nex-panel"
         aria-label={`${open ? 'Close' : 'Open'} ${identity.assistantName} assistant`}
-        className="group relative flex h-14 items-center border border-primary-500/45 bg-[#090b0a]/95 pl-2 pr-4 text-text-primary shadow-[6px_6px_0_rgba(34,197,94,0.2),0_16px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,0_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+        className="nex-terminal-trigger group relative flex h-14 items-center pl-2 pr-4 text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
       >
         <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-primary-500" />
         <NexMascot iconStyle={identity.iconStyle} accentColor={identity.accentColor} size="sm" />

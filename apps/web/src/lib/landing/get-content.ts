@@ -8,8 +8,12 @@ export const LANDING_CACHE_TAG = 'landing-content'
 export async function loadLandingContent(): Promise<LandingContent> {
   if (!process.env.DATABASE_URL) return mergeLandingContent(undefined)
 
-  const row = await prisma.landingContent.findFirst({ where: { singleton: true } })
-  return mergeLandingContent(row?.content)
+  try {
+    const row = await prisma.landingContent.findFirst({ where: { singleton: true } })
+    return mergeLandingContent(row?.content)
+  } catch {
+    return mergeLandingContent(undefined)
+  }
 }
 
 /**
