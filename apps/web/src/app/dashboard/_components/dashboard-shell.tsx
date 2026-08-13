@@ -366,7 +366,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           label: g.label,
           items: g.items
             .filter((it) => !it.adminOnly || isAdmin)
-            .filter((it) => !it.roles || it.roles.includes(role ?? ""))
+            .filter(
+              (it) => !it.roles || it.roles.includes(sessionUser?.role ?? ""),
+            )
             .map((item) =>
               item.to === "/dashboard/assistant"
                 ? {
