@@ -2,448 +2,907 @@
 
 import {
   ArrowUpRight,
+  Bell,
+  Bookmark,
   CalendarDays,
+  Check,
   CheckCircle2,
+  ChevronRight,
   Circle,
   Clock3,
   FileText,
+  Folder,
+  Lightbulb,
+  Link2,
   MessageSquare,
+  MoreHorizontal,
+  Paperclip,
   Plus,
   Search,
+  Send,
   Sparkles,
+  Star,
+  TrendingDown,
   TrendingUp,
   Users,
+  WalletCards,
 } from "lucide-react";
 import { DemoDashboard } from "./demo-dashboard";
+import { PerformanceChart } from "./performance-chart";
 
-type DemoSection = {
+const pill =
+  "rounded-full border border-border-subtle bg-card px-3 py-1.5 text-xs text-text-secondary";
+const panel = "rounded-3xl border border-border-subtle bg-card";
+
+function DemoHeader({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
   eyebrow: string;
   title: string;
   description: string;
-  metric: string;
-  metricLabel: string;
-  secondary: string;
-  secondaryLabel: string;
   action: string;
-  columns: string[];
-  rows: string[][];
-  insight: string;
-};
+}) {
+  return (
+    <header
+      className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
+      data-demo-tour="overview"
+    >
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-400">
+          {eyebrow}
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
+          {title}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+          {description}
+        </p>
+      </div>
+      <button
+        disabled
+        className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-500 px-5 text-xs font-bold text-white opacity-90"
+      >
+        <Plus className="h-4 w-4" />
+        {action}
+      </button>
+    </header>
+  );
+}
 
-const sections: Record<string, DemoSection> = {
-  finance: {
-    eyebrow: "Financial command center",
-    title: "Finance",
-    description:
-      "Know where the money is going and what the next month looks like.",
-    metric: "₱248K",
-    metricLabel: "Revenue this month",
-    secondary: "₱122K",
-    secondaryLabel: "Net operating margin",
-    action: "Add transaction",
-    columns: ["Transaction", "Category", "Date", "Amount"],
-    rows: [
-      ["Mobile commerce milestone", "Project income", "Aug 12", "+₱96,000"],
-      ["Cloud infrastructure", "Software", "Aug 10", "−₱18,420"],
-      ["Operations dashboard", "Project income", "Aug 08", "+₱84,000"],
-      ["Design subscriptions", "Software", "Aug 05", "−₱7,800"],
+function DemoNotice() {
+  return (
+    <div className="flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-400">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary-400" />
+      Interactive sample · read only
+    </div>
+  );
+}
+
+function FinanceDemo() {
+  return (
+    <DemoFrame>
+      <DemoHeader
+        eyebrow="Financial intelligence"
+        title="Money, without the mystery."
+        description="A live view of runway, cash movement, and the decisions that shape margin."
+        action="Add transaction"
+      />
+      <div
+        className="grid gap-4 xl:grid-cols-[1.45fr_.85fr]"
+        data-demo-tour="metrics"
+      >
+        <section className={`${panel} overflow-hidden p-6`}>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-text-tertiary">Available balance</p>
+              <p className="mt-2 text-4xl font-semibold tabular-nums">
+                ₱1,248,920
+              </p>
+              <p className="mt-2 text-xs font-medium text-primary-400">
+                ↑ 18.4% from last month
+              </p>
+            </div>
+            <span className="rounded-2xl bg-primary-500/10 p-3 text-primary-400">
+              <WalletCards className="h-5 w-5" />
+            </span>
+          </div>
+          <div className="mt-8 h-60">
+            <PerformanceChart
+              incomeData={[92, 118, 142, 166, 205, 248]}
+              expenseData={[60, 72, 81, 96, 110, 126]}
+              labels={["Mar", "Apr", "May", "Jun", "Jul", "Aug"]}
+            />
+          </div>
+        </section>
+        <div className="grid gap-4">
+          <section className="relative overflow-hidden rounded-3xl bg-primary-500 p-6 text-white">
+            <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border-[28px] border-white/10" />
+            <p className="text-xs text-white/70">Projected runway</p>
+            <p className="mt-4 text-5xl font-semibold">14.6</p>
+            <p className="mt-1 text-sm">months at current spend</p>
+            <div className="mt-8 flex justify-between border-t border-white/20 pt-4 text-xs">
+              <span>Burn ₱126K</span>
+              <span>Goal 18 mo</span>
+            </div>
+          </section>
+          <section className={`${panel} p-5`} data-demo-tour="nex">
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-primary-400">
+              <Sparkles className="h-4 w-4" />
+              NEX forecast
+            </p>
+            <p className="mt-3 text-sm leading-6 text-text-secondary">
+              Revenue is climbing faster than cost. Hold hiring for 30 days and
+              runway improves by 1.8 months.
+            </p>
+          </section>
+        </div>
+      </div>
+      <section className={`${panel} overflow-hidden`} data-demo-tour="insights">
+        <div className="flex items-center justify-between border-b border-border-subtle p-5">
+          <div>
+            <h2 className="font-semibold">Cash movement</h2>
+            <p className="text-xs text-text-tertiary">August 2026</p>
+          </div>
+          <div className="flex gap-2">
+            <span className={pill}>All accounts</span>
+            <span className={pill}>This month</span>
+          </div>
+        </div>
+        {[
+          ["Mobile commerce milestone", "Project income", "+₱96,000", true],
+          ["Cloud infrastructure", "Software", "−₱18,420", false],
+          ["Operations dashboard", "Project income", "+₱84,000", true],
+          ["Design subscriptions", "Software", "−₱7,800", false],
+        ].map(([name, type, amount, positive]) => (
+          <div
+            key={String(name)}
+            className="grid grid-cols-[1fr_auto] items-center border-b border-border-subtle/70 px-5 py-4 last:border-0 md:grid-cols-[1fr_1fr_auto]"
+          >
+            <div className="flex items-center gap-3">
+              <span
+                className={`rounded-xl p-2.5 ${positive ? "bg-primary-500/10 text-primary-400" : "bg-neg-bg text-neg"}`}
+              >
+                {positive ? (
+                  <TrendingUp className="h-4 w-4" />
+                ) : (
+                  <TrendingDown className="h-4 w-4" />
+                )}
+              </span>
+              <span className="text-sm font-medium">{name}</span>
+            </div>
+            <span className="hidden text-sm text-text-tertiary md:block">
+              {type}
+            </span>
+            <span
+              className={`text-sm font-semibold tabular-nums ${positive ? "text-primary-400" : "text-text-primary"}`}
+            >
+              {amount}
+            </span>
+          </div>
+        ))}
+      </section>
+    </DemoFrame>
+  );
+}
+
+const kanban = [
+  {
+    title: "TO DO",
+    count: 4,
+    cards: [
+      ["Approve onboarding flow", "HIGH", "Mobile commerce", "Mika"],
+      ["Prepare launch analytics", "MEDIUM", "Growth website", "Paolo"],
     ],
-    insight:
-      "Revenue is tracking 14% above plan. Maintain the current delivery pace to protect margin.",
   },
-  tasks: {
-    eyebrow: "Team execution",
-    title: "Tasks",
-    description:
-      "Turn priorities into visible, accountable progress across the team.",
-    metric: "24",
-    metricLabel: "Open tasks",
-    secondary: "86%",
-    secondaryLabel: "On-time completion",
-    action: "Create task",
-    columns: ["Task", "Project", "Owner", "Status"],
-    rows: [
-      ["Approve onboarding flow", "Mobile commerce", "Mika", "In review"],
-      [
-        "Connect support knowledge",
-        "AI support agent",
-        "Justine",
-        "In progress",
-      ],
-      ["Prepare launch analytics", "Growth website", "Paolo", "Ready"],
-      ["Review access controls", "Operations hub", "Andrea", "To do"],
+  {
+    title: "IN PROGRESS",
+    count: 3,
+    cards: [
+      ["Connect support knowledge", "HIGH", "AI support", "Justine"],
+      ["Build finance export", "LOW", "Operations hub", "Andrea"],
     ],
-    insight:
-      "Two launch-critical tasks need review today. Clearing them keeps both releases on schedule.",
   },
-  events: {
-    eyebrow: "Shared schedule",
-    title: "Calendar",
-    description:
-      "Keep launches, reviews, meetings, and deadlines in one team timeline.",
-    metric: "08",
-    metricLabel: "Events this week",
-    secondary: "02",
-    secondaryLabel: "Milestones due",
-    action: "New event",
-    columns: ["Event", "Date", "Time", "Team"],
-    rows: [
-      ["Commerce design review", "Aug 14", "10:00 AM", "Product"],
-      ["AI support launch check", "Aug 15", "2:30 PM", "Engineering"],
-      ["Client progress call", "Aug 17", "11:00 AM", "Delivery"],
-      ["August planning", "Aug 19", "9:00 AM", "All hands"],
+  {
+    title: "IN REVIEW",
+    count: 2,
+    cards: [
+      ["Review access controls", "HIGH", "Operations hub", "Mika"],
+      ["Homepage motion pass", "MEDIUM", "Growth website", "Paolo"],
     ],
-    insight:
-      "Thursday has the highest meeting load. Protect the afternoon focus block for launch work.",
   },
-  reminders: {
-    eyebrow: "Nothing falls through",
-    title: "Reminders",
-    description: "Bring important follow-ups back at exactly the right moment.",
-    metric: "06",
-    metricLabel: "Due today",
-    secondary: "18",
-    secondaryLabel: "Completed this week",
-    action: "Add reminder",
-    columns: ["Reminder", "When", "Related to", "Status"],
-    rows: [
-      [
-        "Send revised proposal",
-        "Today · 4:00 PM",
-        "Northstar Labs",
-        "Upcoming",
-      ],
-      ["Renew staging certificate", "Tomorrow", "Infrastructure", "Scheduled"],
-      ["Check launch feedback", "Aug 16", "AI support", "Scheduled"],
-      ["Invoice milestone two", "Aug 18", "Mobile commerce", "Scheduled"],
+  {
+    title: "DONE",
+    count: 18,
+    cards: [
+      ["Map client journey", "DONE", "Mobile commerce", "Team"],
+      ["Define AI guardrails", "DONE", "AI support", "Team"],
     ],
-    insight:
-      "One client follow-up is time-sensitive. NEX recommends sending the revised proposal before 4 PM.",
   },
+];
+function TasksDemo() {
+  return (
+    <DemoFrame>
+      <DemoHeader
+        eyebrow="Delivery cockpit"
+        title="Work moves here."
+        description="A tactile board for priorities, ownership, and momentum—built for fast weekly standups."
+        action="Create task"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={pill}>Board</span>
+        <span className={pill}>Timeline</span>
+        <span className={pill}>My tasks</span>
+        <span className="ml-auto text-xs text-text-tertiary">
+          24 open · 86% on time
+        </span>
+      </div>
+      <div className="grid gap-3 xl:grid-cols-4" data-demo-tour="metrics">
+        {kanban.map((column, i) => (
+          <section
+            key={column.title}
+            className="rounded-3xl bg-bg-sidebar/60 p-3"
+          >
+            <div className="mb-3 flex items-center gap-2 px-1">
+              <span
+                className={`h-2 w-2 rounded-full ${i === 3 ? "bg-primary-400" : "bg-text-tertiary"}`}
+              />
+              <h2 className="text-[11px] font-bold tracking-[.12em]">
+                {column.title}
+              </h2>
+              <span className="ml-auto text-xs text-text-tertiary">
+                {column.count}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {column.cards.map((card) => (
+                <article
+                  key={card[0]}
+                  className={`${panel} group p-4 transition-transform hover:-translate-y-1`}
+                >
+                  <div className="flex justify-between">
+                    <span
+                      className={`text-[9px] font-bold tracking-wider ${card[1] === "HIGH" ? "text-neg" : "text-primary-400"}`}
+                    >
+                      {card[1]}
+                    </span>
+                    <MoreHorizontal className="h-4 w-4 text-text-tertiary" />
+                  </div>
+                  <h3 className="mt-4 text-sm font-semibold leading-5">
+                    {card[0]}
+                  </h3>
+                  <p className="mt-2 text-xs text-text-tertiary">{card[2]}</p>
+                  <div className="mt-5 flex items-center justify-between border-t border-border-subtle pt-3">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-500/15 text-[9px] font-bold text-primary-400">
+                      {card[3].slice(0, 1)}
+                    </span>
+                    <div className="flex gap-3 text-text-tertiary">
+                      <span className="flex items-center gap-1 text-[10px]">
+                        <MessageSquare className="h-3 w-3" />3
+                      </span>
+                      <Paperclip className="h-3 w-3" />
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+      <NexStrip text="Two launch-critical cards are waiting in review. Clear those before pulling more work into progress." />
+    </DemoFrame>
+  );
+}
+
+const week = [
+  {
+    day: "MON",
+    date: "11",
+    events: [
+      ["09:00", "Team sync"],
+      ["14:00", "Research block"],
+    ],
+  },
+  {
+    day: "TUE",
+    date: "12",
+    events: [
+      ["10:30", "Client kickoff"],
+      ["15:00", "Design crit"],
+    ],
+  },
+  {
+    day: "WED",
+    date: "13",
+    events: [
+      ["09:00", "Focus time"],
+      ["13:30", "AI review"],
+    ],
+  },
+  {
+    day: "THU",
+    date: "14",
+    events: [
+      ["10:00", "Commerce review"],
+      ["14:30", "Launch check"],
+    ],
+  },
+  {
+    day: "FRI",
+    date: "15",
+    events: [
+      ["11:00", "Client progress"],
+      ["16:00", "Weekly retro"],
+    ],
+  },
+];
+function CalendarDemo() {
+  return (
+    <DemoFrame>
+      <DemoHeader
+        eyebrow="Team rhythm"
+        title="August 11–15"
+        description="A calm weekly planner that protects focus while keeping every milestone visible."
+        action="New event"
+      />
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <span className={pill}>Week</span>
+          <span className={pill}>Today</span>
+        </div>
+        <div className="flex -space-x-2">
+          {["J", "M", "P", "A"].map((x) => (
+            <span
+              key={x}
+              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-bg-app bg-primary-500 text-[10px] font-bold text-white"
+            >
+              {x}
+            </span>
+          ))}
+        </div>
+      </div>
+      <section className={`${panel} overflow-hidden`} data-demo-tour="metrics">
+        <div className="grid min-w-[720px] grid-cols-5 overflow-x-auto">
+          {week.map((day, index) => (
+            <div
+              key={day.day}
+              className="min-h-[500px] border-r border-border-subtle p-3 last:border-0"
+            >
+              <div
+                className={`rounded-2xl p-3 text-center ${index === 3 ? "bg-primary-500 text-white" : ""}`}
+              >
+                <p className="text-[10px] font-bold tracking-widest opacity-70">
+                  {day.day}
+                </p>
+                <p className="mt-1 text-2xl font-semibold">{day.date}</p>
+              </div>
+              <div className="mt-8 space-y-5">
+                {day.events.map(([time, event], j) => (
+                  <article
+                    key={event}
+                    className={`rounded-2xl border p-3 ${index === 3 && j === 1 ? "border-primary-500 bg-primary-500/10" : "border-border-subtle bg-bg-sidebar/50"}`}
+                  >
+                    <p className="text-[10px] text-text-tertiary">{time}</p>
+                    <p className="mt-2 text-sm font-semibold">{event}</p>
+                    <div className="mt-4 flex items-center gap-1 text-[10px] text-text-tertiary">
+                      <Clock3 className="h-3 w-3" />
+                      45 min
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <NexStrip text="Thursday is meeting-heavy. Keep 3:30–5:00 PM protected so the launch team can finish uninterrupted." />
+    </DemoFrame>
+  );
+}
+
+const chats = [
+  ["Northstar Labs", "The revised direction looks great.", "8m", "2"],
+  ["AI support team", "QA is ready for final review.", "22m", ""],
+  ["Mobile commerce", "Uploaded the new prototype.", "1h", ""],
+  ["ARKO team", "Planning notes are available.", "1d", ""],
+];
+function MessagesDemo() {
+  return (
+    <DemoFrame>
+      <DemoHeader
+        eyebrow="Conversations in context"
+        title="Messages"
+        description="A focused three-pane workspace inspired by modern team communication tools."
+        action="New message"
+      />
+      <section
+        className={`${panel} grid min-h-[610px] overflow-hidden lg:grid-cols-[280px_1fr_240px]`}
+        data-demo-tour="metrics"
+      >
+        <aside className="border-r border-border-subtle">
+          <div className="p-4">
+            <div className="flex items-center gap-2 rounded-full bg-bg-sidebar px-3 py-2 text-xs text-text-tertiary">
+              <Search className="h-4 w-4" />
+              Search conversations
+            </div>
+          </div>
+          {chats.map((c, i) => (
+            <div
+              key={c[0]}
+              className={`flex gap-3 border-t border-border-subtle p-4 ${i === 0 ? "bg-primary-500/10" : ""}`}
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">
+                {c[0].slice(0, 1)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex justify-between">
+                  <p className="truncate text-sm font-semibold">{c[0]}</p>
+                  <span className="text-[10px] text-text-tertiary">{c[2]}</span>
+                </div>
+                <p className="mt-1 truncate text-xs text-text-tertiary">
+                  {c[1]}
+                </p>
+              </div>
+              {c[3] && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-[9px] font-bold text-white">
+                  {c[3]}
+                </span>
+              )}
+            </div>
+          ))}
+        </aside>
+        <main className="flex min-h-[540px] flex-col">
+          <div className="flex items-center justify-between border-b border-border-subtle p-4">
+            <div>
+              <p className="font-semibold">Northstar Labs</p>
+              <p className="text-xs text-primary-400">3 members online</p>
+            </div>
+            <MoreHorizontal className="h-5 w-5 text-text-tertiary" />
+          </div>
+          <div className="flex-1 space-y-5 p-5">
+            <div className="max-w-[78%] rounded-3xl rounded-tl-md bg-bg-sidebar p-4 text-sm leading-6 text-text-secondary">
+              We reviewed the new direction with the team. The clearer delivery
+              timeline makes this much easier to approve.
+            </div>
+            <div className="ml-auto max-w-[78%] rounded-3xl rounded-tr-md bg-primary-500 p-4 text-sm leading-6 text-white">
+              Great. I’ve attached the revised milestone plan and highlighted
+              what ships in the first release.
+            </div>
+            <div className="max-w-[78%] rounded-3xl rounded-tl-md bg-bg-sidebar p-4 text-sm leading-6 text-text-secondary">
+              The revised direction looks great. Let’s proceed with the kickoff.
+            </div>
+          </div>
+          <div className="m-4 flex items-center gap-3 rounded-2xl border border-border-subtle p-3">
+            <Paperclip className="h-4 w-4 text-text-tertiary" />
+            <span className="flex-1 text-sm text-text-tertiary">
+              Write a reply…
+            </span>
+            <span className="rounded-xl bg-primary-500 p-2 text-white">
+              <Send className="h-4 w-4" />
+            </span>
+          </div>
+        </main>
+        <aside className="hidden border-l border-border-subtle p-5 lg:block">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary">
+            Client context
+          </p>
+          <div className="mt-6 text-center">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-500 text-xl font-bold text-white">
+              N
+            </span>
+            <p className="mt-3 font-semibold">Northstar Labs</p>
+            <p className="text-xs text-text-tertiary">Active client</p>
+          </div>
+          <div className="mt-8 space-y-3 text-xs">
+            <p className="flex justify-between">
+              <span className="text-text-tertiary">Project</span>
+              <span>Commerce app</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-text-tertiary">Health</span>
+              <span className="text-primary-400">On track</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-text-tertiary">Files</span>
+              <span>12 shared</span>
+            </p>
+          </div>
+        </aside>
+      </section>
+    </DemoFrame>
+  );
+}
+
+function AssistantDemo() {
+  const prompts = [
+    "What needs attention today?",
+    "Summarize launch readiness",
+    "Where can we protect margin?",
+    "Prepare a client update",
+  ];
+  return (
+    <DemoFrame>
+      <div
+        className="mx-auto flex min-h-[690px] max-w-4xl flex-col items-center justify-center text-center"
+        data-demo-tour="overview"
+      >
+        <div className="relative">
+          <div className="absolute inset-0 scale-[2] rounded-full bg-primary-500/15 blur-3xl" />
+          <span className="relative flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-primary-500/30 bg-primary-500/10 text-primary-400">
+            <Sparkles className="h-9 w-9" />
+          </span>
+        </div>
+        <p className="mt-8 text-[10px] font-bold uppercase tracking-[.22em] text-primary-400">
+          NEX workspace intelligence
+        </p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-6xl">
+          What can I help you
+          <br />
+          move forward?
+        </h1>
+        <p className="mt-4 max-w-xl text-sm leading-6 text-text-secondary">
+          Ask across projects, finance, tasks, and team activity. This demo uses
+          sample responses and never accesses real workspace data.
+        </p>
+        <div
+          className="mt-8 grid w-full gap-3 sm:grid-cols-2"
+          data-demo-tour="metrics"
+        >
+          {prompts.map((x, i) => (
+            <button
+              disabled
+              key={x}
+              className={`${panel} flex min-h-16 items-center gap-3 p-4 text-left text-sm transition-colors hover:border-primary-500/40`}
+            >
+              <span className="text-primary-400">0{i + 1}</span>
+              <span>{x}</span>
+              <ArrowUpRight className="ml-auto h-4 w-4 text-text-tertiary" />
+            </button>
+          ))}
+        </div>
+        <div className="mt-5 flex w-full items-center gap-3 rounded-full border border-primary-500/30 bg-card p-2 pl-5 shadow-2xl shadow-primary-500/5">
+          <span className="flex-1 text-left text-sm text-text-tertiary">
+            Ask NEX about this workspace…
+          </span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-500 text-white">
+            <Send className="h-4 w-4" />
+          </span>
+        </div>
+      </div>
+    </DemoFrame>
+  );
+}
+
+const editorial: Record<
+  string,
+  {
+    title: string;
+    eyebrow: string;
+    desc: string;
+    action: string;
+    kind:
+      "notes" | "journal" | "ideas" | "documents" | "resources" | "reminders";
+  }
+> = {
   notes: {
-    eyebrow: "Capture the context",
     title: "Notes",
-    description:
-      "Keep decisions, research, and working thoughts easy to find and share.",
-    metric: "32",
-    metricLabel: "Team notes",
-    secondary: "07",
-    secondaryLabel: "Updated today",
+    eyebrow: "Knowledge canvas",
+    desc: "Ideas and decisions arranged for fast visual recall.",
     action: "New note",
-    columns: ["Note", "Workspace", "Updated", "Owner"],
-    rows: [
-      ["Commerce launch checklist", "Mobile commerce", "12 min ago", "Mika"],
-      ["Support agent guardrails", "AI support", "1 hour ago", "Justine"],
-      ["Client discovery summary", "Northstar Labs", "Yesterday", "Andrea"],
-      ["August growth experiments", "Marketing", "Aug 11", "Paolo"],
-    ],
-    insight:
-      "Three recent notes mention launch risk. NEX can turn them into a single action summary.",
+    kind: "notes",
   },
   journal: {
-    eyebrow: "A record of progress",
     title: "Journal",
-    description:
-      "Document wins, decisions, and lessons while the context is still fresh.",
-    metric: "14",
-    metricLabel: "Entries this month",
-    secondary: "04",
-    secondaryLabel: "Shared reflections",
+    eyebrow: "Company memory",
+    desc: "An editorial record of progress, decisions, and lessons.",
     action: "Write entry",
-    columns: ["Entry", "Theme", "Date", "Visibility"],
-    rows: [
-      ["What changed after user testing", "Product", "Aug 12", "Team"],
-      ["A better handoff process", "Operations", "Aug 09", "Private"],
-      ["Launch week lessons", "Delivery", "Aug 05", "Team"],
-      ["July retrospective", "Company", "Jul 31", "Team"],
-    ],
-    insight:
-      "Delivery handoffs are the most repeated theme this month. Turn the latest lesson into a reusable checklist.",
+    kind: "journal",
   },
   ideas: {
-    eyebrow: "From spark to roadmap",
     title: "Ideas",
-    description:
-      "Collect opportunities, sharpen them together, and promote the best into real work.",
-    metric: "18",
-    metricLabel: "Ideas captured",
-    secondary: "05",
-    secondaryLabel: "Ready to evaluate",
+    eyebrow: "Opportunity lab",
+    desc: "Score possibilities by impact, evidence, and effort.",
     action: "Capture idea",
-    columns: ["Idea", "Theme", "Signal", "Stage"],
-    rows: [
-      ["Client health summaries", "Automation", "High", "Evaluating"],
-      ["Proposal generator", "Sales", "High", "Research"],
-      ["Weekly project pulse", "Delivery", "Medium", "Shortlisted"],
-      ["Resource recommendation", "Knowledge", "Medium", "New"],
-    ],
-    insight:
-      "Client health summaries have the strongest customer signal and fit the existing NEX workflow.",
+    kind: "ideas",
   },
   documents: {
-    eyebrow: "Work that stays organized",
     title: "Documents",
-    description:
-      "Create, review, and share the files that keep projects moving.",
-    metric: "46",
-    metricLabel: "Active documents",
-    secondary: "09",
-    secondaryLabel: "Shared externally",
+    eyebrow: "Document studio",
+    desc: "A visual library for proposals, specs, and reports.",
     action: "New document",
-    columns: ["Document", "Type", "Updated", "Access"],
-    rows: [
-      ["Mobile commerce proposal", "Proposal", "Today", "Client shared"],
-      ["AI support implementation", "Technical spec", "Yesterday", "Internal"],
-      ["August delivery report", "Report", "Aug 10", "Leadership"],
-      ["Brand usage guide", "Guide", "Aug 06", "Team"],
-    ],
-    insight:
-      "The commerce proposal was viewed three times today. A follow-up now is likely to get attention.",
+    kind: "documents",
   },
   resources: {
-    eyebrow: "Team knowledge base",
     title: "Resources",
-    description:
-      "Give everyone one dependable place for links, guides, assets, and references.",
-    metric: "68",
-    metricLabel: "Shared resources",
-    secondary: "12",
-    secondaryLabel: "Collections",
+    eyebrow: "Curated library",
+    desc: "The team’s best playbooks, assets, and references.",
     action: "Add resource",
-    columns: ["Resource", "Collection", "Added", "Use"],
-    rows: [
-      ["Frontend quality checklist", "Engineering", "Today", "Frequent"],
-      ["Client kickoff template", "Delivery", "Aug 11", "Frequent"],
-      ["ARKO brand assets", "Brand", "Aug 08", "Pinned"],
-      ["AI safety guidelines", "AI systems", "Aug 03", "Pinned"],
-    ],
-    insight:
-      "The kickoff template is your fastest-growing resource. Pin it for every new client workspace.",
+    kind: "resources",
   },
-  messages: {
-    eyebrow: "Communication in context",
-    title: "Messages",
-    description:
-      "Keep team and client conversations connected to the work they affect.",
-    metric: "04",
-    metricLabel: "Unread threads",
-    secondary: "12m",
-    secondaryLabel: "Average response",
-    action: "New message",
-    columns: ["Conversation", "Last message", "Time", "Status"],
-    rows: [
-      [
-        "Northstar Labs",
-        "The revised direction looks great.",
-        "8 min",
-        "Unread",
-      ],
-      ["AI support team", "QA is ready for final review.", "22 min", "Active"],
-      ["Mobile commerce", "Uploaded the new prototype.", "1 hour", "Active"],
-      ["ARKO team", "Planning notes are now available.", "Yesterday", "Read"],
-    ],
-    insight:
-      "Northstar Labs replied positively. Respond today while the proposal has momentum.",
-  },
-  assistant: {
-    eyebrow: "Workspace intelligence",
-    title: "NEX Assistant",
-    description:
-      "Ask questions across your work and turn answers into clear next steps.",
-    metric: "9.4h",
-    metricLabel: "Estimated time saved",
-    secondary: "28",
-    secondaryLabel: "Insights this week",
-    action: "Start a conversation",
-    columns: ["Recent conversation", "Context", "Updated", "Result"],
-    rows: [
-      [
-        "What needs attention today?",
-        "All workspace",
-        "10 min ago",
-        "3 actions",
-      ],
-      ["Summarize launch readiness", "AI support", "Yesterday", "Ready"],
-      ["Where can we protect margin?", "Finance", "Aug 11", "2 insights"],
-      ["Prepare client update", "Mobile commerce", "Aug 09", "Drafted"],
-    ],
-    insight:
-      "Try asking: “What should the team prioritize before Friday?” In demo mode, responses remain examples only.",
+  reminders: {
+    title: "Reminders",
+    eyebrow: "Action timeline",
+    desc: "Important follow-ups, ordered around your attention.",
+    action: "Add reminder",
+    kind: "reminders",
   },
 };
+const content = [
+  "Commerce launch checklist",
+  "AI support guardrails",
+  "Client discovery summary",
+  "August growth experiments",
+  "A better handoff process",
+  "Weekly project pulse",
+];
+function EditorialDemo({ type }: { type: keyof typeof editorial }) {
+  const p = editorial[type];
+  if (p.kind === "reminders") return <ReminderDemo />;
+  return (
+    <DemoFrame>
+      <DemoHeader
+        eyebrow={p.eyebrow}
+        title={p.title}
+        description={p.desc}
+        action={p.action}
+      />
+      {p.kind === "ideas" ? (
+        <div
+          className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+          data-demo-tour="metrics"
+        >
+          {content.map((x, i) => (
+            <article key={x} className={`${panel} p-5`}>
+              <div className="flex justify-between">
+                <Lightbulb className="h-5 w-5 text-primary-400" />
+                <span className="text-2xl font-semibold">{92 - i * 7}</span>
+              </div>
+              <h2 className="mt-8 text-lg font-semibold">{x}</h2>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                A promising direction supported by recurring client and delivery
+                signals.
+              </p>
+              <div className="mt-6 grid grid-cols-3 gap-2 border-t border-border-subtle pt-4 text-center text-[10px] text-text-tertiary">
+                <span>
+                  Impact
+                  <br />
+                  <b className="text-text-primary">High</b>
+                </span>
+                <span>
+                  Effort
+                  <br />
+                  <b className="text-text-primary">Medium</b>
+                </span>
+                <span>
+                  Signal
+                  <br />
+                  <b className="text-primary-400">Strong</b>
+                </span>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : p.kind === "documents" || p.kind === "resources" ? (
+        <div
+          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          data-demo-tour="metrics"
+        >
+          {content.map((x, i) => (
+            <article key={x} className={`${panel} overflow-hidden`}>
+              <div
+                className={`flex h-36 items-center justify-center ${i % 2 ? "bg-primary-500/10" : "bg-bg-sidebar"}`}
+              >
+                {p.kind === "documents" ? (
+                  <FileText className="h-12 w-12 text-primary-400" />
+                ) : (
+                  <Bookmark className="h-12 w-12 text-primary-400" />
+                )}
+              </div>
+              <div className="p-5">
+                <div className="flex justify-between">
+                  <h2 className="font-semibold">{x}</h2>
+                  <MoreHorizontal className="h-4 w-4 text-text-tertiary" />
+                </div>
+                <p className="mt-2 text-xs text-text-tertiary">
+                  {i % 2 ? "Updated today" : "Updated Aug 11"} · {i + 3}{" "}
+                  collaborators
+                </p>
+                <div className="mt-5 flex gap-2">
+                  <span className={pill}>
+                    {p.kind === "documents" ? "PDF" : "Guide"}
+                  </span>
+                  <span className={pill}>{i % 2 ? "Pinned" : "Shared"}</span>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : p.kind === "journal" ? (
+        <div className="mx-auto max-w-4xl" data-demo-tour="metrics">
+          {content.slice(0, 4).map((x, i) => (
+            <article
+              key={x}
+              className="grid gap-4 border-l border-primary-500/40 pb-10 pl-8 md:grid-cols-[120px_1fr]"
+            >
+              <div className="relative">
+                <span className="absolute -left-[37px] top-1 h-4 w-4 rounded-full border-4 border-bg-app bg-primary-500" />
+                <p className="text-xs text-text-tertiary">AUG {12 - i * 2}</p>
+              </div>
+              <div className={`${panel} p-6`}>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary-400">
+                  {i % 2 ? "OPERATIONS" : "PRODUCT"}
+                </p>
+                <h2 className="mt-2 text-xl font-semibold">{x}</h2>
+                <p className="mt-3 text-sm leading-6 text-text-secondary">
+                  A concise reflection on what changed, why it mattered, and
+                  what the team will do differently next time.
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div
+          className="columns-1 gap-4 sm:columns-2 xl:columns-3"
+          data-demo-tour="metrics"
+        >
+          {content.map((x, i) => (
+            <article key={x} className={`${panel} mb-4 break-inside-avoid p-5`}>
+              <div className="flex justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary-400">
+                  {i % 2 ? "RESEARCH" : "PROJECT"}
+                </span>
+                <Star className="h-4 w-4 text-text-tertiary" />
+              </div>
+              <h2 className="mt-5 text-lg font-semibold">{x}</h2>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">
+                {i % 2
+                  ? "What we learned from the latest client conversation and the decisions it changes."
+                  : "The essential checklist, owners, open questions, and launch conditions in one place."}
+              </p>
+              {i % 3 === 0 && (
+                <div className="mt-5 h-28 rounded-2xl bg-gradient-to-br from-primary-500/20 to-transparent" />
+              )}
+              <p className="mt-5 text-[10px] text-text-tertiary">
+                Edited {i + 1}h ago
+              </p>
+            </article>
+          ))}
+        </div>
+      )}
+      <NexStrip text="NEX found related context across three items and can combine it into a concise team briefing." />
+    </DemoFrame>
+  );
+}
 
-function sectionKey(pathname: string) {
-  return pathname.split("/")[2] || "dashboard";
+function ReminderDemo() {
+  const groups = [
+    [
+      "TODAY",
+      [
+        "Send revised proposal",
+        "Review launch checklist",
+        "Call Northstar Labs",
+      ],
+    ],
+    ["TOMORROW", ["Renew staging certificate", "Prepare weekly update"]],
+    ["NEXT WEEK", ["Invoice milestone two", "Review monthly runway"]],
+  ];
+  return (
+    <DemoFrame>
+      <DemoHeader
+        eyebrow="Action timeline"
+        title="Reminders"
+        description="A chronological focus rail that puts urgency before volume."
+        action="Add reminder"
+      />
+      <div
+        className="grid gap-5 xl:grid-cols-[1fr_320px]"
+        data-demo-tour="metrics"
+      >
+        <section className={`${panel} p-5 md:p-7`}>
+          {groups.map(([label, items]) => (
+            <div key={String(label)} className="mb-8 last:mb-0">
+              <p className="mb-3 text-[10px] font-bold tracking-[.18em] text-text-tertiary">
+                {label as string}
+              </p>
+              <div className="space-y-2">
+                {(items as string[]).map((x, i) => (
+                  <div
+                    key={x}
+                    className="flex items-center gap-4 rounded-2xl border border-border-subtle p-4"
+                  >
+                    <button
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-primary-500/50"
+                      aria-label={`Complete ${x}`}
+                    >
+                      {i === 1 ? (
+                        <Check className="h-3.5 w-3.5 text-primary-400" />
+                      ) : null}
+                    </button>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{x}</p>
+                      <p className="mt-1 text-xs text-text-tertiary">
+                        {label === "TODAY" ? `${i + 2}:00 PM` : "9:00 AM"}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-text-tertiary" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+        <aside className="space-y-4">
+          <div className="rounded-3xl bg-primary-500 p-6 text-white">
+            <Bell className="h-5 w-5" />
+            <p className="mt-8 text-4xl font-semibold">06</p>
+            <p className="mt-1 text-sm text-white/70">due today</p>
+            <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/20">
+              <div className="h-full w-2/3 rounded-full bg-white" />
+            </div>
+          </div>
+          <NexCard text="The proposal follow-up is the only time-sensitive item. Send it before 4 PM." />
+        </aside>
+      </div>
+    </DemoFrame>
+  );
+}
+
+function NexStrip({ text }: { text: string }) {
+  return (
+    <section
+      className="flex flex-col gap-4 rounded-3xl border border-primary-500/25 bg-primary-500/10 p-5 md:flex-row md:items-center"
+      data-demo-tour="nex"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500 text-white">
+        <Sparkles className="h-5 w-5" />
+      </span>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[.16em] text-primary-400">
+          NEX recommends
+        </p>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">{text}</p>
+      </div>
+      <span className="ml-auto whitespace-nowrap text-xs font-bold text-primary-400">
+        View reasoning →
+      </span>
+    </section>
+  );
+}
+function NexCard({ text }: { text: string }) {
+  return (
+    <div className={`${panel} p-5`}>
+      <Sparkles className="h-5 w-5 text-primary-400" />
+      <p className="mt-4 text-[10px] font-bold uppercase tracking-widest text-primary-400">
+        NEX focus
+      </p>
+      <p className="mt-2 text-sm leading-6 text-text-secondary">{text}</p>
+    </div>
+  );
+}
+function DemoFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mx-auto w-full max-w-[1500px] space-y-5 pb-28">
+      <div className="flex justify-end">
+        <DemoNotice />
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export function DemoSystemPage({ pathname }: { pathname: string }) {
-  const key = sectionKey(pathname);
+  const key = pathname.split("/")[2] || "dashboard";
   if (key === "dashboard") return <DemoDashboard />;
-  const section = sections[key] ?? sections.tasks;
-
-  return (
-    <div
-      className="mx-auto w-full max-w-[1500px] space-y-4 pb-28"
-      data-demo-tour="overview"
-    >
-      <section className="relative overflow-hidden rounded-3xl border border-border-subtle bg-card p-5 md:p-7">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary-500/12 blur-3xl" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-primary-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-primary-400">
-                Interactive demo
-              </span>
-              <span className="rounded-full border border-border-subtle px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
-                Sample data · Read only
-              </span>
-            </div>
-            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-              {section.eyebrow}
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
-              {section.title}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary md:text-base">
-              {section.description}
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled
-            className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-500 px-5 text-xs font-bold text-white opacity-90"
-          >
-            <Plus className="h-4 w-4" /> {section.action}
-          </button>
-        </div>
-      </section>
-
-      <section
-        className="grid gap-3 md:grid-cols-[1fr_1fr_1.4fr]"
-        data-demo-tour="metrics"
-      >
-        <div className="dashboard-panel rounded-2xl border border-border-subtle p-5">
-          <TrendingUp className="h-4 w-4 text-primary-400" />
-          <p className="mt-5 text-3xl font-semibold tracking-tight">
-            {section.metric}
-          </p>
-          <p className="mt-1 text-xs text-text-tertiary">
-            {section.metricLabel}
-          </p>
-        </div>
-        <div className="dashboard-panel rounded-2xl border border-border-subtle p-5">
-          <CheckCircle2 className="h-4 w-4 text-primary-400" />
-          <p className="mt-5 text-3xl font-semibold tracking-tight">
-            {section.secondary}
-          </p>
-          <p className="mt-1 text-xs text-text-tertiary">
-            {section.secondaryLabel}
-          </p>
-        </div>
-        <div
-          className="dashboard-panel flex rounded-2xl border border-primary-500/20 p-5"
-          data-demo-tour="nex"
-        >
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500/15 text-primary-400">
-              <Sparkles className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-400">
-                NEX insight
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                {section.insight}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        className="dashboard-panel overflow-hidden rounded-2xl border border-border-subtle"
-        data-demo-tour="insights"
-      >
-        <div className="flex flex-col gap-3 border-b border-border-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-semibold">Recent activity</p>
-            <p className="mt-0.5 text-xs text-text-tertiary">
-              A polished preview of this workspace module
-            </p>
-          </div>
-          <div className="flex items-center gap-2 rounded-full border border-border-subtle px-3 py-2 text-xs text-text-tertiary">
-            <Search className="h-3.5 w-3.5" /> Search{" "}
-            {section.title.toLowerCase()}
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <div className="min-w-[680px]">
-            <div className="grid grid-cols-4 border-b border-border-subtle px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-text-tertiary">
-              {section.columns.map((column) => (
-                <span key={column}>{column}</span>
-              ))}
-            </div>
-            {section.rows.map((row, index) => (
-              <div
-                key={row[0]}
-                className="grid grid-cols-4 items-center border-b border-border-subtle/70 px-5 py-4 text-sm last:border-0"
-              >
-                {row.map((cell, cellIndex) => (
-                  <span
-                    key={cell}
-                    className={
-                      cellIndex === 0
-                        ? "font-medium text-text-primary"
-                        : cellIndex === 3
-                          ? "text-primary-400"
-                          : "text-text-secondary"
-                    }
-                  >
-                    {cellIndex === 0 ? (
-                      <span className="flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500/10 text-primary-400">
-                          {index % 3 === 0 ? (
-                            <FileText className="h-3.5 w-3.5" />
-                          ) : index % 3 === 1 ? (
-                            <Users className="h-3.5 w-3.5" />
-                          ) : (
-                            <Clock3 className="h-3.5 w-3.5" />
-                          )}
-                        </span>
-                        {cell}
-                      </span>
-                    ) : (
-                      cell
-                    )}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { icon: CalendarDays, label: "Upcoming", value: "4 scheduled" },
-          { icon: MessageSquare, label: "Collaboration", value: "12 updates" },
-          { icon: ArrowUpRight, label: "Momentum", value: "+18% this week" },
-        ].map(({ icon: Icon, label, value }) => (
-          <div
-            key={label}
-            className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-card p-4"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-500/10 text-primary-400">
-              <Icon className="h-4 w-4" />
-            </span>
-            <div>
-              <p className="text-xs text-text-tertiary">{label}</p>
-              <p className="mt-0.5 text-sm font-semibold">{value}</p>
-            </div>
-            <Circle className="ml-auto h-2 w-2 fill-primary-400 text-primary-400" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  if (key === "finance") return <FinanceDemo />;
+  if (key === "tasks") return <TasksDemo />;
+  if (key === "events") return <CalendarDemo />;
+  if (key === "messages") return <MessagesDemo />;
+  if (key === "assistant") return <AssistantDemo />;
+  if (key in editorial)
+    return <EditorialDemo type={key as keyof typeof editorial} />;
+  return <DemoDashboard />;
 }
