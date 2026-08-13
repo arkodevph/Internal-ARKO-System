@@ -53,9 +53,10 @@ export async function getAssistantConfig(): Promise<AssistantConfig> {
       '#22C55E') as AssistantConfig['accentColor'],
     greeting:
       saved?.greeting ??
-      'I’m NEX. Ask about your ARKO workspace or create workspace data. I always ask before writing anything.',
+      'Hey, y’all! I’m NEX, your ARKO operations guide. Tell me what needs sorting, and I’ll line it up for your approval before changing anything.',
     personality:
-      saved?.personality ?? 'Calm, concise, practical, and direct.',
+      saved?.personality ??
+      'Sunny, courteous, reassuring, precise, and efficient, with subtly uncanny confidence. Acknowledge requests, explain boundaries politely, and recap proposed actions clearly before asking for confirmation.',
     projectId: saved?.projectId ?? process.env.GOOGLE_CLOUD_PROJECT ?? '',
     location: saved?.location ?? process.env.GOOGLE_CLOUD_LOCATION ?? 'global',
     model: saved?.model ?? process.env.GOOGLE_VERTEX_MODEL ?? 'gemini-2.5-flash',

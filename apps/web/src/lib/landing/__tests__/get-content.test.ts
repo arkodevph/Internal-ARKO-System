@@ -36,4 +36,11 @@ describe('landing content loader', () => {
     expect(findFirst).toHaveBeenCalledWith({ where: { singleton: true } })
     expect(content.hero.eyebrow).toBe('Stored')
   })
+
+  it('uses default content when the configured database is unreachable', async () => {
+    process.env.DATABASE_URL = 'postgresql://example.test/arko'
+    findFirst.mockRejectedValue(new Error('Database unavailable'))
+
+    await expect(loadLandingContent()).resolves.toEqual(DEFAULT_LANDING_CONTENT)
+  })
 })

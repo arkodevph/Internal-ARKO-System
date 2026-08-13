@@ -261,17 +261,6 @@ export default function ClientDocumentWorkflowPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden border-y-4 border-acid bg-acid py-5 text-ink">
-        <div className="marquee-track display text-4xl md:text-6xl">
-          <span className="pr-5">
-            DRAFT · REVIEW · PUBLISH · SHARE · PRINT ·{" "}
-          </span>
-          <span className="pr-5">
-            DRAFT · REVIEW · PUBLISH · SHARE · PRINT ·{" "}
-          </span>
-        </div>
-      </section>
-
       <section className="px-6 py-24 md:px-10 md:py-36">
         <div className="mx-auto grid max-w-[90rem] gap-12 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
