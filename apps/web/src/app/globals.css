@@ -591,7 +591,7 @@
 }
 .nex-terminal-trigger {
   border: 2px solid #8b7a4c;
-  border-radius: 10px 10px 14px 14px;
+  border-radius: 9999px;
   background-color: #211d13;
   background-image: linear-gradient(145deg, rgb(49 43 28 / 78%), rgb(21 20 14 / 92%) 62%), url('/nex/terminal-shell.webp');
   background-position: center;
@@ -607,7 +607,7 @@
   inset: 5px;
   pointer-events: none;
   border: 1px solid rgb(184 255 46 / 18%);
-  border-radius: 5px 5px 9px 9px;
+  border-radius: 9999px;
   content: '';
 }
 
