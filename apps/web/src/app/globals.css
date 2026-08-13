@@ -611,6 +611,19 @@
   content: '';
 }
 
+@media (max-width: 767px) {
+  .floating-nex-shell:has(.floating-nex-input:focus) {
+    bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+  .floating-nex-shell:has(.floating-nex-input:focus) .floating-nex-panel {
+    bottom: 0;
+    height: min(26rem, calc(100dvh - 1rem - env(safe-area-inset-bottom)));
+  }
+  .floating-nex-shell:has(.floating-nex-input:focus) .floating-nex-trigger {
+    visibility: hidden;
+  }
+}
+
 /* Shared client-document canvas. It is intentionally independent from the
    dashboard palette so screen and printed output remain the same. */
 .document-sheet {

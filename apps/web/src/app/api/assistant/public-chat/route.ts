@@ -62,7 +62,7 @@ function publicReply(input: string, content: LandingContent) {
     return 'ARKO is based in the Philippines and works with clients worldwide using an async-first process.'
   }
   if (/contact|email|start|hire|project|talk|reply/.test(message)) {
-    return 'Send a short project brief through the contact form or email arkodevph@gmail.com. ARKO usually replies within 24 hours.'
+    return 'Send a short project brief through the contact form or email contact@arkodevph.com. ARKO usually replies within 24 hours.'
   }
   if (/inquir|interested|help me choose/.test(message)) {
     return PUBLIC_FALLBACK

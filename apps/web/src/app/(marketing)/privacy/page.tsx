@@ -24,10 +24,10 @@ const SECTIONS: { heading: string; body: React.ReactNode }[] = [
         worldwide. This policy covers information handled through this website
         (arkodevph.vercel.app). You can reach us any time at{' '}
         <a
-          href="mailto:arkodevph@gmail.com"
+          href="mailto:contact@arkodevph.com"
           className="text-acid underline underline-offset-4"
         >
-          arkodevph@gmail.com
+          contact@arkodevph.com
         </a>
         .
       </p>
@@ -101,10 +101,10 @@ const SECTIONS: { heading: string; body: React.ReactNode }[] = [
         You can ask us to access, correct, or delete the personal information we
         hold about you. Email{' '}
         <a
-          href="mailto:arkodevph@gmail.com"
+          href="mailto:contact@arkodevph.com"
           className="text-acid underline underline-offset-4"
         >
-          arkodevph@gmail.com
+          contact@arkodevph.com
         </a>{' '}
         and we will respond promptly.
       </p>
