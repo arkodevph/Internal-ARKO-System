@@ -274,6 +274,13 @@ function resendClient() {
   return new Resend(apiKey);
 }
 
+function resendInboundClient() {
+  const apiKey = process.env.RESEND_INBOUND_API_KEY;
+  if (!apiKey)
+    throw new Error("RESEND_INBOUND_API_KEY is not configured");
+  return new Resend(apiKey);
+}
+
 export async function sendMarketingTestEmail(
   db: DbClient,
   input: { to: string; subject: string; html: string; text?: string | null },
@@ -518,7 +525,7 @@ export async function recordResendWebhook(
   if (existing) return { duplicate: true };
 
   if (event.type === "email.received") {
-    const resend = resendClient();
+    const resend = resendInboundClient();
     const received = await resend.emails.receiving.get(event.data.email_id);
     if (received.error || !received.data)
       throw new Error(
