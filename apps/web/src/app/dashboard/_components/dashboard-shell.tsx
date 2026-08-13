@@ -38,6 +38,7 @@ import { NexMark } from "../../../components/nex-mascot";
 import { DashboardThemeToggle } from "./dashboard-theme-toggle";
 import { DemoNexTour } from "./demo-nex-tour";
 import { DemoSystemPage } from "./demo-system-page";
+import { NotificationDrawer } from "./notification-drawer";
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -135,7 +136,6 @@ const CLIENT_CATEGORIES: NavCategory[] = [
     end: true,
   },
   { to: "/dashboard/messages", icon: MessageSquare, label: "Messages" },
-  { to: "/dashboard/resources", icon: Bookmark, label: "Shared Resources" },
 ];
 
 const DEMO_GROUPS = NAV_GROUPS.filter((group) => group.label !== "Admin");
@@ -330,6 +330,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const isClient = sessionUser?.role === "CLIENT";
   const [showSearch, setShowSearch] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const unread = useUnreadCounts(!isDemo);
   const assistantIdentity = useAssistantIdentity();
@@ -554,8 +555,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </Link>
               )}
               {!isDemo && (
-                <Link
-                  href="/dashboard/notifications"
+                <button
+                  type="button"
+                  onClick={() => setShowNotifications(true)}
                   title="Notifications"
                   className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
                 >
@@ -565,7 +567,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       {unread.notifications > 99 ? "99+" : unread.notifications}
                     </span>
                   )}
-                </Link>
+                </button>
               )}
             </div>
           </header>
@@ -609,6 +611,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         pathname !== "/dashboard/assistant" && (
           <FloatingNexChat identity={assistantIdentity} pathname={pathname} />
         )
+      )}
+      {!isDemo && (
+        <NotificationDrawer
+          open={showNotifications}
+          onClose={() => setShowNotifications(false)}
+        />
       )}
     </div>
   );

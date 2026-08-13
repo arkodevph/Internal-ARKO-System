@@ -26,7 +26,10 @@ import {
   TrendingUp,
   Users,
   WalletCards,
+  X,
 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useState, type MouseEvent as ReactMouseEvent } from "react";
 import { DemoDashboard } from "./demo-dashboard";
 import { PerformanceChart } from "./performance-chart";
 
@@ -62,8 +65,8 @@ function DemoHeader({
         </p>
       </div>
       <button
-        disabled
-        className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-500 px-5 text-xs font-bold text-white opacity-90"
+        data-demo-action={action}
+        className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-500 px-5 text-xs font-bold text-white shadow-lg shadow-primary-500/20 transition-transform hover:scale-[1.02] active:scale-[.98]"
       >
         <Plus className="h-4 w-4" />
         {action}
@@ -147,8 +150,18 @@ function FinanceDemo() {
             <p className="text-xs text-text-tertiary">August 2026</p>
           </div>
           <div className="flex gap-2">
-            <span className={pill}>All accounts</span>
-            <span className={pill}>This month</span>
+            <button
+              data-demo-action="Account filter changed"
+              className={`${pill} min-h-11`}
+            >
+              All accounts
+            </button>
+            <button
+              data-demo-action="Date range changed"
+              className={`${pill} min-h-11`}
+            >
+              This month
+            </button>
           </div>
         </div>
         {[
@@ -157,9 +170,11 @@ function FinanceDemo() {
           ["Operations dashboard", "Project income", "+₱84,000", true],
           ["Design subscriptions", "Software", "−₱7,800", false],
         ].map(([name, type, amount, positive]) => (
-          <div
+          <button
             key={String(name)}
-            className="grid grid-cols-[1fr_auto] items-center border-b border-border-subtle/70 px-5 py-4 last:border-0 md:grid-cols-[1fr_1fr_auto]"
+            data-demo-title={String(name)}
+            data-demo-detail={`${type} transaction · ${amount} · August 2026`}
+            className="grid w-full grid-cols-[1fr_auto] items-center border-b border-border-subtle/70 px-5 py-4 text-left transition-colors last:border-0 hover:bg-primary-500/5 md:grid-cols-[1fr_1fr_auto]"
           >
             <div className="flex items-center gap-3">
               <span
@@ -181,7 +196,7 @@ function FinanceDemo() {
             >
               {amount}
             </span>
-          </div>
+          </button>
         ))}
       </section>
     </DemoFrame>
@@ -260,7 +275,9 @@ function TasksDemo() {
               {column.cards.map((card) => (
                 <article
                   key={card[0]}
-                  className={`${panel} group p-4 transition-transform hover:-translate-y-1`}
+                  data-demo-title={card[0]}
+                  data-demo-detail={`${card[1]} priority · ${card[2]} · Assigned to ${card[3]}`}
+                  className={`${panel} group cursor-pointer p-4 transition-transform hover:-translate-y-1 hover:border-primary-500/40`}
                 >
                   <div className="flex justify-between">
                     <span
@@ -382,6 +399,8 @@ function CalendarDemo() {
                 {day.events.map(([time, event], j) => (
                   <article
                     key={event}
+                    data-demo-title={event}
+                    data-demo-detail={`${day.day}, August ${day.date} at ${time} · 45 minute event`}
                     className={`rounded-2xl border p-3 ${index === 3 && j === 1 ? "border-primary-500 bg-primary-500/10" : "border-border-subtle bg-bg-sidebar/50"}`}
                   >
                     <p className="text-[10px] text-text-tertiary">{time}</p>
@@ -429,9 +448,11 @@ function MessagesDemo() {
             </div>
           </div>
           {chats.map((c, i) => (
-            <div
+            <button
               key={c[0]}
-              className={`flex gap-3 border-t border-border-subtle p-4 ${i === 0 ? "bg-primary-500/10" : ""}`}
+              data-demo-title={c[0]}
+              data-demo-detail={`Conversation preview · ${c[1]}`}
+              className={`flex w-full gap-3 border-t border-border-subtle p-4 text-left transition-colors hover:bg-primary-500/5 ${i === 0 ? "bg-primary-500/10" : ""}`}
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">
                 {c[0].slice(0, 1)}
@@ -450,7 +471,7 @@ function MessagesDemo() {
                   {c[3]}
                 </span>
               )}
-            </div>
+            </button>
           ))}
         </aside>
         <main className="flex min-h-[540px] flex-col">
@@ -479,9 +500,12 @@ function MessagesDemo() {
             <span className="flex-1 text-sm text-text-tertiary">
               Write a reply…
             </span>
-            <span className="rounded-xl bg-primary-500 p-2 text-white">
+            <button
+              data-demo-action="Message sent"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-primary-500 p-2 text-white"
+            >
               <Send className="h-4 w-4" />
-            </span>
+            </button>
           </div>
         </main>
         <aside className="hidden border-l border-border-subtle p-5 lg:block">
@@ -552,8 +576,9 @@ function AssistantDemo() {
         >
           {prompts.map((x, i) => (
             <button
-              disabled
               key={x}
+              data-demo-title={x}
+              data-demo-detail="NEX is ready to generate a sample briefing from fictional workspace data."
               className={`${panel} flex min-h-16 items-center gap-3 p-4 text-left text-sm transition-colors hover:border-primary-500/40`}
             >
               <span className="text-primary-400">0{i + 1}</span>
@@ -566,9 +591,12 @@ function AssistantDemo() {
           <span className="flex-1 text-left text-sm text-text-tertiary">
             Ask NEX about this workspace…
           </span>
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-500 text-white">
+          <button
+            data-demo-action="NEX response generated"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-500 text-white"
+          >
             <Send className="h-4 w-4" />
-          </span>
+          </button>
         </div>
       </div>
     </DemoFrame>
@@ -654,7 +682,12 @@ function EditorialDemo({ type }: { type: keyof typeof editorial }) {
           data-demo-tour="metrics"
         >
           {content.map((x, i) => (
-            <article key={x} className={`${panel} p-5`}>
+            <article
+              key={x}
+              data-demo-title={x}
+              data-demo-detail={`Opportunity score ${92 - i * 7} · Strong signal · Medium effort`}
+              className={`${panel} cursor-pointer p-5 transition-transform hover:-translate-y-1`}
+            >
               <div className="flex justify-between">
                 <Lightbulb className="h-5 w-5 text-primary-400" />
                 <span className="text-2xl font-semibold">{92 - i * 7}</span>
@@ -690,7 +723,12 @@ function EditorialDemo({ type }: { type: keyof typeof editorial }) {
           data-demo-tour="metrics"
         >
           {content.map((x, i) => (
-            <article key={x} className={`${panel} overflow-hidden`}>
+            <article
+              key={x}
+              data-demo-title={x}
+              data-demo-detail={`${p.kind === "documents" ? "Document" : "Resource"} preview · ${i + 3} collaborators`}
+              className={`${panel} cursor-pointer overflow-hidden transition-transform hover:-translate-y-1`}
+            >
               <div
                 className={`flex h-36 items-center justify-center ${i % 2 ? "bg-primary-500/10" : "bg-bg-sidebar"}`}
               >
@@ -724,6 +762,8 @@ function EditorialDemo({ type }: { type: keyof typeof editorial }) {
           {content.slice(0, 4).map((x, i) => (
             <article
               key={x}
+              data-demo-title={x}
+              data-demo-detail="Journal entry preview · Shared with the demo team"
               className="grid gap-4 border-l border-primary-500/40 pb-10 pl-8 md:grid-cols-[120px_1fr]"
             >
               <div className="relative">
@@ -749,7 +789,12 @@ function EditorialDemo({ type }: { type: keyof typeof editorial }) {
           data-demo-tour="metrics"
         >
           {content.map((x, i) => (
-            <article key={x} className={`${panel} mb-4 break-inside-avoid p-5`}>
+            <article
+              key={x}
+              data-demo-title={x}
+              data-demo-detail="Knowledge card · Related to three sample projects"
+              className={`${panel} mb-4 cursor-pointer break-inside-avoid p-5 transition-transform hover:-translate-y-1`}
+            >
               <div className="flex justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-primary-400">
                   {i % 2 ? "RESEARCH" : "PROJECT"}
@@ -884,12 +929,159 @@ function NexCard({ text }: { text: string }) {
   );
 }
 function DemoFrame({ children }: { children: React.ReactNode }) {
+  const [detail, setDetail] = useState<{ title: string; body: string } | null>(
+    null,
+  );
+  const [toast, setToast] = useState("");
+  const reduceMotion = useReducedMotion();
+
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2600);
+  };
+
+  const interact = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = (event.target as HTMLElement).closest<HTMLElement>(
+      "button, article, [data-demo-title]",
+    );
+    if (!target || target.closest('[aria-label="NEX demo walkthrough"]'))
+      return;
+    const action = target.dataset.demoAction;
+    if (action) {
+      showToast(`${action} — saved in your private demo sandbox`);
+      return;
+    }
+    const title =
+      target.dataset.demoTitle ||
+      target.querySelector("h2, h3")?.textContent?.trim();
+    if (!title) return;
+    setDetail({
+      title,
+      body:
+        target.dataset.demoDetail ||
+        "Open this item to review ownership, activity, attachments, and NEX recommendations. Everything here is fictional and private to this demo session.",
+    });
+  };
+
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-5 pb-28">
+    <div
+      onClick={interact}
+      className="mx-auto w-full max-w-[1500px] space-y-5 pb-28"
+    >
       <div className="flex justify-end">
         <DemoNotice />
       </div>
       {children}
+      <AnimatePresence>
+        {detail ? (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close preview"
+              onClick={() => setDetail(null)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm"
+            />
+            <motion.aside
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${detail.title} preview`}
+              initial={{ x: reduceMotion ? 0 : "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: reduceMotion ? 0 : "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-md flex-col border-l border-border-subtle bg-bg-sidebar shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-border-subtle p-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary-400">
+                    Demo detail
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold">{detail.title}</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetail(null)}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle"
+                  aria-label="Close detail"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5">
+                <div className="rounded-3xl border border-primary-500/25 bg-primary-500/10 p-5">
+                  <Sparkles className="h-5 w-5 text-primary-400" />
+                  <p className="mt-4 text-sm leading-6 text-text-secondary">
+                    {detail.body}
+                  </p>
+                </div>
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  {[
+                    ["Owner", "Demo team"],
+                    ["Status", "On track"],
+                    ["Activity", "12 updates"],
+                    ["Access", "Read only"],
+                  ].map(([label, value]) => (
+                    <div key={label} className={`${panel} p-4`}>
+                      <p className="text-[10px] uppercase tracking-wider text-text-tertiary">
+                        {label}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                <h3 className="mt-7 text-sm font-semibold">Recent activity</h3>
+                <div className="mt-3 space-y-4 border-l border-primary-500/30 pl-5">
+                  {[
+                    "NEX summarized the latest changes",
+                    "A teammate reviewed this item",
+                    "Progress was updated",
+                  ].map((item, index) => (
+                    <div key={item} className="relative">
+                      <span className="absolute -left-[25px] top-1 h-2 w-2 rounded-full bg-primary-400" />
+                      <p className="text-sm">{item}</p>
+                      <p className="mt-1 text-xs text-text-tertiary">
+                        {index + 1} hour{index ? "s" : ""} ago
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-border-subtle p-5">
+                <button
+                  type="button"
+                  data-demo-action="Preview action completed"
+                  onClick={() => {
+                    setDetail(null);
+                    showToast(
+                      "Action completed — saved in your private demo sandbox",
+                    );
+                  }}
+                  className="min-h-12 w-full rounded-full bg-primary-500 px-5 text-sm font-bold text-white"
+                >
+                  Try this action
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {toast ? (
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="fixed bottom-24 left-1/2 z-[60] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 rounded-full border border-primary-500/30 bg-bg-sidebar/95 px-5 py-3 text-center text-sm font-medium shadow-2xl backdrop-blur-xl"
+          >
+            <CheckCircle2 className="mr-2 inline h-4 w-4 text-primary-400" />
+            {toast}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

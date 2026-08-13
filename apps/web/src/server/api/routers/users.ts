@@ -359,7 +359,7 @@ export const usersRouter = router({
 
       return ctx.prisma.user.update({
         where: { id: input.userId },
-        data: { role: input.role },
+        data: { role: input.role, authVersion: { increment: 1 } },
         select: { id: true, name: true, email: true, role: true },
       });
     }),
@@ -391,7 +391,7 @@ export const usersRouter = router({
 
       return ctx.prisma.user.update({
         where: { id: input.userId },
-        data: { status: input.status },
+        data: { status: input.status, authVersion: { increment: 1 } },
         select: { id: true, name: true, email: true, status: true },
       });
     }),
@@ -414,7 +414,7 @@ export const usersRouter = router({
 
       await ctx.prisma.user.update({
         where: { id: input.userId },
-        data: { password: hashedPassword },
+        data: { password: hashedPassword, authVersion: { increment: 1 } },
       });
 
       return { email: user.email, generatedPassword: plainPassword };
@@ -492,7 +492,7 @@ export const usersRouter = router({
       const hashedPassword = await hash(input.newPassword, 12);
       await ctx.prisma.user.update({
         where: { id: ctx.user.id },
-        data: { password: hashedPassword },
+        data: { password: hashedPassword, authVersion: { increment: 1 } },
       });
 
       return { success: true };
