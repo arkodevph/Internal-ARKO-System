@@ -53,4 +53,18 @@ describe("Facebook blog posts", () => {
       .mockResolvedValue(new Response("", { status: 401 }));
     await expect(getFacebookBlogPosts()).resolves.toEqual([]);
   });
+
+  it("reads the Page published_posts edge", async () => {
+    process.env.FACEBOOK_PAGE_ID = "page-id";
+    process.env.FACEBOOK_PAGE_ACCESS_TOKEN = "secret-token";
+    const fetchSpy = jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(Response.json({ data: [] }));
+
+    await getFacebookBlogPosts();
+
+    expect(String(fetchSpy.mock.calls[0]?.[0])).toContain(
+      "/page-id/published_posts?",
+    );
+  });
 });

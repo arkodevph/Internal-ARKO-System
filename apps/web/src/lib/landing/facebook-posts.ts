@@ -54,7 +54,7 @@ export async function getFacebookBlogPosts(): Promise<BlogItem[]> {
   if (!pageId || !accessToken) return [];
 
   const url = new URL(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${pageId}/posts`,
+    `https://graph.facebook.com/${GRAPH_VERSION}/${pageId}/published_posts`,
   );
   url.searchParams.set(
     "fields",
