@@ -1,20 +1,31 @@
-import type { Metadata } from 'next'
-import Image from 'next/image'
-import { ArrowUpRight, Rss } from 'lucide-react'
-import { getLandingContent } from '../../../lib/landing/get-content'
+import type { Metadata } from "next";
+import Image from "next/image";
+import { ArrowUpRight, Rss } from "lucide-react";
+import { getLandingContent } from "../../../lib/landing/get-content";
+import { getFacebookBlogPosts } from "../../../lib/landing/facebook-posts";
 
 export const metadata: Metadata = {
-  title: 'Blogs — ARKO Software Studio',
-  description: 'Ideas, launches, and studio updates from ARKO.',
-  alternates: { canonical: '/blogs' },
-}
+  title: "Blogs — ARKO Software Studio",
+  description: "Ideas, launches, and studio updates from ARKO.",
+  alternates: { canonical: "/blogs" },
+};
 
 export default async function BlogsPage() {
-  const { blogs } = await getLandingContent()
+  const [{ blogs }, facebookPosts] = await Promise.all([
+    getLandingContent(),
+    getFacebookBlogPosts(),
+  ]);
+  const posts = [...facebookPosts, ...blogs.items].filter(
+    (post, index, all) =>
+      all.findIndex((item) => item.href === post.href) === index,
+  );
 
   return (
     <div className="min-h-dvh bg-ink pb-24 pt-14 text-white md:pt-20">
-      <section data-bg="light" className="border-b-4 border-ink bg-acid px-6 py-16 text-ink md:px-10 md:py-24">
+      <section
+        data-bg="light"
+        className="border-b-4 border-ink bg-acid px-6 py-16 text-ink md:px-10 md:py-24"
+      >
         <p className="eyebrow text-ink/60">{blogs.eyebrow}</p>
         <h1 className="display mt-5 text-[clamp(4rem,13vw,10rem)] leading-[0.78]">
           {blogs.heading}
@@ -25,9 +36,9 @@ export default async function BlogsPage() {
       </section>
 
       <section className="px-4 py-10 sm:px-6 md:px-10 md:py-16">
-        {blogs.items.length ? (
+        {posts.length ? (
           <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {blogs.items.map((post, index) => (
+            {posts.map((post, index) => (
               <a
                 key={`${post.href}-${index}`}
                 href={post.href}
@@ -49,7 +60,8 @@ export default async function BlogsPage() {
                 ) : null}
                 <div className="flex flex-1 flex-col p-5 md:p-6">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="mono text-[0.65rem] font-bold uppercase tracking-[0.16em] text-acid">
+                    <span className="mono inline-flex items-center gap-2 border border-acid/40 bg-acid/10 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-acid">
+                      <span className="h-1.5 w-1.5 rounded-full bg-acid" />
                       {post.platform}
                     </span>
                     <ArrowUpRight className="h-5 w-5 text-white/45 transition-colors group-hover:text-acid" />
@@ -72,11 +84,12 @@ export default async function BlogsPage() {
             <Rss className="h-8 w-8 text-acid" />
             <h2 className="display mt-5 text-4xl">Posts are coming.</h2>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-white/55">
-              Follow our social channels for studio updates while we prepare the archive.
+              Follow our social channels for studio updates while we prepare the
+              archive.
             </p>
           </div>
         )}
       </section>
     </div>
-  )
+  );
 }

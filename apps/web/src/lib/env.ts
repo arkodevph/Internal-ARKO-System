@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 /**
  * Server environment validation. Called at runtime (first tRPC request) so a
@@ -13,7 +13,7 @@ const serverEnvSchema = z
     // NextAuth v5 reads AUTH_SECRET; NEXTAUTH_SECRET is the v4 name. Accept either.
     AUTH_SECRET: z.string().min(1).optional(),
     NEXTAUTH_SECRET: z.string().min(1).optional(),
-    DATABASE_URL: z.string().min(1, 'required — Postgres connection string'),
+    DATABASE_URL: z.string().min(1, "required — Postgres connection string"),
     DIRECT_URL: z.string().min(1).optional(),
     NEXT_PUBLIC_APP_URL: z.string().url().optional(),
     // Storage / email integrations — optional; features degrade if unset.
@@ -23,6 +23,8 @@ const serverEnvSchema = z
     S3_SECRET_ACCESS_KEY: z.string().optional(),
     S3_REGION: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
+    FACEBOOK_PAGE_ID: z.string().optional(),
+    FACEBOOK_PAGE_ACCESS_TOKEN: z.string().optional(),
     RESEND_INBOUND_API_KEY: z.string().optional(),
     RESEND_WEBHOOK_SECRET: z.string().optional(),
     CRON_SECRET: z.string().optional(),
@@ -35,23 +37,24 @@ const serverEnvSchema = z
     GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID: z.string().optional(),
   })
   .refine((e) => Boolean(e.AUTH_SECRET || e.NEXTAUTH_SECRET), {
-    message: 'AUTH_SECRET (or NEXTAUTH_SECRET) is required — session signing secret',
-    path: ['AUTH_SECRET'],
-  })
+    message:
+      "AUTH_SECRET (or NEXTAUTH_SECRET) is required — session signing secret",
+    path: ["AUTH_SECRET"],
+  });
 
-export type ServerEnv = z.infer<typeof serverEnvSchema>
+export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
-let cached: ServerEnv | undefined
+let cached: ServerEnv | undefined;
 
 export function serverEnv(): ServerEnv {
-  if (cached) return cached
-  const parsed = serverEnvSchema.safeParse(process.env)
+  if (cached) return cached;
+  const parsed = serverEnvSchema.safeParse(process.env);
   if (!parsed.success) {
     const issues = parsed.error.issues
-      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
-      .join('\n')
-    throw new Error(`Invalid/missing environment variables:\n${issues}`)
+      .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
+    throw new Error(`Invalid/missing environment variables:\n${issues}`);
   }
-  cached = parsed.data
-  return cached
+  cached = parsed.data;
+  return cached;
 }
