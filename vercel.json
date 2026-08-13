@@ -5,11 +5,5 @@
   "regions": ["syd1"],
   "installCommand": "pnpm install",
   "buildCommand": "DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" pnpm --filter @arko/db exec prisma migrate deploy && pnpm turbo run build --filter=@arko/web",
-  "outputDirectory": "apps/web/.next",
-  "crons": [
-    {
-      "path": "/api/email-marketing/cron",
-      "schedule": "* * * * *"
-    }
-  ]
+  "outputDirectory": "apps/web/.next"
 }
