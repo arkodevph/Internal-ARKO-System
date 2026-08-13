@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 /**
  * Landing page CMS content shape.
@@ -11,17 +11,17 @@ import { z } from 'zod'
 
 const statSchema = z.object({
   to: z.number(),
-  suffix: z.string().default(''),
+  suffix: z.string().default(""),
   label: z.string(),
   // When present (even empty string), the raw text is shown instead of the CountUp animation.
   displayText: z.string().optional(),
-})
+});
 
 const serviceSlideSchema = z.object({
   lead: z.string(),
   accent: z.string(),
   resolve: z.boolean().optional(),
-})
+});
 
 const workCardSchema = z.object({
   kind: z.string(),
@@ -29,7 +29,7 @@ const workCardSchema = z.object({
   copy: z.string(),
   tags: z.array(z.string()),
   icon: z.string(),
-})
+});
 
 const processStepSchema = z.object({
   n: z.string(),
@@ -37,20 +37,23 @@ const processStepSchema = z.object({
   body: z.string(),
   detail: z.string(),
   icon: z.string(),
-})
+});
 
 // Only allow safe link/asset values: https:// URL, root-relative path, #anchor, or empty.
 // Blocks dangerous schemes (javascript:, data:) from ever being stored and rendered.
 const safeUrl = z
   .string()
-  .regex(/^$|^(https?:\/\/|\/|#)/, 'Must be an https:// URL, a /relative path, or a #anchor')
+  .regex(
+    /^$|^(https?:\/\/|\/|#)/,
+    "Must be an https:// URL, a /relative path, or a #anchor",
+  );
 
 const safeExternalUrl = z
   .string()
   .url()
-  .regex(/^https?:\/\//i, 'Must be an http:// or https:// URL')
+  .regex(/^https?:\/\//i, "Must be an http:// or https:// URL");
 
-const footerLinkSchema = z.object({ label: z.string(), href: safeUrl })
+const footerLinkSchema = z.object({ label: z.string(), href: safeUrl });
 
 const projectItemSchema = z.object({
   number: z.string(),
@@ -60,7 +63,7 @@ const projectItemSchema = z.object({
   domain: z.string(),
   href: safeUrl,
   image: safeUrl,
-})
+});
 
 const blogItemSchema = z.object({
   title: z.string().trim().min(1).max(180),
@@ -69,7 +72,7 @@ const blogItemSchema = z.object({
   publishedAt: z.string().trim().max(40),
   href: safeExternalUrl,
   image: safeUrl,
-})
+});
 
 export const landingContentSchema = z.object({
   // Per-section visibility toggles (hero + footer are structural and always render).
@@ -150,9 +153,9 @@ export const landingContentSchema = z.object({
     intro: z.string(),
     items: z.array(blogItemSchema),
   }),
-})
+});
 
-export type LandingContent = z.infer<typeof landingContentSchema>
+export type LandingContent = z.infer<typeof landingContentSchema>;
 
 export const DEFAULT_LANDING_CONTENT: LandingContent = {
   sections: {
@@ -165,243 +168,243 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
     contact: true,
   },
   hero: {
-    eyebrow: 'Arkō — software studio',
-    headingLead: 'We build',
-    roles: ['websites', 'mobile apps', 'automation', 'ai tools'],
+    eyebrow: "Arkō — software studio",
+    headingLead: "We build",
+    roles: ["websites", "mobile apps", "automation", "ai tools"],
     paragraph:
-      'You bring the idea. We design it, build it across web and mobile, then wire in the automation and AI that make it run on its own.',
+      "You bring the idea. We design it, build it across web and mobile, then wire in the automation and AI that make it run on its own.",
   },
-  marquee: { words: 'SITES · APPS · SYSTEMS · TOOLS · CODE · SHIP · ' },
+  marquee: { words: "SITES · APPS · SYSTEMS · TOOLS · CODE · SHIP · " },
   stats: [
-    { to: 4, suffix: '', label: 'disciplines under one roof' },
-    { to: 2, suffix: '', label: 'platforms from one codebase' },
-    { to: 0, suffix: '', label: 'your product, our focus', displayText: '' },
-    { to: 0, suffix: '', label: 'middlemen between you and the code' },
+    { to: 4, suffix: "", label: "disciplines under one roof" },
+    { to: 2, suffix: "", label: "platforms from one codebase" },
+    { to: 0, suffix: "", label: "your product, our focus", displayText: "" },
+    { to: 0, suffix: "", label: "middlemen between you and the code" },
   ],
   intro: {
-    heading: 'Ship.',
-    eyebrowNote: '*We handle the hard parts.',
+    heading: "Ship.",
+    eyebrowNote: "*We handle the hard parts.",
     bodyBefore:
-      'Most good ideas die in the gap between design and done. We live in that gap, so your product ',
-    bodyHighlight: 'actually gets built',
+      "Most good ideas die in the gap between design and done. We live in that gap, so your product ",
+    bodyHighlight: "actually gets built",
     bodyAfter:
-      ' and reaches real people, without you managing five contractors to get there.',
+      " and reaches real people, without you managing five contractors to get there.",
   },
   services: {
-    label: 'What we build',
-    videoSrc: '/services.mp4',
-    poster: '/services-poster.jpg',
-    ctaLabel: 'Start a project →',
+    label: "What we build",
+    videoSrc: "/services.mp4",
+    poster: "/services-poster.jpg",
+    ctaLabel: "Start a project →",
     slides: [
-      { lead: 'Looking for', accent: 'frontend development?' },
-      { lead: 'Backend', accent: 'systems?' },
-      { lead: 'Cross-platform', accent: 'mobile apps?' },
-      { lead: 'Workflows on', accent: 'automation?' },
-      { lead: 'Products with', accent: 'AI that ships?' },
-      { lead: 'Whatever you need,', accent: 'we build it.', resolve: true },
+      { lead: "Looking for", accent: "frontend development?" },
+      { lead: "Backend", accent: "systems?" },
+      { lead: "Cross-platform", accent: "mobile apps?" },
+      { lead: "Workflows on", accent: "automation?" },
+      { lead: "Products with", accent: "AI that ships?" },
+      { lead: "Whatever you need,", accent: "we build it.", resolve: true },
     ],
   },
   work: {
-    eyebrow: 'what we build',
-    heading: 'Work',
-    subtitle: 'The kind of thing we make',
-    ctaLabel: 'See what fits your project →',
+    eyebrow: "what we build",
+    heading: "Work",
+    subtitle: "The kind of thing we make",
+    ctaLabel: "See what fits your project →",
     cards: [
       {
-        kind: 'web',
-        title: 'Product websites',
-        copy: 'Landing pages and marketing sites that load fast and convert.',
-        tags: ['Next.js', 'Tailwind', 'Framer'],
-        icon: '◇',
+        kind: "web",
+        title: "Product websites",
+        copy: "Landing pages and marketing sites that load fast and convert.",
+        tags: ["Next.js", "Tailwind", "Framer"],
+        icon: "◇",
       },
       {
-        kind: 'mobile',
-        title: 'Cross-platform apps',
-        copy: 'One codebase shipped to iOS and Android, store to home screen.',
-        tags: ['React Native', 'Expo', 'Gesture'],
-        icon: '◎',
+        kind: "mobile",
+        title: "Cross-platform apps",
+        copy: "One codebase shipped to iOS and Android, store to home screen.",
+        tags: ["React Native", "Expo", "Gesture"],
+        icon: "◎",
       },
       {
-        kind: 'automation',
-        title: 'Automation pipelines',
-        copy: 'Quiet systems that move data and trigger work while you sleep.',
-        tags: ['n8n', 'Cron', 'Webhooks'],
-        icon: '⚡',
+        kind: "automation",
+        title: "Automation pipelines",
+        copy: "Quiet systems that move data and trigger work while you sleep.",
+        tags: ["n8n", "Cron", "Webhooks"],
+        icon: "⚡",
       },
       {
-        kind: 'ai',
-        title: 'AI features',
-        copy: 'Chat, retrieval and agents built into products people already use.',
-        tags: ['LLMs', 'RAG', 'Agents'],
-        icon: '◆',
+        kind: "ai",
+        title: "AI features",
+        copy: "Chat, retrieval and agents built into products people already use.",
+        tags: ["LLMs", "RAG", "Agents"],
+        icon: "◆",
       },
     ],
   },
   process: {
-    eyebrow: 'our process',
-    heading: 'How we work',
-    subtitle: 'Four steps. One direction. Ship.',
-    ctaLabel: 'Ready to start? →',
+    eyebrow: "our process",
+    heading: "How we work",
+    subtitle: "Four steps. One direction. Ship.",
+    ctaLabel: "Ready to start? →",
     steps: [
       {
-        n: '01',
-        title: 'Discovery',
-        body: 'We learn how your team works today and map the fastest path to something real. You leave with a plan, a scope and a fixed idea of what ships first.',
+        n: "01",
+        title: "Discovery",
+        body: "We learn how your team works today and map the fastest path to something real. You leave with a plan, a scope and a fixed idea of what ships first.",
         detail:
-          'A two-week sprint where we interview stakeholders, audit your existing stack, review analytics, and map user flows. You get a technical brief, a sitemap, a UI audit, and a prioritized backlog — no billable hours wasted on discovery theatre.',
-        icon: '→',
+          "A two-week sprint where we interview stakeholders, audit your existing stack, review analytics, and map user flows. You get a technical brief, a sitemap, a UI audit, and a prioritized backlog — no billable hours wasted on discovery theatre.",
+        icon: "→",
       },
       {
-        n: '02',
-        title: 'Design & build',
-        body: 'Design and engineering happen in the same room. You see working software every week, not slide decks, so you can steer while it is cheap to change.',
+        n: "02",
+        title: "Design & build",
+        body: "Design and engineering happen in the same room. You see working software every week, not slide decks, so you can steer while it is cheap to change.",
         detail:
-          'We work in one-week cycles. Monday: scope the week. Wednesday: first working build. Friday: demo and feedback. No handoffs, no Figma-to-code gap — the designer writes CSS and the engineer thinks about margins.',
-        icon: '◆',
+          "We work in one-week cycles. Monday: scope the week. Wednesday: first working build. Friday: demo and feedback. No handoffs, no Figma-to-code gap — the designer writes CSS and the engineer thinks about margins.",
+        icon: "◆",
       },
       {
-        n: '03',
-        title: 'Automation & AI',
-        body: 'Once the core works, we wire in the automation and AI that remove the busywork, so the product does more of the running on its own.',
+        n: "03",
+        title: "Automation & AI",
+        body: "Once the core works, we wire in the automation and AI that remove the busywork, so the product does more of the running on its own.",
         detail:
-          'This is where we add the force multiplier — background jobs, webhook integrations, vector search, LLM agents, scheduled tasks. Whatever lets your team wake up to work already done instead of a queue of manual steps.',
-        icon: '⚡',
+          "This is where we add the force multiplier — background jobs, webhook integrations, vector search, LLM agents, scheduled tasks. Whatever lets your team wake up to work already done instead of a queue of manual steps.",
+        icon: "⚡",
       },
       {
-        n: '04',
-        title: 'Handover & support',
-        body: 'You get clean code, docs and the keys. We stay on for as much or as little support as you want, no lock-in and no mystery.',
+        n: "04",
+        title: "Handover & support",
+        body: "You get clean code, docs and the keys. We stay on for as much or as little support as you want, no lock-in and no mystery.",
         detail:
-          'Full handover includes: private npm packages or monorepo access, architecture decision records (ADRs), CI/CD pipelines, runbooks, and a 30-min walkthrough. After that, we offer retainer support in 10-hour blocks — cancel anytime.',
-        icon: '◈',
+          "Full handover includes: private npm packages or monorepo access, architecture decision records (ADRs), CI/CD pipelines, runbooks, and a 30-min walkthrough. After that, we offer retainer support in 10-hour blocks — cancel anytime.",
+        icon: "◈",
       },
     ],
   },
   contact: {
     headingLine1: "Let's",
-    headingLine2: 'build',
+    headingLine2: "build",
     paragraph:
-      'Tell us what you are trying to make. We will tell you the fastest honest way to get it shipped.',
-    email: 'contact@arkodevph.com',
+      "Tell us what you are trying to make. We will tell you the fastest honest way to get it shipped.",
+    email: "contact@arkodevph.com",
   },
   footer: {
     brandBlurb:
-      'A software studio that designs, builds and ships web and mobile products — without the overhead.',
-    email: 'contact@arkodevph.com',
-    githubUrl: 'https://github.com/justrhey',
+      "A software studio that designs, builds and ships web and mobile products — without the overhead.",
+    email: "contact@arkodevph.com",
+    githubUrl: "https://github.com/justrhey",
     whatWeDo: [
-      { label: 'Product websites', href: '#work' },
-      { label: 'Cross-platform apps', href: '#work' },
-      { label: 'Automation pipelines', href: '#work' },
-      { label: 'AI features & agents', href: '#work' },
-      { label: 'Design & prototyping', href: '#work' },
-      { label: 'Performance audits', href: '#work' },
+      { label: "Product websites", href: "#work" },
+      { label: "Cross-platform apps", href: "#work" },
+      { label: "Automation pipelines", href: "#work" },
+      { label: "AI features & agents", href: "#work" },
+      { label: "Design & prototyping", href: "#work" },
+      { label: "Performance audits", href: "#work" },
     ],
     ctaLine1: "Let's",
-    ctaLine2: 'make it',
-    ctaLine3: 'real.',
-    location: 'Philippines',
+    ctaLine2: "make it",
+    ctaLine3: "real.",
+    location: "Philippines",
   },
   projects: {
-    eyebrow: 'Selected work / 2025—2026',
-    heading: 'Projects',
+    eyebrow: "Selected work / 2025—2026",
+    heading: "Projects",
     intro:
-      'Websites and digital products built to turn an idea into something people can use.',
-    ctaEyebrow: 'Have a project in mind?',
+      "Websites and digital products built to turn an idea into something people can use.",
+    ctaEyebrow: "Have a project in mind?",
     ctaHeading: "Let's make it real.",
-    ctaLabel: 'Start a project →',
+    ctaLabel: "Start a project →",
     items: [
       {
-        number: '01',
-        title: 'BMW',
-        category: 'Automotive',
-        type: 'Immersive brand website',
-        domain: 'unofficial-bmw.vercel.app',
-        href: 'https://unofficial-bmw.vercel.app',
-        image: '/projects/unofficial-bmw-preview.png',
+        number: "01",
+        title: "BMW",
+        category: "Automotive",
+        type: "Immersive brand website",
+        domain: "unofficial-bmw.vercel.app",
+        href: "https://unofficial-bmw.vercel.app",
+        image: "/projects/unofficial-bmw-preview.png",
       },
       {
-        number: '02',
+        number: "02",
         title: "Omniscient Reader's Viewpoint",
-        category: 'Entertainment',
-        type: 'Interactive story website',
-        domain: 'unofficial-omniscient-readers-viewpoint.vercel.app',
-        href: 'https://unofficial-omniscient-readers-viewpoint.vercel.app',
-        image: '/projects/unofficial-omniscient-readers-viewpoint-preview.png',
+        category: "Entertainment",
+        type: "Interactive story website",
+        domain: "unofficial-omniscient-readers-viewpoint.vercel.app",
+        href: "https://unofficial-omniscient-readers-viewpoint.vercel.app",
+        image: "/projects/unofficial-omniscient-readers-viewpoint-preview.png",
       },
       {
-        number: '03',
-        title: 'Co-Map',
-        category: 'Civic Tech',
-        type: 'Community reporting web app',
-        domain: 'co-map.vercel.app',
-        href: 'https://co-map.vercel.app',
-        image: '/projects/co-map-preview.png',
+        number: "03",
+        title: "Co-Map",
+        category: "Civic Tech",
+        type: "Community reporting web app",
+        domain: "co-map.vercel.app",
+        href: "https://co-map.vercel.app",
+        image: "/projects/co-map-preview.png",
       },
       {
-        number: '04',
-        title: 'Yuenansichu Restaurant',
-        category: 'Hospitality',
-        type: 'Restaurant website',
-        domain: 'yuenansichu-restaurant.vercel.app',
-        href: 'https://yuenansichu-restaurant.vercel.app/',
-        image: '/projects/yuenansichu-restaurant-preview.webp',
+        number: "04",
+        title: "Yuenansichu Restaurant",
+        category: "Hospitality",
+        type: "Restaurant website",
+        domain: "yuenansichu-restaurant.vercel.app",
+        href: "https://yuenansichu-restaurant.vercel.app/",
+        image: "/projects/yuenansichu-restaurant-preview.webp",
       },
       {
-        number: '05',
-        title: 'Kapet Balay',
-        category: 'Hospitality',
-        type: 'Cafe website',
-        domain: 'kapetbalay.vercel.app',
-        href: 'https://kapetbalay.vercel.app/',
-        image: '/projects/kapetbalay-preview.png',
+        number: "05",
+        title: "Kapet Balay",
+        category: "Hospitality",
+        type: "Cafe website",
+        domain: "kapetbalay.vercel.app",
+        href: "https://kapetbalay.vercel.app/",
+        image: "/projects/kapetbalay-preview.png",
       },
       {
-        number: '06',
-        title: 'ISLAS',
-        category: 'Travel',
-        type: 'Boutique Philippine journey platform',
-        domain: 'arko-islas.vercel.app',
-        href: 'https://arko-islas.vercel.app/',
-        image: '/projects/islas-preview.webp',
+        number: "06",
+        title: "ISLAS",
+        category: "Travel",
+        type: "Boutique Philippine journey platform",
+        domain: "arko-islas.vercel.app",
+        href: "https://arko-islas.vercel.app/",
+        image: "/projects/islas-preview.webp",
       },
       {
-        number: '07',
-        title: 'Locus Assembly',
-        category: 'Architecture',
-        type: 'Terrain-rooted architecture studio website',
-        domain: 'arko-locus-assembly.vercel.app',
-        href: 'https://arko-locus-assembly.vercel.app/',
-        image: '/projects/locus-assembly-preview.avif',
+        number: "07",
+        title: "Locus Assembly",
+        category: "Architecture",
+        type: "Terrain-rooted architecture studio website",
+        domain: "arko-locus-assembly.vercel.app",
+        href: "https://arko-locus-assembly.vercel.app/",
+        image: "/projects/locus-assembly-preview.avif",
       },
       {
-        number: '08',
-        title: 'DM ARC Construction',
-        category: 'Construction',
-        type: 'Construction services and project portfolio website',
-        domain: 'dmarc-construction.vercel.app',
-        href: 'https://dmarc-construction.vercel.app/',
-        image: '/projects/dmarc-construction-preview.webp',
+        number: "08",
+        title: "DM ARC Construction",
+        category: "Construction",
+        type: "Construction services and project portfolio website",
+        domain: "dmarc-construction.vercel.app",
+        href: "https://dmarc-construction.vercel.app/",
+        image: "/projects/dmarc-construction-preview.webp",
       },
       {
-        number: '09',
-        title: 'Fresh Phones PH',
-        category: 'E-commerce',
-        type: 'Mobile device catalog and flexible payment platform',
-        domain: 'freshphonesph.vercel.app',
-        href: 'https://freshphonesph.vercel.app/',
-        image: '/projects/freshphonesph-preview.webp',
+        number: "09",
+        title: "Fresh Phones PH",
+        category: "E-commerce",
+        type: "Mobile device catalog and flexible payment platform",
+        domain: "freshphonesph.vercel.app",
+        href: "https://freshphonesph.vercel.app/",
+        image: "/projects/freshphonesph-preview.webp",
       },
     ],
   },
   blogs: {
-    eyebrow: 'Notes / updates / fieldwork',
-    heading: 'Blogs',
+    eyebrow: "Notes / updates / fieldwork",
+    heading: "Blogs",
     intro:
-      'Ideas, launches, and behind-the-scenes updates from ARKO across the platforms where we publish.',
+      "Ideas, launches, and behind-the-scenes updates from ARKO across the platforms where we publish.",
     items: [],
   },
-}
+};
 
 /**
  * Merge stored (possibly partial / older-schema) content over the defaults so a
@@ -409,17 +412,19 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
  * except project items, where newly shipped defaults are appended by URL.
  */
 export function mergeLandingContent(stored: unknown): LandingContent {
-  const d = DEFAULT_LANDING_CONTENT
-  if (!stored || typeof stored !== 'object') return d
-  const s = stored as Partial<LandingContent>
-  const storedProjects = s.projects?.items ?? []
-  const storedProjectUrls = new Set(storedProjects.map((project) => project.href.replace(/\/$/, '')))
+  const d = DEFAULT_LANDING_CONTENT;
+  if (!stored || typeof stored !== "object") return d;
+  const s = stored as Partial<LandingContent>;
+  const storedProjects = s.projects?.items ?? [];
+  const storedProjectUrls = new Set(
+    storedProjects.map((project) => project.href.replace(/\/$/, "")),
+  );
   const projectItems = [
     ...storedProjects,
     ...d.projects.items.filter(
-      (project) => !storedProjectUrls.has(project.href.replace(/\/$/, '')),
+      (project) => !storedProjectUrls.has(project.href.replace(/\/$/, "")),
     ),
-  ]
+  ];
   return {
     sections: { ...d.sections, ...s.sections },
     hero: { ...d.hero, ...s.hero },
@@ -433,5 +438,5 @@ export function mergeLandingContent(stored: unknown): LandingContent {
     footer: { ...d.footer, ...s.footer },
     projects: { ...d.projects, ...s.projects, items: projectItems },
     blogs: { ...d.blogs, ...s.blogs, items: s.blogs?.items ?? d.blogs.items },
-  }
+  };
 }

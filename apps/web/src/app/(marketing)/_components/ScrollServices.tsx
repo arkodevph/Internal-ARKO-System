@@ -1,14 +1,14 @@
-'use client'
+"use client";
 
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useCallback, useRef } from 'react'
-import Services3DScene from './Services3DScene'
-import StarBorder from './StarBorder'
-import type { LandingContent } from '../../../lib/landing/content'
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useCallback, useRef } from "react";
+import Services3DScene from "./Services3DScene";
+import StarBorder from "./StarBorder";
+import type { LandingContent } from "../../../lib/landing/content";
 
-gsap.registerPlugin(ScrollTrigger, useGSAP)
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export default function ScrollServices({
   label,
@@ -16,99 +16,121 @@ export default function ScrollServices({
   poster,
   ctaLabel,
   slides: SLIDES,
-}: LandingContent['services']) {
-  const sectionRef = useRef<HTMLElement>(null)
-  const sceneProgressRef = useRef(0)
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([])
-  const counterRef = useRef<HTMLSpanElement>(null)
-  const labelRef = useRef<HTMLSpanElement>(null)
-  const hintRef = useRef<HTMLSpanElement>(null)
-  const progressRef = useRef<HTMLDivElement>(null)
-  const scrimRef = useRef<HTMLDivElement>(null)
-  const dotRefs = useRef<(HTMLSpanElement | null)[]>([])
+}: LandingContent["services"]) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const sceneProgressRef = useRef(0);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const counterRef = useRef<HTMLSpanElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const hintRef = useRef<HTMLSpanElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const scrimRef = useRef<HTMLDivElement>(null);
+  const dotRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
-  const paint = useCallback((progress: number) => {
-    sceneProgressRef.current = progress
-    // ——— TEXT SLIDES (always work, no video dependency) ———
-    const total = SLIDES.length
-    const sequence = total === 6 ? [0, 2, 1, 3, 4, 5] : Array.from({ length: total }, (_, i) => i)
-    const chapterStarts = total === 6
-      ? [0, 0.25, 0.5, 0.75, 0.875, 0.94]
-      : sequence.map((_, i) => i / total)
-    const activePosition = chapterStarts.reduce(
-      (position, start, index) => (progress >= start ? index : position),
-      0,
-    )
-    const active = sequence[activePosition]
+  const paint = useCallback(
+    (progress: number) => {
+      sceneProgressRef.current = progress;
+      // ——— TEXT SLIDES (always work, no video dependency) ———
+      const total = SLIDES.length;
+      const sequence =
+        total === 6
+          ? [0, 2, 1, 3, 4, 5]
+          : Array.from({ length: total }, (_, i) => i);
+      const chapterStarts =
+        total === 6
+          ? [0, 0.25, 0.5, 0.75, 0.875, 0.94]
+          : sequence.map((_, i) => i / total);
+      const activePosition = chapterStarts.reduce(
+        (position, start, index) => (progress >= start ? index : position),
+        0,
+      );
+      const active = sequence[activePosition];
 
-    slideRefs.current.forEach((el, i) => {
-      if (!el) return
-      const isActive = i === active
-      const slidePosition = sequence.indexOf(i)
-      el.style.opacity = isActive ? '1' : '0'
-      el.style.transform = isActive
-        ? 'translateY(0) scale(1)'
-        : `translateY(${slidePosition < activePosition ? '-2rem' : '2rem'}) scale(0.97)`
-      el.style.filter = isActive ? 'blur(0px)' : 'blur(10px)'
-      el.style.pointerEvents = isActive ? 'auto' : 'none'
-    })
+      slideRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const isActive = i === active;
+        const slidePosition = sequence.indexOf(i);
+        el.style.opacity = isActive ? "1" : "0";
+        el.style.transform = isActive
+          ? "translateY(0) scale(1)"
+          : `translateY(${slidePosition < activePosition ? "-2rem" : "2rem"}) scale(0.97)`;
+        el.style.filter = isActive ? "blur(0px)" : "blur(10px)";
+        el.style.pointerEvents = isActive ? "auto" : "none";
+      });
 
-    if (counterRef.current)
-      counterRef.current.textContent = `${String(activePosition + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`
-    if (progressRef.current) progressRef.current.style.width = `${progress * 100}%`
+      if (counterRef.current)
+        counterRef.current.textContent = `${String(activePosition + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+      if (progressRef.current)
+        progressRef.current.style.width = `${progress * 100}%`;
 
-    dotRefs.current.forEach((dot, i) => {
-      if (!dot) return
-      dot.style.background = sequence.indexOf(i) <= activePosition
-        ? 'var(--color-acid)'
-        : 'rgba(255,255,255,0.2)'
-    })
+      dotRefs.current.forEach((dot, i) => {
+        if (!dot) return;
+        dot.style.background =
+          sequence.indexOf(i) <= activePosition
+            ? "var(--color-acid)"
+            : "rgba(255,255,255,0.2)";
+      });
 
-    if (labelRef.current)
-      labelRef.current.style.opacity = String(Math.max(0, 1 - progress * 3))
-    if (hintRef.current)
-      hintRef.current.style.opacity = String(Math.max(0, 1 - progress * total * 2))
+      if (labelRef.current)
+        labelRef.current.style.opacity = String(Math.max(0, 1 - progress * 3));
+      if (hintRef.current)
+        hintRef.current.style.opacity = String(
+          Math.max(0, 1 - progress * total * 2),
+        );
 
-    if (scrimRef.current) {
-      const o = 0.35 - progress * 0.15
-      scrimRef.current.style.opacity = String(Math.max(0.15, o))
-    }
-  }, [SLIDES.length])
+      if (scrimRef.current) {
+        const o = 0.35 - progress * 0.15;
+        scrimRef.current.style.opacity = String(Math.max(0.15, o));
+      }
+    },
+    [SLIDES.length],
+  );
 
   // Create ScrollTrigger immediately — text always works, video seeking is extra
   useGSAP(
     () => {
-      const section = sectionRef.current
-      if (!section) return
+      const section = sectionRef.current;
+      if (!section) return;
 
       const trigger = ScrollTrigger.create({
         trigger: section,
-        start: 'top top',
-        end: 'bottom bottom',
+        start: "top top",
+        end: "bottom bottom",
         scrub: 0.3,
         onUpdate(self) {
           // Text transitions always
-          paint(self.progress)
-
+          paint(self.progress);
         },
-      })
-      paint(0)
+      });
+      paint(0);
 
       return () => {
-        trigger.kill()
-      }
+        trigger.kill();
+      };
     },
     { scope: sectionRef },
-  )
+  );
 
   return (
-    <section id="services" ref={sectionRef} className="relative" style={{ height: '1200vh' }}>
+    <section
+      id="services"
+      ref={sectionRef}
+      className="relative"
+      style={{ height: "1200vh" }}
+    >
       <div
         className="sticky top-0 flex h-screen items-center overflow-hidden bg-ink"
-        style={{ backgroundImage: `url(${poster})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        style={{
+          backgroundImage: `url(${poster})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-
-        <Services3DScene progress={sceneProgressRef} poster={poster} videoSrc={videoSrc} />
+        <Services3DScene
+          progress={sceneProgressRef}
+          poster={poster}
+          videoSrc={videoSrc}
+        />
 
         <div
           ref={scrimRef}
@@ -117,23 +139,33 @@ export default function ScrollServices({
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-ink/60" />
 
         <div className="absolute inset-x-0 bottom-0 z-30 h-[3px] bg-white/10">
-          <div ref={progressRef} className="h-full bg-acid transition-none" style={{ width: '0%' }} />
+          <div
+            ref={progressRef}
+            className="h-full bg-acid transition-none"
+            style={{ width: "0%" }}
+          />
         </div>
 
         <div className="absolute bottom-6 right-6 z-30 flex gap-1.5 md:right-10">
           {SLIDES.map((_, i) => (
             <span
               key={i}
-              ref={(el) => { dotRefs.current[i] = el }}
+              ref={(el) => {
+                dotRefs.current[i] = el;
+              }}
               className="h-2 w-2 transition-colors duration-300"
-              style={{ background: 'rgba(255,255,255,0.2)' }}
+              style={{ background: "rgba(255,255,255,0.2)" }}
             />
           ))}
         </div>
 
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pt-8 md:px-10">
-          <span ref={labelRef} className="eyebrow text-acid">{label}</span>
-          <span ref={counterRef} className="eyebrow mono text-white/60">01 / 06</span>
+          <span ref={labelRef} className="eyebrow text-acid">
+            {label}
+          </span>
+          <span ref={counterRef} className="eyebrow mono text-white/60">
+            01 / 06
+          </span>
         </div>
 
         <div className="relative z-10 w-full px-6 md:px-10">
@@ -141,7 +173,9 @@ export default function ScrollServices({
             {SLIDES.map((s, i) => (
               <div
                 key={s.accent}
-                ref={(el) => { slideRefs.current[i] = el }}
+                ref={(el) => {
+                  slideRefs.current[i] = el;
+                }}
                 className="absolute inset-0 flex flex-col justify-center transition-all duration-700 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
                 style={{ opacity: 0 }}
               >
@@ -170,5 +204,5 @@ export default function ScrollServices({
         </span>
       </div>
     </section>
-  )
+  );
 }
