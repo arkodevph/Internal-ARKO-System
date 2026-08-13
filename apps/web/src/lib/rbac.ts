@@ -45,6 +45,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "workflows:read",
     "workflows:update",
     "workflows:execute",
+    "email-marketing:read",
+    "email-marketing:create",
+    "email-marketing:update",
     "users:read",
   ],
   USER: [

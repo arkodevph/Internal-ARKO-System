@@ -1,10 +1,11 @@
-'use client'
+"use client";
 
-import { usePathname } from 'next/navigation'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { NavItem } from '@arko/ui'
-import { api } from '../../lib/trpc/client'
+import { usePathname } from "next/navigation";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { NavItem } from "@arko/ui";
+import { api } from "../../lib/trpc/client";
 import {
   LayoutDashboard,
   Wallet,
@@ -22,57 +23,145 @@ import {
   BookOpen,
   Link2,
   Calendar,
-} from 'lucide-react'
+  Mail,
+} from "lucide-react";
 
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { href: '/dashboard/finance', label: 'Finance', icon: <Wallet className="h-5 w-5" /> },
-  { href: '/dashboard/documents', label: 'Documents', icon: <FileCheck className="h-5 w-5" /> },
-  { href: '/dashboard/workflows', label: 'Workflows', icon: <Workflow className="h-5 w-5" /> },
-  { href: '/dashboard/tasks', label: 'Tasks', icon: <CheckSquare className="h-5 w-5" /> },
-  { href: '/dashboard/events', label: 'Events', icon: <Calendar className="h-5 w-5" /> },
-  { href: '/dashboard/ideas', label: 'Ideas', icon: <Lightbulb className="h-5 w-5" /> },
-  { href: '/dashboard/journal', label: 'Journal', icon: <BookOpen className="h-5 w-5" /> },
-  { href: '/dashboard/resources', label: 'Resources', icon: <Link2 className="h-5 w-5" /> },
-  { href: '/dashboard/updates', label: 'Updates', icon: <GitCommit className="h-5 w-5" /> },
-  { href: '/dashboard/users', label: 'Users', icon: <Users className="h-5 w-5" /> },
-  { href: '/dashboard/messages', label: 'Messages', icon: <MessageSquare className="h-5 w-5" /> },
-  { href: '/dashboard/notifications', label: 'Notifications', icon: <BellRing className="h-5 w-5" /> },
-  { href: '/dashboard/reminders', label: 'Reminders', icon: <Bell className="h-5 w-5" /> },
-  { href: '/dashboard/notes', label: 'Notes', icon: <FileText className="h-5 w-5" /> },
-  { href: '/dashboard/settings', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
-]
+type DashboardNavItem = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  roles?: string[];
+};
+
+const navItems: DashboardNavItem[] = [
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/finance",
+    label: "Finance",
+    icon: <Wallet className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/documents",
+    label: "Documents",
+    icon: <FileCheck className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/workflows",
+    label: "Workflows",
+    icon: <Workflow className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/tasks",
+    label: "Tasks",
+    icon: <CheckSquare className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/events",
+    label: "Events",
+    icon: <Calendar className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/ideas",
+    label: "Ideas",
+    icon: <Lightbulb className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/journal",
+    label: "Journal",
+    icon: <BookOpen className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/resources",
+    label: "Resources",
+    icon: <Link2 className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/updates",
+    label: "Updates",
+    icon: <GitCommit className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/users",
+    label: "Users",
+    icon: <Users className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/messages",
+    label: "Messages",
+    icon: <MessageSquare className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/email-marketing",
+    label: "Email Marketing",
+    icon: <Mail className="h-5 w-5" />,
+    roles: ["ADMIN", "MEMBER"],
+  },
+  {
+    href: "/dashboard/notifications",
+    label: "Notifications",
+    icon: <BellRing className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/reminders",
+    label: "Reminders",
+    icon: <Bell className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/notes",
+    label: "Notes",
+    icon: <FileText className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/settings",
+    label: "Settings",
+    icon: <Settings className="h-5 w-5" />,
+  },
+];
 
 export function DashboardNav() {
-  const pathname = usePathname()
-  const router = useRouter()
+  const pathname = usePathname();
+  const router = useRouter();
+  const { data: session } = useSession();
+  const visibleNavItems = useMemo(
+    () =>
+      navItems.filter(
+        (item) => !item.roles || item.roles.includes(session?.user?.role ?? ""),
+      ),
+    [session?.user?.role],
+  );
 
   // Poll unread messages for the sidebar badge.
   const { data: unread } = api.messages.unreadCount.useQuery(undefined, {
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-  })
+  });
 
   // Prefetch all nav routes so they compile in the background
   useEffect(() => {
-    navItems.forEach((item) => {
-      router.prefetch(item.href)
-    })
-  }, [router])
+    visibleNavItems.forEach((item) => {
+      router.prefetch(item.href);
+    });
+  }, [router, visibleNavItems]);
 
   return (
     <div className="space-y-1">
-      {navItems.map((item) => (
+      {visibleNavItems.map((item) => (
         <NavItem
           key={item.href}
           href={item.href}
           label={item.label}
           icon={item.icon}
-          active={pathname === item.href || pathname.startsWith(item.href + '/')}
-          badge={item.href === '/dashboard/messages' ? unread : undefined}
+          active={
+            pathname === item.href || pathname.startsWith(item.href + "/")
+          }
+          badge={item.href === "/dashboard/messages" ? unread : undefined}
         />
       ))}
     </div>
-  )
+  );
 }

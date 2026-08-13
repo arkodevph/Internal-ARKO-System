@@ -28,6 +28,7 @@ import {
   BriefcaseBusiness,
   Palette,
   ClipboardList,
+  Mail,
 } from "lucide-react";
 import { api } from "../../../lib/trpc/client";
 import dynamic from "next/dynamic";
@@ -53,6 +54,7 @@ type NavCategory = {
   end?: boolean;
   /** Only shown to ADMIN users. */
   adminOnly?: boolean;
+  roles?: string[];
 };
 
 type NavGroup = { label: string; items: NavCategory[] };
@@ -89,6 +91,12 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/dashboard/documents", icon: FileCheck, label: "Documents" },
       { to: "/dashboard/resources", icon: Bookmark, label: "Resources" },
       { to: "/dashboard/messages", icon: MessageSquare, label: "Messages" },
+      {
+        to: "/dashboard/email-marketing",
+        icon: Mail,
+        label: "Email Marketing",
+        roles: ["ADMIN", "MEMBER"],
+      },
     ],
   },
   {
@@ -357,6 +365,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           label: g.label,
           items: g.items
             .filter((it) => !it.adminOnly || isAdmin)
+            .filter((it) => !it.roles || it.roles.includes(role ?? ""))
             .map((item) =>
               item.to === "/dashboard/assistant"
                 ? {
