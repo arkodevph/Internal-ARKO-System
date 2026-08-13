@@ -28,6 +28,7 @@ import {
   BriefcaseBusiness,
   Palette,
   ClipboardList,
+  Mail,
 } from "lucide-react";
 import { api } from "../../../lib/trpc/client";
 import dynamic from "next/dynamic";
@@ -51,6 +52,8 @@ type NavCategory = {
   end?: boolean;
   /** Only shown to ADMIN users. */
   adminOnly?: boolean;
+  /** Restrict the item to these application roles. */
+  roles?: string[];
 };
 
 type NavGroup = { label: string; items: NavCategory[] };
@@ -87,6 +90,12 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/dashboard/documents", icon: FileCheck, label: "Documents" },
       { to: "/dashboard/resources", icon: Bookmark, label: "Resources" },
       { to: "/dashboard/messages", icon: MessageSquare, label: "Messages" },
+      {
+        to: "/dashboard/email-marketing",
+        icon: Mail,
+        label: "Email Marketing",
+        roles: ["ADMIN", "MEMBER"],
+      },
     ],
   },
   {
@@ -338,12 +347,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const handleLogout = () => requestSignOut();
 
   const isAdmin = sessionUser?.role === "ADMIN";
+  const userRole = sessionUser?.role as string | undefined;
   const navGroups: NavGroup[] = isClient
     ? [{ label: "Portal", items: CLIENT_CATEGORIES }]
     : NAV_GROUPS.map((g) => ({
         label: g.label,
         items: g.items
-          .filter((it) => !it.adminOnly || isAdmin)
+          .filter(
+            (it) =>
+              (!it.adminOnly || isAdmin) &&
+              (!it.roles || (userRole ? it.roles.includes(userRole) : false)),
+          )
           .map((item) =>
             item.to === "/dashboard/assistant"
               ? {

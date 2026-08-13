@@ -25,41 +25,50 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  accounts              Account[]
-  sessions              Session[]
-  workspaceMembers      WorkspaceMember[]
-  transactions          Transaction[]
-  accountCategories     AccountCategory[]
-  splitShares           SplitShare[]
-  tasks                 Task[]
-  comments              Comment[]
-  workflows             Workflow[]
-  conversationLinks     ConversationParticipant[]
-  sentMessages          Message[]
-  reminders             Reminder[]
-  notes                 Note[]
-  events                Event[]
-  sprints               Sprint[]
-  ideas                 Idea[]
-  journalEntries        JournalEntry[]
-  notifications         Notification[]
-  resources             Resource[]
-  resourceCategories    ResourceCategory[]
-  fileAttachments       FileAttachment[]
-  metrics               BusinessMetric[]
-  recurring             RecurringTransaction[]
-  budgets               Budget[]
-  clientProjects        ClientProject[]           @relation("ClientProjects")
-  managedClientProjects ClientProject[]           @relation("ManagedClientProjects")
-  clientUpdates         ClientUpdate[]
-  clientRequests        ClientRequest[]
-  docsCreated           Document[]                @relation("CreatedDocs")
-  clientDocs            Document[]                @relation("DocClient")
-  landingEdits          LandingContent[]          @relation("LandingEditor")
-  assistantRateLimits   AssistantRateLimit[]
-  assistantConfigEdits  AssistantConfiguration[]  @relation("AssistantConfigEditor")
-  assistantConversations AssistantConversation[]
-  assistantActivities    AssistantActivity[]
+  accounts                 Account[]
+  sessions                 Session[]
+  workspaceMembers         WorkspaceMember[]
+  transactions             Transaction[]
+  accountCategories        AccountCategory[]
+  splitShares              SplitShare[]
+  tasks                    Task[]
+  comments                 Comment[]
+  workflows                Workflow[]
+  conversationLinks        ConversationParticipant[]
+  sentMessages             Message[]
+  reminders                Reminder[]
+  notes                    Note[]
+  events                   Event[]
+  sprints                  Sprint[]
+  ideas                    Idea[]
+  journalEntries           JournalEntry[]
+  notifications            Notification[]
+  resources                Resource[]
+  resourceCategories       ResourceCategory[]
+  fileAttachments          FileAttachment[]
+  metrics                  BusinessMetric[]
+  recurring                RecurringTransaction[]
+  budgets                  Budget[]
+  clientProjects           ClientProject[]           @relation("ClientProjects")
+  managedClientProjects    ClientProject[]           @relation("ManagedClientProjects")
+  clientUpdates            ClientUpdate[]
+  clientRequests           ClientRequest[]
+  docsCreated              Document[]                @relation("CreatedDocs")
+  clientDocs               Document[]                @relation("DocClient")
+  landingEdits             LandingContent[]          @relation("LandingEditor")
+  assistantRateLimits      AssistantRateLimit[]
+  assistantConfigEdits     AssistantConfiguration[]  @relation("AssistantConfigEditor")
+  assistantConversations   AssistantConversation[]
+  assistantActivities      AssistantActivity[]
+  marketingContactsCreated MarketingContact[]        @relation("MarketingContactCreator")
+  marketingSegmentsCreated MarketingSegment[]        @relation("MarketingSegmentCreator")
+  emailTemplatesCreated    EmailTemplate[]           @relation("EmailTemplateCreator")
+  emailCampaignsCreated    EmailCampaign[]           @relation("EmailCampaignCreator")
+  emailCampaignsAsClient   EmailCampaign[]           @relation("EmailCampaignClient")
+  emailAutomationsCreated  EmailAutomation[]         @relation("EmailAutomationCreator")
+  marketingInboxAssigned   MarketingInboundMessage[] @relation("MarketingInboxAssignee")
+  marketingInboxNotes      MarketingInboxNote[]
+  emailSettingsUpdated     EmailMarketingSettings[]  @relation("EmailSettingsUpdater")
 }
 
 model AssistantRateLimit {
@@ -484,17 +493,17 @@ model Message {
 // ===== REMINDER MODELS =====
 
 model Reminder {
-  id        String           @id @default(cuid())
-  title     String
-  note      String?
-  dueAt     DateTime
-  isDone    Boolean          @default(false)
-  userId    String
-  scope     TransactionScope @default(PERSONAL)
-  createdAt DateTime         @default(now())
-  recurrence String          @default("NONE")
-  notifyMinutesBefore Int    @default(15)
-  lastNotifiedAt DateTime?
+  id                  String           @id @default(cuid())
+  title               String
+  note                String?
+  dueAt               DateTime
+  isDone              Boolean          @default(false)
+  userId              String
+  scope               TransactionScope @default(PERSONAL)
+  createdAt           DateTime         @default(now())
+  recurrence          String           @default("NONE")
+  notifyMinutesBefore Int              @default(15)
+  lastNotifiedAt      DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -690,15 +699,16 @@ model ClientProject {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  client       User                 @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
-  owner        User                 @relation("ManagedClientProjects", fields: [ownerId], references: [id], onDelete: Restrict)
-  updates      ClientUpdate[]
-  requests     ClientRequest[]
-  milestones   ProjectMilestone[]
-  deliverables ProjectDeliverable[]
-  activities   ProjectActivity[]
-  tasks        Task[]
-  documents    Document[]
+  client         User                 @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
+  owner          User                 @relation("ManagedClientProjects", fields: [ownerId], references: [id], onDelete: Restrict)
+  updates        ClientUpdate[]
+  requests       ClientRequest[]
+  milestones     ProjectMilestone[]
+  deliverables   ProjectDeliverable[]
+  activities     ProjectActivity[]
+  tasks          Task[]
+  documents      Document[]
+  emailCampaigns EmailCampaign[]
 
   @@index([clientId])
   @@index([ownerId])
@@ -779,6 +789,487 @@ model ProjectActivity {
   project ClientProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
+}
+
+// ===== EMAIL MARKETING =====
+
+enum MarketingContactStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+  BOUNCED
+  COMPLAINED
+  INVALID
+  ARCHIVED
+}
+
+enum MarketingSegmentType {
+  STATIC
+  DYNAMIC
+}
+
+enum EmailTemplateStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  PAUSED
+  SENT
+  CANCELLED
+  FAILED
+}
+
+enum EmailAudienceRuleType {
+  INCLUDE
+  EXCLUDE
+}
+
+enum EmailRecipientStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  DEFERRED
+  BOUNCED
+  COMPLAINED
+  FAILED
+  SUPPRESSED
+  OPENED
+  CLICKED
+  CANCELLED
+}
+
+enum EmailSuppressionReason {
+  UNSUBSCRIBED
+  BOUNCE
+  COMPLAINT
+  INVALID
+  MANUAL
+}
+
+enum EmailAutomationTrigger {
+  CONTACT_ADDED
+  TAG_ADDED
+  BIRTHDAY
+  DATE_BASED
+  SUBSCRIPTION_CONFIRMED
+}
+
+enum EmailAutomationAction {
+  SEND_EMAIL
+  WAIT
+  ADD_TAG
+  REMOVE_TAG
+  END
+}
+
+enum EmailAutomationStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum EmailAutomationEnrollmentStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PAUSED
+  FAILED
+  CANCELLED
+}
+
+enum MarketingInboxStatus {
+  UNREAD
+  OPEN
+  DONE
+  TRASHED
+}
+
+model MarketingSource {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts MarketingContact[]
+}
+
+model MarketingContact {
+  id                String                 @id @default(cuid())
+  email             String                 @unique
+  firstName         String?
+  lastName          String?
+  company           String?
+  phone             String?
+  birthday          DateTime?
+  street            String?
+  address2          String?
+  city              String?
+  region            String?
+  postal            String?
+  country           String?
+  status            MarketingContactStatus @default(SUBSCRIBED)
+  consentSource     String?
+  consentAt         DateTime?
+  unsubscribeToken  String                 @unique @default(cuid())
+  providerContactId String?                @unique
+  sourceId          String?
+  createdById       String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  source        MarketingSource?            @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdBy     User                        @relation("MarketingContactCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  tags          MarketingContactTag[]
+  segments      MarketingSegmentMember[]
+  campaignRules EmailCampaignContact[]
+  recipients    EmailCampaignRecipient[]
+  enrollments   EmailAutomationEnrollment[]
+  inboxMessages MarketingInboundMessage[]
+
+  @@index([status, createdAt])
+  @@index([sourceId])
+  @@index([company])
+}
+
+model MarketingTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts      MarketingContactTag[]
+  campaignRules EmailCampaignTag[]
+}
+
+model MarketingContactTag {
+  contactId String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  contact MarketingContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag     MarketingTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@index([tagId, createdAt])
+}
+
+model MarketingSegment {
+  id          String               @id @default(cuid())
+  name        String               @unique
+  description String?
+  type        MarketingSegmentType @default(STATIC)
+  filters     Json                 @default("{}")
+  createdById String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  createdBy     User                     @relation("MarketingSegmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members       MarketingSegmentMember[]
+  campaignRules EmailCampaignSegment[]
+}
+
+model MarketingSegmentMember {
+  segmentId String
+  contactId String
+  createdAt DateTime @default(now())
+
+  segment MarketingSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  contact MarketingContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([segmentId, contactId])
+  @@index([contactId])
+}
+
+model EmailTemplate {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  subject     String
+  previewText String?
+  htmlBody    String
+  textBody    String?
+  status      EmailTemplateStatus @default(ACTIVE)
+  createdById String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  createdBy User            @relation("EmailTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  campaigns EmailCampaign[]
+
+  @@index([status, updatedAt])
+}
+
+model EmailCampaign {
+  id                  String              @id @default(cuid())
+  name                String
+  description         String?
+  status              EmailCampaignStatus @default(DRAFT)
+  fromName            String
+  fromEmail           String
+  replyTo             String?
+  subject             String
+  previewText         String?
+  htmlBody            String
+  textBody            String?
+  timezone            String              @default("Asia/Manila")
+  scheduledAt         DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  providerBroadcastId String?             @unique
+  recipientCount      Int                 @default(0)
+  sentCount           Int                 @default(0)
+  deliveredCount      Int                 @default(0)
+  failedCount         Int                 @default(0)
+  openedCount         Int                 @default(0)
+  clickedCount        Int                 @default(0)
+  templateId          String?
+  clientId            String?
+  projectId           String?
+  createdById         String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  template      EmailTemplate?            @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  client        User?                     @relation("EmailCampaignClient", fields: [clientId], references: [id], onDelete: SetNull)
+  project       ClientProject?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdBy     User                      @relation("EmailCampaignCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  contactRules  EmailCampaignContact[]
+  tagRules      EmailCampaignTag[]
+  segmentRules  EmailCampaignSegment[]
+  recipients    EmailCampaignRecipient[]
+  inboxMessages MarketingInboundMessage[]
+
+  @@index([status, scheduledAt])
+  @@index([createdAt])
+  @@index([clientId])
+  @@index([projectId])
+}
+
+model EmailCampaignContact {
+  campaignId String
+  contactId  String
+  ruleType   EmailAudienceRuleType @default(INCLUDE)
+
+  campaign EmailCampaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  MarketingContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, contactId])
+  @@index([contactId])
+}
+
+model EmailCampaignTag {
+  campaignId String
+  tagId      String
+  ruleType   EmailAudienceRuleType @default(INCLUDE)
+
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  tag      MarketingTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, tagId])
+  @@index([tagId])
+}
+
+model EmailCampaignSegment {
+  campaignId String
+  segmentId  String
+  ruleType   EmailAudienceRuleType @default(INCLUDE)
+
+  campaign EmailCampaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  segment  MarketingSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, segmentId])
+  @@index([segmentId])
+}
+
+model EmailCampaignRecipient {
+  id              String               @id @default(cuid())
+  campaignId      String
+  contactId       String?
+  email           String
+  firstName       String?
+  lastName        String?
+  status          EmailRecipientStatus @default(QUEUED)
+  providerEmailId String?              @unique
+  errorMessage    String?
+  queuedAt        DateTime             @default(now())
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  failedAt        DateTime?
+  updatedAt       DateTime             @updatedAt
+
+  campaign EmailCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  MarketingContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  events   EmailDeliveryEvent[]
+
+  @@unique([campaignId, email])
+  @@index([campaignId, status])
+  @@index([email])
+}
+
+model EmailDeliveryEvent {
+  id              String   @id @default(cuid())
+  providerEventId String   @unique
+  providerEmailId String?
+  recipientId     String?
+  type            String
+  payload         Json     @default("{}")
+  eventAt         DateTime
+  createdAt       DateTime @default(now())
+
+  recipient EmailCampaignRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([providerEmailId])
+  @@index([type, eventAt])
+}
+
+model EmailSuppression {
+  id           String                 @id @default(cuid())
+  email        String                 @unique
+  reason       EmailSuppressionReason
+  source       String
+  details      String?
+  suppressedAt DateTime               @default(now())
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([reason, suppressedAt])
+}
+
+model EmailAutomation {
+  id            String                 @id @default(cuid())
+  name          String
+  description   String?
+  trigger       EmailAutomationTrigger
+  triggerConfig Json                   @default("{}")
+  status        EmailAutomationStatus  @default(DRAFT)
+  createdById   String
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  createdBy   User                        @relation("EmailAutomationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  steps       EmailAutomationStep[]
+  enrollments EmailAutomationEnrollment[]
+
+  @@index([status, trigger])
+}
+
+model EmailAutomationStep {
+  id           String                @id @default(cuid())
+  automationId String
+  position     Int
+  action       EmailAutomationAction
+  delayMinutes Int                   @default(0)
+  config       Json                  @default("{}")
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  automation EmailAutomation               @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  logs       EmailAutomationExecutionLog[]
+
+  @@unique([automationId, position])
+}
+
+model EmailAutomationEnrollment {
+  id           String                          @id @default(cuid())
+  automationId String
+  contactId    String
+  runKey       String
+  status       EmailAutomationEnrollmentStatus @default(PENDING)
+  currentStep  Int                             @default(0)
+  nextRunAt    DateTime?
+  startedAt    DateTime                        @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+  updatedAt    DateTime                        @updatedAt
+
+  automation EmailAutomation               @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  contact    MarketingContact              @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  logs       EmailAutomationExecutionLog[]
+
+  @@unique([automationId, contactId, runKey])
+  @@index([status, nextRunAt])
+  @@index([contactId])
+}
+
+model EmailAutomationExecutionLog {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  stepId       String?
+  status       String
+  message      String
+  details      Json     @default("{}")
+  createdAt    DateTime @default(now())
+
+  enrollment EmailAutomationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  step       EmailAutomationStep?      @relation(fields: [stepId], references: [id], onDelete: SetNull)
+
+  @@index([enrollmentId, createdAt])
+}
+
+model MarketingInboundMessage {
+  id                String               @id @default(cuid())
+  providerMessageId String               @unique
+  senderName        String?
+  senderEmail       String
+  recipientEmail    String?
+  subject           String
+  textBody          String?
+  htmlBody          String?
+  status            MarketingInboxStatus @default(UNREAD)
+  contactId         String?
+  campaignId        String?
+  assignedToId      String?
+  receivedAt        DateTime
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  contact    MarketingContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  campaign   EmailCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  assignedTo User?                @relation("MarketingInboxAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes      MarketingInboxNote[]
+
+  @@index([status, receivedAt])
+  @@index([contactId])
+  @@index([campaignId])
+}
+
+model MarketingInboxNote {
+  id        String   @id @default(cuid())
+  messageId String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  message MarketingInboundMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  author  User                    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([messageId, createdAt])
+}
+
+model EmailMarketingSettings {
+  id             String   @id @default("system")
+  provider       String   @default("RESEND")
+  fromName       String   @default("ARKO")
+  fromEmail      String   @default("onboarding@resend.dev")
+  replyTo        String?
+  inboundAddress String?
+  trackOpens     Boolean  @default(true)
+  trackClicks    Boolean  @default(true)
+  companyName    String   @default("ARKO")
+  companyAddress String   @default("")
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  updatedBy User? @relation("EmailSettingsUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
 }
 
 // ===== FINANCE EXTRAS =====
