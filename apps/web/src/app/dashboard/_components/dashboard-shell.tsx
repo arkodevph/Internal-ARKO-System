@@ -35,6 +35,7 @@ import { useAssistantIdentity } from "../../../lib/use-assistant-identity";
 import { FloatingNexChat } from "./floating-nex-chat";
 import { NexMark } from "../../../components/nex-mascot";
 import { DashboardThemeToggle } from "./dashboard-theme-toggle";
+import { DemoNexTour } from "./demo-nex-tour";
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -128,6 +129,15 @@ const CLIENT_CATEGORIES: NavCategory[] = [
   { to: "/dashboard/resources", icon: Bookmark, label: "Shared Resources" },
 ];
 
+const DEMO_CATEGORIES: NavCategory[] = [
+  {
+    to: "/dashboard",
+    icon: LayoutDashboard,
+    label: "Demo overview",
+    end: true,
+  },
+];
+
 const BOTTOM_NAV = ALL_CATEGORIES.slice(0, 5);
 
 function isActivePath(pathname: string, item: NavCategory) {
@@ -136,12 +146,13 @@ function isActivePath(pathname: string, item: NavCategory) {
 
 /* ─── Unread badge sources ─── */
 
-function useUnreadCounts() {
+function useUnreadCounts(enabled = true) {
   const { data: notifications } = api.notifications.unreadCount.useQuery(
     undefined,
-    { refetchInterval: 60000 },
+    { enabled, refetchInterval: 60000 },
   );
   const { data: messages } = api.messages.unreadCount.useQuery(undefined, {
+    enabled,
     refetchInterval: 5000,
     refetchIntervalInBackground: false,
   });
@@ -202,6 +213,7 @@ function MobileDrawer({
   categories,
   user,
   messageUnread,
+  isDemo,
   onSettings,
   onLogout,
 }: {
@@ -210,6 +222,7 @@ function MobileDrawer({
   categories: NavCategory[];
   user: any;
   messageUnread: number;
+  isDemo: boolean;
   onSettings: () => void;
   onLogout: () => void;
 }) {
@@ -272,16 +285,18 @@ function MobileDrawer({
             </div>
           </div>
           <div className="flex gap-1">
-            <button
-              onClick={() => {
-                onClose();
-                onSettings();
-              }}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-text-secondary hover:bg-card/[0.04] hover:text-text-primary transition-colors cursor-pointer"
-            >
-              <Settings className="h-3.5 w-3.5" />
-              Settings
-            </button>
+            {!isDemo && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onSettings();
+                }}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-text-secondary hover:bg-card/[0.04] hover:text-text-primary transition-colors cursor-pointer"
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Settings
+              </button>
+            )}
             <button
               onClick={onLogout}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-neg hover:bg-neg-bg transition-colors cursor-pointer"
@@ -302,17 +317,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, status } = useSession();
-  useHeartbeat();
   const sessionUser = session?.user as any;
+  const isDemo = sessionUser?.role === "DEMO";
+  useHeartbeat(!isDemo);
   const { data: profile } = api.users.getProfile.useQuery(undefined, {
-    enabled: status === "authenticated",
+    enabled: status === "authenticated" && !isDemo,
   });
   const user = profile ?? sessionUser;
   const isClient = sessionUser?.role === "CLIENT";
   const [showSearch, setShowSearch] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const unread = useUnreadCounts();
+  const unread = useUnreadCounts(!isDemo);
   const assistantIdentity = useAssistantIdentity();
 
   useEffect(() => {
@@ -334,28 +350,40 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   }, [isClient, pathname, router, status]);
 
+  useEffect(() => {
+    if (status === "authenticated" && isDemo && pathname !== "/dashboard") {
+      router.replace("/dashboard");
+    }
+  }, [isDemo, pathname, router, status]);
+
   const requestSignOut = useRequestSignOut();
   const handleLogout = () => requestSignOut();
 
   const isAdmin = sessionUser?.role === "ADMIN";
   const navGroups: NavGroup[] = isClient
     ? [{ label: "Portal", items: CLIENT_CATEGORIES }]
-    : NAV_GROUPS.map((g) => ({
-        label: g.label,
-        items: g.items
-          .filter((it) => !it.adminOnly || isAdmin)
-          .map((item) =>
-            item.to === "/dashboard/assistant"
-              ? {
-                  ...item,
-                  label: `${assistantIdentity.assistantName} Assistant`,
-                }
-              : item,
-          ),
-      })).filter((g) => g.items.length > 0);
+    : isDemo
+      ? [{ label: "Demo", items: DEMO_CATEGORIES }]
+      : NAV_GROUPS.map((g) => ({
+          label: g.label,
+          items: g.items
+            .filter((it) => !it.adminOnly || isAdmin)
+            .map((item) =>
+              item.to === "/dashboard/assistant"
+                ? {
+                    ...item,
+                    label: `${assistantIdentity.assistantName} Assistant`,
+                  }
+                : item,
+            ),
+        })).filter((g) => g.items.length > 0);
   const categories = navGroups.flatMap((g) => g.items);
   const currentCategory = categories.find((c) => isActivePath(pathname, c));
-  const bottomCategories = isClient ? CLIENT_CATEGORIES : BOTTOM_NAV;
+  const bottomCategories = isClient
+    ? CLIENT_CATEGORIES
+    : isDemo
+      ? DEMO_CATEGORIES
+      : BOTTOM_NAV;
   return (
     <div className="dashboard-theme-root h-dvh bg-bg-app text-text-primary">
       <MobileDrawer
@@ -364,6 +392,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         categories={categories}
         user={user}
         messageUnread={unread.messages}
+        isDemo={isDemo}
         onSettings={() => router.push("/dashboard/settings")}
         onLogout={handleLogout}
       />
@@ -440,13 +469,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
               <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => router.push("/dashboard/settings")}
-                  title="Settings"
-                  className="rounded-lg p-1.5 text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
-                >
-                  <Settings className="h-4 w-4" />
-                </button>
+                {!isDemo && (
+                  <button
+                    onClick={() => router.push("/dashboard/settings")}
+                    title="Settings"
+                    className="rounded-lg p-1.5 text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   title="Sign out"
@@ -483,7 +514,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
             <div className="flex items-center gap-1.5 shrink-0">
               <DashboardThemeToggle />
-              {showSearch ? (
+              {isDemo ? (
+                <span className="hidden rounded-full border border-primary-500/25 bg-primary-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-400 sm:inline-flex">
+                  Demo mode
+                </span>
+              ) : showSearch ? (
                 <div className="flex items-center rounded-lg border border-border-subtle bg-card px-2.5 py-1.5">
                   <Search className="h-4 w-4 shrink-0 text-text-tertiary" />
                   <input
@@ -505,36 +540,40 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <Search className="h-4 w-4" />
                 </button>
               )}
-              <Link
-                href="/dashboard/messages"
-                title={`${unread.messages} unread messages`}
-                aria-label={`${unread.messages} unread messages`}
-                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
-              >
-                <MessageSquare className="h-4 w-4" />
-                {unread.messages > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] font-bold text-white">
-                    {unread.messages > 99 ? "99+" : unread.messages}
-                  </span>
-                )}
-              </Link>
-              <Link
-                href="/dashboard/notifications"
-                title="Notifications"
-                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
-              >
-                <Bell className="h-4 w-4" />
-                {unread.notifications > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neg px-1 text-[9px] font-bold text-white">
-                    {unread.notifications > 99 ? "99+" : unread.notifications}
-                  </span>
-                )}
-              </Link>
+              {!isDemo && (
+                <Link
+                  href="/dashboard/messages"
+                  title={`${unread.messages} unread messages`}
+                  aria-label={`${unread.messages} unread messages`}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {unread.messages > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] font-bold text-white">
+                      {unread.messages > 99 ? "99+" : unread.messages}
+                    </span>
+                  )}
+                </Link>
+              )}
+              {!isDemo && (
+                <Link
+                  href="/dashboard/notifications"
+                  title="Notifications"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unread.notifications > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neg px-1 text-[9px] font-bold text-white">
+                      {unread.notifications > 99 ? "99+" : unread.notifications}
+                    </span>
+                  )}
+                </Link>
+              )}
             </div>
           </header>
 
           <main
-            className={`min-h-0 flex-1 px-3 py-4 md:px-6 ${pathname === "/dashboard" ? "overflow-y-auto xl:overflow-hidden" : "overflow-y-auto"}`}
+            className={`min-h-0 flex-1 px-3 py-4 md:px-6 ${pathname === "/dashboard" && !isDemo ? "overflow-y-auto xl:overflow-hidden" : "overflow-y-auto"}`}
           >
             {children}
           </main>
@@ -566,8 +605,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {pathname !== "/dashboard/assistant" && (
-        <FloatingNexChat identity={assistantIdentity} pathname={pathname} />
+      {isDemo ? (
+        <DemoNexTour />
+      ) : (
+        pathname !== "/dashboard/assistant" && (
+          <FloatingNexChat identity={assistantIdentity} pathname={pathname} />
+        )
       )}
     </div>
   );

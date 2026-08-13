@@ -1,70 +1,70 @@
-import type { Metadata } from 'next'
-import SiteHeader from './_components/SiteHeader'
-import SmoothScrollProvider from './_components/SmoothScrollProvider'
-import Preloader from './_components/Preloader'
-import StickyMobileCta from './_components/StickyMobileCta'
-import MarketingPageTransition from './_components/MarketingPageTransition'
-import FloatingAssistant from './_components/FloatingAssistant'
+import type { Metadata } from "next";
+import SiteHeader from "./_components/SiteHeader";
+import SmoothScrollProvider from "./_components/SmoothScrollProvider";
+import Preloader from "./_components/Preloader";
+import StickyMobileCta from "./_components/StickyMobileCta";
+import MarketingPageTransition from "./_components/MarketingPageTransition";
+import FloatingAssistant from "./_components/FloatingAssistant";
 
-const TITLE = 'Arko — We build web, mobile, automation and AI'
+const TITLE = "Arko — We build web, mobile, automation and AI";
 const DESCRIPTION =
-  'Arko is a small software studio. We design and ship web and mobile products, then wire in the automation and AI that make them run on their own.'
+  "Arko is a small software studio. We design and ship web and mobile products, then wire in the automation and AI that make them run on their own.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://arkodevph.vercel.app'),
+  metadataBase: new URL("https://arkodevph.vercel.app"),
   title: TITLE,
   description: DESCRIPTION,
-  alternates: { canonical: '/' },
+  alternates: { canonical: "/" },
   openGraph: {
-    type: 'website',
-    url: '/',
-    siteName: 'Arko',
+    type: "website",
+    url: "/",
+    siteName: "Arko",
     title: TITLE,
     description: DESCRIPTION,
   },
   twitter: {
-    card: 'summary_large_image',
+    card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
   },
-}
+};
 
-const BASE = 'https://arkodevph.vercel.app'
+const BASE = "https://arkodevph.vercel.app";
 
 const SCHEMA_JSONLD = {
-  '@context': 'https://schema.org',
-  '@graph': [
+  "@context": "https://schema.org",
+  "@graph": [
     {
-      '@type': ['Organization', 'ProfessionalService'],
-      '@id': `${BASE}/#organization`,
-      name: 'Arko',
-      alternateName: 'Arko Software Studio',
+      "@type": ["Organization", "ProfessionalService"],
+      "@id": `${BASE}/#organization`,
+      name: "Arko",
+      alternateName: "Arko Software Studio",
       url: BASE,
-      email: 'contact@arkodevph.com',
+      email: "contact@arkodevph.com",
       description: DESCRIPTION,
-      slogan: 'We build web, mobile, automation and AI',
-      sameAs: ['https://github.com/justrhey'],
+      slogan: "We build web, mobile, automation and AI",
+      sameAs: ["https://github.com/justrhey"],
       address: {
-        '@type': 'PostalAddress',
-        addressCountry: 'PH',
+        "@type": "PostalAddress",
+        addressCountry: "PH",
       },
-      areaServed: 'Worldwide',
+      areaServed: "Worldwide",
       knowsAbout: [
-        'Web development',
-        'Mobile app development',
-        'Automation',
-        'Artificial intelligence',
+        "Web development",
+        "Mobile app development",
+        "Automation",
+        "Artificial intelligence",
       ],
     },
     {
-      '@type': 'WebSite',
-      '@id': `${BASE}/#website`,
+      "@type": "WebSite",
+      "@id": `${BASE}/#website`,
       url: BASE,
-      name: 'Arko',
-      publisher: { '@id': `${BASE}/#organization` },
+      name: "Arko",
+      publisher: { "@id": `${BASE}/#organization` },
     },
   ],
-}
+};
 
 export default function MarketingLayout({
   children,
@@ -85,5 +85,5 @@ export default function MarketingLayout({
         <StickyMobileCta />
       </MarketingPageTransition>
     </div>
-  )
+  );
 }

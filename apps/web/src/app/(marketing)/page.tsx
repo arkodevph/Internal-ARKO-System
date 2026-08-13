@@ -27,6 +27,7 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
         alt=""
         width={1254}
         height={1254}
+        priority
         className="pointer-events-none absolute -bottom-[8vw] -right-[8vw] hidden w-[62vw] max-w-[58rem] select-none lg:block"
       />
       <div className="relative z-10">

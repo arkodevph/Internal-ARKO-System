@@ -372,4 +372,47 @@ describe('assistant chat route', () => {
       context: expect.objectContaining({ unreadMessageCount: 3 }),
     }))
   })
+
+  it('supplies presence and conversation-aware messages for authorized workspace questions', async () => {
+    const lastActiveAt = new Date('2026-08-12T14:00:00Z')
+    userFindMany.mockResolvedValue([{
+      id: 'user-2',
+      name: 'Alex',
+      email: 'alex@arko.app',
+      role: 'MEMBER',
+      status: 'ACTIVE',
+      title: 'Designer',
+      lastActiveAt,
+    }])
+    messageFindMany.mockResolvedValue([{
+      id: 'message-1',
+      content: 'The homepage review is ready.',
+      createdAt: new Date('2026-08-12T13:55:00Z'),
+      sender: { name: 'Alex' },
+      conversation: {
+        id: 'conversation-1',
+        name: null,
+        participants: [
+          { user: { id: 'user-1', name: 'Justine' } },
+          { user: { id: 'user-2', name: 'Alex' } },
+        ],
+      },
+    }])
+
+    await POST(request({ messages: [{ role: 'user', content: 'Who is online and what are my messages?' }] }))
+
+    expect(userFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      select: expect.objectContaining({ lastActiveAt: true }),
+    }))
+    expect(generateReplyMock).toHaveBeenCalledWith(expect.objectContaining({
+      context: expect.objectContaining({
+        users: [expect.objectContaining({ name: 'Alex', lastActiveAt })],
+        messages: [expect.objectContaining({
+          senderName: 'Alex',
+          conversationId: 'conversation-1',
+          conversationName: 'Alex',
+        })],
+      }),
+    }))
+  })
 })

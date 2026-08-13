@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server'
 import { getAssistantConfig } from '../../../../server/services/assistant-config'
 
 export async function GET() {
-  const config = await getAssistantConfig()
+  const config = await getAssistantConfig().catch(() => ({
+    assistantName: 'NEX',
+    iconStyle: 'BOT' as const,
+    accentColor: '#22C55E' as const,
+    greeting:
+      'Hey, y’all! I’m NEX, your ARKO operations guide. Tell me what needs sorting, and I’ll line it up for your approval before changing anything.',
+  }))
 
   return NextResponse.json(
     {

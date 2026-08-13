@@ -20,6 +20,9 @@ jest.mock('../../../../../server/services/assistant-config', () => ({
 }))
 
 import { GET } from '../route'
+import { getAssistantConfig } from '../../../../../server/services/assistant-config'
+
+const mockedGetAssistantConfig = jest.mocked(getAssistantConfig)
 
 describe('assistant identity route', () => {
   it('returns only public mascot fields', async () => {
@@ -34,5 +37,18 @@ describe('assistant identity route', () => {
     })
     expect(JSON.stringify(body)).not.toContain('serviceAccountEmail')
     expect(response.headers.get('cache-control')).toContain('s-maxage=60')
+  })
+
+  it('returns the public default identity when configuration is unavailable', async () => {
+    mockedGetAssistantConfig.mockRejectedValueOnce(new Error('database unavailable'))
+
+    const response = await GET()
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      assistantName: 'NEX',
+      iconStyle: 'BOT',
+      accentColor: '#22C55E',
+    })
   })
 })

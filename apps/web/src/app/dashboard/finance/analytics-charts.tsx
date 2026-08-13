@@ -41,7 +41,7 @@ export function AnalyticsCharts({ transactions }: { transactions: AnalyticsTrans
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="analytics-panel flex h-[300px] flex-col overflow-hidden">
+      <Card className="analytics-panel finance-panel flex h-[300px] flex-col overflow-hidden">
         <CardHeader className="flex-row items-start justify-between p-5 pb-2">
           <div>
             <CardTitle className="text-sm font-medium">Expenses</CardTitle>
@@ -87,7 +87,7 @@ export function AnalyticsCharts({ transactions }: { transactions: AnalyticsTrans
         </CardContent>
       </Card>
 
-      <Card className="analytics-panel flex h-[300px] flex-col overflow-hidden">
+      <Card className="analytics-panel finance-panel flex h-[300px] flex-col overflow-hidden">
         <CardHeader className="flex-row items-start justify-between p-5 pb-2">
           <div>
             <CardTitle className="text-sm font-medium">Financial activity</CardTitle>

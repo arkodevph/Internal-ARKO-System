@@ -88,18 +88,19 @@ export default function FinancePage() {
   const refetchTransactions = () => txQuery.refetch()
 
   return (
-    <div className="analytics-reference mx-auto max-w-[1500px] space-y-5">
+    <div className="analytics-reference finance-reference mx-auto max-w-[1500px] space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Analytics</h1>
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.16em] text-primary-400">Money workspace</p>
+          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Finance</h1>
           <p className="text-sm text-text-tertiary mt-1">
             {scopeFilter === 'PERSONAL'
               ? 'Your private budgets, spending, bills, and savings'
               : 'Shared company cash flow for admins and accountants'}
           </p>
         </div>
-        <Button className="rounded-full px-5" onClick={() => setDialogOpen(true)}>
+        <Button className="min-h-10 w-full rounded-full px-5 sm:w-auto" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           Add Transaction
         </Button>
@@ -107,15 +108,15 @@ export default function FinancePage() {
 
       {/* Pending splits alert */}
       {pendingSplits && pendingSplits.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50">
+        <Card className="finance-panel border-amber-500/25 bg-amber-500/[0.06]">
           <CardContent className="flex items-center justify-between py-3">
             <div className="flex items-center gap-2.5">
               <Users className="h-4 w-4 text-amber-600" />
-              <p className="text-sm font-medium text-amber-800">
+              <p className="text-sm font-medium text-amber-300">
                 {pendingSplits.length} pending split{pendingSplits.length > 1 ? 's' : ''} to settle
               </p>
             </div>
-            <span className="text-xs text-amber-600 font-medium">
+            <span className="text-xs text-amber-300 font-medium tabular-nums">
               ₱{pendingSplits.reduce((s, p) => s + p.amount, 0).toLocaleString()}
             </span>
           </CardContent>
@@ -123,11 +124,11 @@ export default function FinancePage() {
       )}
 
       {hasError ? (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="finance-panel border-red-500/25 bg-red-500/[0.06]">
           <CardContent className="flex items-center justify-between py-6">
             <div className="flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-red-500" />
-              <p className="text-sm font-medium text-red-800">Failed to load finance data.</p>
+              <p className="text-sm font-medium text-red-300">Failed to load finance data.</p>
             </div>
             <Button variant="outline" size="sm" onClick={refetchAll}>Retry</Button>
           </CardContent>
@@ -137,7 +138,7 @@ export default function FinancePage() {
       ) : (
         <>
           {/* Scope tabs */}
-          <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-border-subtle bg-card p-1">
+          <div className="dashboard-segmented inline-flex w-fit items-center gap-1 p-1">
             {(['PERSONAL', ...(canUseCompany ? ['COMPANY' as const] : [])] as const).map((s) => (
               <button
                 key={s}
@@ -147,8 +148,8 @@ export default function FinancePage() {
                 }}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                   scopeFilter === s
-                    ? 'bg-primary-500 text-white shadow-sm'
-                    : 'text-text-secondary hover:bg-card/[0.04]'
+                    ? 'bg-primary-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.16)]'
+                    : 'text-text-secondary hover:bg-white/[0.04]'
                 }`}
               >
                 <span className="inline-flex items-center gap-1.5">
@@ -159,22 +160,26 @@ export default function FinancePage() {
             ))}
           </div>
 
-          {/* Stat cards */}
-          <AnalyticsCharts transactions={transactions} />
-
-          {/* Stat cards */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
+          <section aria-labelledby="finance-summary">
+            <div className="mb-3 flex items-end justify-between">
+              <div>
+                <h2 id="finance-summary" className="text-base font-semibold text-text-primary">Financial position</h2>
+                <p className="mt-1 text-xs text-text-tertiary">Current totals for the selected account.</p>
+              </div>
+              <span className="hidden text-xs text-text-tertiary sm:block">PHP · Current period</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+            <Card className="finance-panel">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-text-tertiary">Balance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-text-primary">
+                <div className="text-2xl font-semibold tabular-nums text-text-primary">
                   {formatCurrency(balance?.balance ?? 0)}
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="finance-panel">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-text-tertiary">Income</CardTitle>
               </CardHeader>
@@ -183,13 +188,13 @@ export default function FinancePage() {
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-50">
                     <ArrowUpRight className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-2xl font-bold text-green-600">
+                  <span className="text-2xl font-semibold tabular-nums text-primary-400">
                     {formatCurrency(balance?.income ?? 0)}
                   </span>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="finance-panel">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-text-tertiary">Expenses</CardTitle>
               </CardHeader>
@@ -198,17 +203,22 @@ export default function FinancePage() {
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50">
                     <ArrowDownRight className="h-4 w-4 text-red-600" />
                   </div>
-                  <span className="text-2xl font-bold text-red-600">
+                  <span className="text-2xl font-semibold tabular-nums text-red-400">
                     {formatCurrency(balance?.expenses ?? 0)}
                   </span>
                 </div>
               </CardContent>
             </Card>
           </div>
+          </section>
 
-          {/* Decision support */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
+          <section aria-labelledby="finance-insights">
+            <div className="mb-3">
+              <h2 id="finance-insights" className="text-base font-semibold text-text-primary">Decision support</h2>
+              <p className="mt-1 text-xs text-text-tertiary">Signals derived from this month’s activity.</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+            <Card className="finance-panel">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-text-tertiary">Savings rate</p>
@@ -220,7 +230,7 @@ export default function FinancePage() {
                 <p className="mt-1 text-xs text-text-tertiary">Income retained this month</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="finance-panel">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-text-tertiary">30-day projection</p>
@@ -232,7 +242,7 @@ export default function FinancePage() {
                 <p className="mt-1 text-xs text-text-tertiary">After upcoming recurring entries</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="finance-panel">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-text-tertiary">Top expense</p>
@@ -249,11 +259,21 @@ export default function FinancePage() {
               </CardContent>
             </Card>
           </div>
+          </section>
+
+          <section aria-labelledby="finance-trends">
+            <div className="mb-3">
+              <h2 id="finance-trends" className="text-base font-semibold text-text-primary">Trends and distribution</h2>
+              <p className="mt-1 text-xs text-text-tertiary">Six-month movement and spending concentration.</p>
+            </div>
+            <AnalyticsCharts transactions={transactions} />
+          </section>
 
           {/* Budgets */}
-          <Card>
+          <Card className="finance-panel">
             <CardHeader>
-              <CardTitle>Monthly budgets</CardTitle>
+              <CardTitle className="text-base">Monthly budgets</CardTitle>
+              <p className="text-xs text-text-tertiary">Set limits and track category spending for this month.</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2 md:grid-cols-[1fr_140px_1fr_auto]">
@@ -342,9 +362,10 @@ export default function FinancePage() {
           </Card>
 
           {/* Transactions list */}
-          <Card>
+          <Card className="finance-panel overflow-hidden">
             <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
+              <CardTitle className="text-base">Transaction history</CardTitle>
+              <p className="text-xs text-text-tertiary">Most recent entries for the selected account.</p>
             </CardHeader>
             <CardContent>
               {txQuery.isError ? (
@@ -363,9 +384,9 @@ export default function FinancePage() {
                   </Button>
                 </div>
               ) : (
-                <div className="divide-y divide-border-subtle">
+                <div className="divide-y divide-border-subtle overflow-x-auto">
                   {ghostTransactions.map((tx) => (
-                    <div key={tx.id} className="flex animate-pulse items-center justify-between py-3 opacity-55">
+                    <div key={tx.id} className="flex min-w-[36rem] animate-pulse items-center justify-between py-3 opacity-55">
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="h-9 w-9 shrink-0 rounded-full bg-card" />
                         <div className="min-w-0">
@@ -390,7 +411,7 @@ export default function FinancePage() {
                   {transactions.map((tx) => {
                     const unsettledShares = tx.splitShares?.filter((s) => !s.settled) ?? []
                     return (
-                      <div key={tx.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                      <div key={tx.id} className="group flex min-w-[36rem] items-center justify-between py-3 transition-colors hover:bg-white/[0.025] first:pt-0 last:pb-0">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`flex h-9 w-9 items-center justify-center rounded-full shrink-0 ${
                             tx.type === 'INCOME' ? 'bg-green-50' : tx.type === 'EXPENSE' ? 'bg-red-50' : 'bg-blue-50'
@@ -460,7 +481,7 @@ export default function FinancePage() {
 
           {/* Pending splits section */}
           {pendingSplits && pendingSplits.length > 0 && (
-            <Card>
+            <Card className="finance-panel">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Pending Splits</CardTitle>
                 <Users className="h-4 w-4 text-text-tertiary" />
@@ -504,7 +525,7 @@ export default function FinancePage() {
           )}
 
           {/* Recurring Transactions */}
-          <Card>
+          <Card className="finance-panel">
             <CardHeader className="flex flex-row items-center justify-between cursor-pointer" onClick={() => setShowRecurring(!showRecurring)}>
               <div className="flex items-center gap-2">
                 <CardTitle>Recurring Transactions</CardTitle>

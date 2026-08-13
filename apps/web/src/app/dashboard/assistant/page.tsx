@@ -19,6 +19,7 @@ import {
   DEFAULT_ASSISTANT_IDENTITY,
   useAssistantIdentity,
 } from '../../../lib/use-assistant-identity'
+import { AssistantThinking, ProgressiveResponse } from '../../../components/assistant-response'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -52,25 +53,10 @@ function ThinkingIndicator({
   accentColor: string
   reduceMotion: boolean | null
 }) {
-  const label = `${assistantName} is thinking…`
-
   return (
-    <div className="flex justify-start" role="status" aria-label={label}>
+    <div className="flex justify-start">
       <div className="rounded-2xl rounded-bl-md border border-border-subtle bg-bg-app px-4 py-3">
-        {reduceMotion ? (
-          <span className="text-sm font-medium text-text-tertiary">{label}</span>
-        ) : (
-          <motion.span
-            animate={{ backgroundPosition: ['100% center', '-100% center'] }}
-            transition={{ duration: 1.6, ease: 'linear', repeat: Infinity }}
-            className="inline-block bg-[length:250%_100%] bg-clip-text text-sm font-medium text-transparent"
-            style={{
-              backgroundImage: `linear-gradient(90deg, var(--color-text-tertiary) 20%, ${accentColor} 50%, var(--color-text-tertiary) 80%)`,
-            }}
-          >
-            {label}
-          </motion.span>
-        )}
+        <AssistantThinking label={`${assistantName} is thinking`} />
       </div>
     </div>
   )
@@ -437,7 +423,7 @@ export default function AssistantPage() {
                 <span className="sr-only">
                   {message.role === 'user' ? 'You' : identity.assistantName}:{' '}
                 </span>
-                {message.content}
+                  {message.role === 'assistant' ? <ProgressiveResponse text={message.content} animate={index === messages.length - 1 && !loading} /> : message.content}
               </div>
             </div>
           ))}
@@ -588,7 +574,7 @@ export default function AssistantPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="border-t border-border-subtle p-3 sm:p-4">
-        <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-border-subtle bg-bg-app p-2 focus-within:border-primary-500/50">
+        <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-full border border-border-subtle bg-bg-app p-2 focus-within:border-primary-500/50">
           <textarea
             value={input}
             onChange={(event) => setInput(event.target.value)}
@@ -608,7 +594,7 @@ export default function AssistantPage() {
             type="submit"
             disabled={!input.trim() || loading}
             aria-label="Send message"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-500 text-[#07110b] transition-opacity disabled:opacity-40"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-500 text-[#07110b] transition-opacity disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
           </button>

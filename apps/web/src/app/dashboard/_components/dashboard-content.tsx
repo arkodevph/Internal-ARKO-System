@@ -23,6 +23,11 @@ import {
 import { api } from '../../../lib/trpc/client'
 import { PerformanceChart } from './performance-chart'
 import { LandingTrafficChart } from './landing-traffic-chart'
+import { Sparkline } from './sparkline'
+
+function pctChange(current: number, previous: number) {
+  return previous > 0 ? ((current - previous) / previous) * 100 : null
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-PH', {
@@ -101,10 +106,23 @@ export default function DashboardContent() {
     }
   }, [transactions])
 
+  const incomeDelta = insights
+    ? pctChange(insights.current.income, insights.previous.income)
+    : null
+  const expenseDelta = insights
+    ? pctChange(insights.current.expenses, insights.previous.expenses)
+    : null
+  const landingDelta = landingStats?.previous7Days
+    ? pctChange(landingStats.last7Days ?? 0, landingStats.previous7Days)
+    : null
+
   return (
-    <div className="dashboard-reference mx-auto min-h-full w-full max-w-[1500px]">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="dashboard-reference mx-auto min-h-full w-full max-w-[1500px] xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between xl:mb-3 xl:shrink-0">
         <div>
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.16em] text-primary-400">
+            Workspace overview
+          </p>
           <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
             Dashboard
           </h1>
@@ -149,9 +167,59 @@ export default function DashboardContent() {
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-4">
-          <Card className="dashboard-panel overflow-hidden">
+      <section aria-labelledby="dashboard-kpis" className="mb-4 xl:mb-3 xl:shrink-0">
+        <div className="mb-3 flex items-end justify-between">
+          <div>
+            <h2 id="dashboard-kpis" className="text-base font-semibold text-text-primary">
+              At a glance
+            </h2>
+            <p className="mt-1 text-xs text-text-tertiary">
+              The numbers that need your attention today.
+            </p>
+          </div>
+          <span className="hidden text-xs text-text-tertiary sm:block">Updated live</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            label="Income"
+            value={formatCurrency(balance?.income ?? 0)}
+            detail="vs. previous month"
+            icon={<ArrowUpRight className="h-4 w-4" />}
+            delta={incomeDelta}
+            trend={chartData.income}
+            positive
+          />
+          <MetricCard
+            label="Expenses"
+            value={formatCurrency(balance?.expenses ?? 0)}
+            detail={`${insights?.upcomingCount ?? 0} upcoming entries`}
+            icon={<ArrowDownRight className="h-4 w-4" />}
+            delta={expenseDelta}
+            trend={chartData.expenses}
+          />
+          <MetricCard
+            label="Active tasks"
+            value={String(activeTasks)}
+            detail={`${completedTasks} completed`}
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            trend={[0, 0, completedTasks, totalTasks, completedTasks]}
+            positive
+          />
+          <MetricCard
+            label="Landing views"
+            value={new Intl.NumberFormat('en-US').format(landingStats?.viewCount ?? 0)}
+            detail={landingStats?.lastViewedAt ? `Last view ${timeAgo(String(landingStats.lastViewedAt))}` : 'No views yet'}
+            icon={<Eye className="h-4 w-4" />}
+            delta={landingDelta}
+            trend={(landingStats?.history ?? []).map((point) => point.views)}
+            positive
+          />
+        </div>
+      </section>
+
+      <div className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-3">
+        <div className="flex flex-col gap-4 xl:min-h-0 xl:gap-3">
+          <Card className="dashboard-panel overflow-hidden xl:min-h-0 xl:flex-1">
             <CardHeader className="flex-row items-center justify-between p-5 pb-3">
               <CardTitle className="text-base font-medium">
                 Current balance
@@ -159,7 +227,7 @@ export default function DashboardContent() {
               <Wallet className="h-4 w-4 text-primary-400" />
             </CardHeader>
             <CardContent className="p-5 pt-0">
-              <div className="dashboard-balance-card">
+              <div className="dashboard-balance-card xl:min-h-0">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-white/65">
                     {financeScope === 'PERSONAL'
@@ -168,7 +236,7 @@ export default function DashboardContent() {
                   </span>
                   <CircleDollarSign className="h-5 w-5 text-white/80" />
                 </div>
-                <p className="mt-10 text-3xl font-semibold tabular-nums text-white">
+                <p className="mt-10 text-3xl font-semibold tabular-nums text-white xl:mt-6">
                   {formatCurrency(balance?.balance ?? 0)}
                 </p>
                 <p className="mt-1 text-xs text-white/60">
@@ -189,10 +257,32 @@ export default function DashboardContent() {
                   </p>
                 </div>
               </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-4">
+                <div className="min-w-0">
+                  <p className="text-xs text-text-tertiary">Projected net</p>
+                  <p className="mt-1 text-sm font-semibold tabular-nums text-text-primary">
+                    {formatCurrency(insights?.projectedBalance ?? 0)}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-text-tertiary">Top expense</p>
+                  <p
+                    className="mt-1 truncate text-sm font-semibold text-text-primary"
+                    title={insights?.topCategory?.name ?? undefined}
+                  >
+                    {insights?.topCategory?.name ?? '—'}
+                  </p>
+                  {insights?.topCategory && (
+                    <p className="text-[11px] tabular-nums text-text-tertiary">
+                      {formatCurrency(insights.topCategory.amount)}
+                    </p>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="dashboard-panel">
+          <Card className="dashboard-panel xl:shrink-0">
             <CardHeader className="p-5 pb-3">
               <CardTitle className="text-base font-medium">
                 Task completion
@@ -225,7 +315,7 @@ export default function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Card className="dashboard-panel">
+          <Card className="dashboard-panel xl:shrink-0">
             <CardHeader className="flex-row items-center justify-between p-5 pb-3">
               <CardTitle className="text-base font-medium">Team</CardTitle>
               <span className="text-xs text-text-tertiary">
@@ -257,45 +347,9 @@ export default function DashboardContent() {
           </Card>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <MetricCard
-              label="Income"
-              value={formatCurrency(balance?.income ?? 0)}
-              detail="Total recorded"
-              icon={<ArrowUpRight className="h-4 w-4" />}
-              positive
-            />
-            <MetricCard
-              label="Expenses"
-              value={formatCurrency(balance?.expenses ?? 0)}
-              detail={`${insights?.upcomingCount ?? 0} upcoming`}
-              icon={<ArrowDownRight className="h-4 w-4" />}
-            />
-            <MetricCard
-              label="Active tasks"
-              value={String(activeTasks)}
-              detail={`${completedTasks} completed`}
-              icon={<CheckCircle2 className="h-4 w-4" />}
-              positive
-            />
-            <MetricCard
-              label="Landing views"
-              value={new Intl.NumberFormat('en-US').format(
-                landingStats?.viewCount ?? 0,
-              )}
-              detail={
-                landingStats?.lastViewedAt
-                  ? `Last view ${timeAgo(String(landingStats.lastViewedAt))}`
-                  : 'No views yet'
-              }
-              icon={<Eye className="h-4 w-4" />}
-              positive
-            />
-          </div>
-
-          <Card className="dashboard-panel overflow-hidden">
-            <CardHeader className="flex-row items-start justify-between gap-4 p-5 pb-2">
+        <div className="flex min-w-0 flex-col gap-4 xl:grid xl:min-h-0 xl:grid-rows-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:gap-3">
+          <Card className="dashboard-panel overflow-hidden xl:flex xl:min-h-0 xl:flex-col">
+            <CardHeader className="flex-row items-start justify-between gap-4 p-4 pb-1">
               <div>
                 <CardTitle className="text-base font-medium">
                   Landing page traffic
@@ -306,33 +360,24 @@ export default function DashboardContent() {
               </div>
               <Activity className="h-4 w-4 shrink-0 text-primary-400" />
             </CardHeader>
-            <CardContent className="p-5 pt-2">
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                <TrafficStat
-                  label="Today"
-                  value={landingStats?.todayViews ?? 0}
-                />
-                <TrafficStat
-                  label="Last 7 days"
-                  value={landingStats?.last7Days ?? 0}
-                />
-                <TrafficStat
-                  label="Last 30 days"
-                  value={landingStats?.last30Days ?? 0}
-                />
+            <CardContent className="flex min-h-0 flex-1 flex-col p-4 pt-1">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-b border-white/[0.06] pb-2">
+                <InlineTrafficStat label="Today" value={landingStats?.todayViews ?? 0} />
+                <InlineTrafficStat label="7 days" value={landingStats?.last7Days ?? 0} />
+                <InlineTrafficStat label="30 days" value={landingStats?.last30Days ?? 0} />
+                <span className="ml-auto hidden text-[11px] text-text-tertiary sm:block">
+                  {landingStats?.previous7Days
+                    ? `${Math.round((((landingStats.last7Days ?? 0) - landingStats.previous7Days) / landingStats.previous7Days) * 100)}% vs previous week`
+                    : 'Awaiting comparison data'}
+                </span>
               </div>
-              <div className="mt-4 h-[190px]">
+              <div className="mt-2 min-h-[130px] flex-1">
                 <LandingTrafficChart data={landingStats?.history ?? []} />
               </div>
-              <p className="mt-2 text-xs text-text-tertiary">
-                {landingStats?.previous7Days
-                  ? `${Math.round((((landingStats.last7Days ?? 0) - landingStats.previous7Days) / landingStats.previous7Days) * 100)}% vs. the previous 7 days`
-                  : 'Comparison will appear after a prior week of traffic.'}
-              </p>
             </CardContent>
           </Card>
 
-          <Card className="dashboard-panel flex h-[300px] flex-col overflow-hidden">
+          <Card className="dashboard-panel flex h-[300px] flex-col overflow-hidden xl:h-auto xl:min-h-0">
             <CardHeader className="flex-row items-center justify-between p-5 pb-1">
               <div>
                 <CardTitle className="text-base font-medium">
@@ -362,7 +407,7 @@ export default function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Card className="dashboard-panel overflow-hidden">
+          <Card className="dashboard-panel overflow-hidden xl:hidden">
             <CardHeader className="flex-row items-center justify-between p-5">
               <div>
                 <CardTitle className="text-base font-medium">
@@ -428,7 +473,7 @@ export default function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Card className="dashboard-panel overflow-hidden">
+          <Card className="dashboard-panel overflow-hidden xl:hidden">
             <CardHeader className="flex-row items-center justify-between p-5 pb-3">
               <CardTitle className="text-base font-medium">
                 Recent updates
@@ -477,13 +522,13 @@ export default function DashboardContent() {
   )
 }
 
-function TrafficStat({ label, value }: { label: string; value: number }) {
+function InlineTrafficStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 sm:p-4">
-      <p className="text-[11px] text-text-tertiary sm:text-xs">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums text-text-primary sm:text-2xl">
+    <div className="flex items-baseline gap-2">
+      <span className="text-xl font-semibold tabular-nums text-text-primary">
         {new Intl.NumberFormat('en-US').format(value)}
-      </p>
+      </span>
+      <span className="text-[11px] text-text-tertiary">{label}</span>
     </div>
   )
 }
@@ -493,17 +538,21 @@ function MetricCard({
   value,
   detail,
   icon,
+  delta,
+  trend = [],
   positive = false,
 }: {
   label: string
   value: string
   detail: string
   icon: React.ReactNode
+  delta?: number | null
+  trend?: number[]
   positive?: boolean
 }) {
   return (
     <Card className="dashboard-panel">
-      <CardContent className="p-5">
+      <CardContent className="p-5 xl:p-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-text-tertiary">{label}</p>
           <span
@@ -512,13 +561,28 @@ function MetricCard({
             {icon}
           </span>
         </div>
-        <p className="mt-4 truncate text-2xl font-semibold tabular-nums text-text-primary">
-          {value}
-        </p>
-        <p className="mt-1 flex items-center gap-1 text-xs text-text-tertiary">
-          <Clock3 className="h-3 w-3" />
-          {detail}
-        </p>
+        <div className="mt-4 flex items-end justify-between gap-3 xl:mt-2">
+          <div className="min-w-0">
+            <p className="truncate text-2xl font-semibold tabular-nums text-text-primary">
+              {value}
+            </p>
+            <p className="mt-1 flex items-center gap-1 text-xs text-text-tertiary">
+              {delta == null ? (
+                <Clock3 className="h-3 w-3" />
+              ) : delta >= 0 ? (
+                <ArrowUpRight className="h-3 w-3 text-primary-400" />
+              ) : (
+                <ArrowDownRight className="h-3 w-3 text-red-400" />
+              )}
+              {delta == null ? detail : `${Math.abs(delta).toFixed(1)}% ${detail}`}
+            </p>
+          </div>
+          <Sparkline
+            data={trend}
+            color={positive ? '#22c55e' : '#f87171'}
+            className="h-8 w-20 shrink-0 opacity-80"
+          />
+        </div>
       </CardContent>
     </Card>
   )

@@ -11,88 +11,86 @@ function shortDate(date: string) {
   }).format(new Date(`${date}T00:00:00Z`))
 }
 
-export function LandingTrafficChart({ data }: { data: TrafficPoint[] }) {
-  const maxViews = Math.max(...data.map((point) => point.views), 1)
-  const total = data.reduce((sum, point) => sum + point.views, 0)
-  const peak = data.reduce<TrafficPoint | null>(
-    (highest, point) =>
-      !highest || point.views > highest.views ? point : highest,
-    null,
-  )
+function emptyTrafficSeries() {
+  return Array.from({ length: 30 }, (_, index) => {
+    const date = new Date()
+    date.setUTCDate(date.getUTCDate() - (29 - index))
+    return { date: date.toISOString().slice(0, 10), views: 0 }
+  })
+}
 
-  if (total === 0) {
-    return (
-      <div className="flex h-full min-h-40 items-center justify-center text-center">
-        <div>
-          <p className="text-sm font-medium text-text-secondary">
-            No visits yet
-          </p>
-          <p className="mt-1 text-xs text-text-tertiary">
-            Traffic will appear here after someone visits the landing page.
-          </p>
-        </div>
-      </div>
-    )
-  }
+export function LandingTrafficChart({ data }: { data: TrafficPoint[] }) {
+  const points = data.length > 1 ? data : emptyTrafficSeries()
+  const maxViews = Math.max(...points.map((point) => point.views), 1)
+  const total = points.reduce((sum, point) => sum + point.views, 0)
+  const width = 760
+  const height = 150
+  const left = 34
+  const right = 8
+  const top = 8
+  const bottom = 24
+  const chartWidth = width - left - right
+  const chartHeight = height - top - bottom
+  const coordinates = points.map((point, index) => ({
+    x: left + (index / Math.max(points.length - 1, 1)) * chartWidth,
+    y: top + chartHeight - (point.views / maxViews) * chartHeight,
+    point,
+  }))
+  const linePath = coordinates
+    .map(({ x, y }, index) => `${index === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(' ')
+  const lastCoordinate = coordinates[coordinates.length - 1]
+  const areaPath = `${linePath} L${lastCoordinate?.x ?? left},${top + chartHeight} L${left},${top + chartHeight} Z`
+  const labelIndexes = [0, Math.floor((points.length - 1) / 2), points.length - 1]
 
   return (
-    <div className="h-full min-h-40 w-full">
-      <div
-        className="relative h-full pb-6 pl-8 pt-2"
+    <div className="h-full min-h-0 w-full">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        className="h-full w-full"
         role="img"
-        aria-label={`Landing page visits over the last 30 days. ${total} total visits. Peak was ${peak?.views ?? 0} on ${peak ? shortDate(peak.date) : 'no date'}.`}
+        aria-label={`Landing page visits over the last 30 days. ${total} total visits.`}
       >
-        <div className="pointer-events-none absolute bottom-6 left-8 right-0 top-2 flex flex-col justify-between">
-          {[1, 0.5, 0].map((fraction) => (
-            <div
-              key={fraction}
-              className="relative border-t border-white/[0.07]"
-            >
-              <span className="absolute right-full top-0 mr-2 -translate-y-1/2 text-[9px] tabular-nums text-text-tertiary">
+        <defs>
+          <linearGradient id="traffic-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[1, 0.5, 0].map((fraction) => {
+          const y = top + chartHeight - chartHeight * fraction
+          return (
+            <g key={fraction}>
+              <line x1={left} y1={y} x2={width - right} y2={y} className="stroke-white/[0.07]" />
+              <text x={left - 8} y={y + 3} textAnchor="end" className="fill-text-tertiary text-[9px]">
                 {Math.round(maxViews * fraction)}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="flex h-full items-end gap-px">
-          {data.map((point) => (
-            <div
-              key={point.date}
-              className="flex h-full min-w-0 flex-1 items-end"
-              title={`${shortDate(point.date)}: ${point.views} visit${point.views === 1 ? '' : 's'}`}
-            >
-              <span
-                className="block w-full rounded-t-sm bg-primary-500"
-                style={{
-                  height: `${(point.views / maxViews) * 100}%`,
-                  minHeight: point.views > 0 ? 2 : 0,
-                }}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="absolute bottom-0 left-8 right-0 flex justify-between text-[9px] text-text-tertiary">
-          <span>{data[0] ? shortDate(data[0].date) : ''}</span>
-          <span>{data[14] ? shortDate(data[14].date) : ''}</span>
-          <span>{data[29] ? shortDate(data[29].date) : ''}</span>
-        </div>
-      </div>
+              </text>
+            </g>
+          )
+        })}
+        <path d={areaPath} fill="url(#traffic-area)" />
+        <path d={linePath} fill="none" stroke="#22c55e" strokeWidth="2.2" vectorEffect="non-scaling-stroke" />
+        {coordinates.map(({ x, y, point }, index) => (
+          <circle key={point.date} cx={x} cy={y} r={index === coordinates.length - 1 ? 3 : 1.5} fill="#22c55e">
+            <title>{shortDate(point.date)}: {point.views} visits</title>
+          </circle>
+        ))}
+        {labelIndexes.map((index) => (
+          <text
+            key={points[index].date}
+            x={coordinates[index].x}
+            y={height - 5}
+            textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}
+            className="fill-text-tertiary text-[9px]"
+          >
+            {shortDate(points[index].date)}
+          </text>
+        ))}
+      </svg>
       <table className="sr-only">
         <caption>Landing page visits by day for the last 30 days</caption>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Visits</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((point) => (
-            <tr key={point.date}>
-              <td>{shortDate(point.date)}</td>
-              <td>{point.views}</td>
-            </tr>
-          ))}
-        </tbody>
+        <tbody>{points.map((point) => <tr key={point.date}><td>{shortDate(point.date)}</td><td>{point.views}</td></tr>)}</tbody>
       </table>
     </div>
   )
