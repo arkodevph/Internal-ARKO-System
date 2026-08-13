@@ -36,6 +36,7 @@ import { FloatingNexChat } from "./floating-nex-chat";
 import { NexMark } from "../../../components/nex-mascot";
 import { DashboardThemeToggle } from "./dashboard-theme-toggle";
 import { DemoNexTour } from "./demo-nex-tour";
+import { DemoSystemPage } from "./demo-system-page";
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -129,14 +130,8 @@ const CLIENT_CATEGORIES: NavCategory[] = [
   { to: "/dashboard/resources", icon: Bookmark, label: "Shared Resources" },
 ];
 
-const DEMO_CATEGORIES: NavCategory[] = [
-  {
-    to: "/dashboard",
-    icon: LayoutDashboard,
-    label: "Demo overview",
-    end: true,
-  },
-];
+const DEMO_GROUPS = NAV_GROUPS.filter((group) => group.label !== "Admin");
+const DEMO_CATEGORIES = DEMO_GROUPS.flatMap((group) => group.items);
 
 const BOTTOM_NAV = ALL_CATEGORIES.slice(0, 5);
 
@@ -350,12 +345,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   }, [isClient, pathname, router, status]);
 
-  useEffect(() => {
-    if (status === "authenticated" && isDemo && pathname !== "/dashboard") {
-      router.replace("/dashboard");
-    }
-  }, [isDemo, pathname, router, status]);
-
   const requestSignOut = useRequestSignOut();
   const handleLogout = () => requestSignOut();
 
@@ -363,7 +352,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const navGroups: NavGroup[] = isClient
     ? [{ label: "Portal", items: CLIENT_CATEGORIES }]
     : isDemo
-      ? [{ label: "Demo", items: DEMO_CATEGORIES }]
+      ? DEMO_GROUPS
       : NAV_GROUPS.map((g) => ({
           label: g.label,
           items: g.items
@@ -575,7 +564,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <main
             className={`min-h-0 flex-1 px-3 py-4 md:px-6 ${pathname === "/dashboard" && !isDemo ? "overflow-y-auto xl:overflow-hidden" : "overflow-y-auto"}`}
           >
-            {children}
+            {isDemo ? <DemoSystemPage pathname={pathname} /> : children}
           </main>
 
           {/* Mobile bottom nav */}
@@ -606,7 +595,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {isDemo ? (
-        <DemoNexTour />
+        <DemoNexTour key={pathname} />
       ) : (
         pathname !== "/dashboard/assistant" && (
           <FloatingNexChat identity={assistantIdentity} pathname={pathname} />
