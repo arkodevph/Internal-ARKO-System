@@ -397,7 +397,6 @@ export function FloatingNexChat({
         aria-label={`${open ? 'Close' : 'Open'} ${identity.assistantName} assistant`}
         className="floating-nex-trigger nex-terminal-trigger group relative flex h-16 items-center rounded-full pl-2 pr-4 text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
       >
-        <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-primary-500" />
         <NexMascot
           iconStyle={identity.iconStyle}
           accentColor={identity.accentColor}
