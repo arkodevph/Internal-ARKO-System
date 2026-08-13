@@ -4,12 +4,11 @@ import type { AssistantIdentity } from '../lib/use-assistant-identity'
 export function NexMark({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
-      <path d="M2 9h7l5 6M2 31h7l5-6M38 9h-7l-5 6M38 31h-7l-5-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M20 3 34 20 20 37 6 20 20 3Z" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="20" cy="20" r="8" fill="currentColor" />
-      <circle cx="17" cy="19" r="1.2" className="fill-bg-sidebar" />
-      <circle cx="23" cy="19" r="1.2" className="fill-bg-sidebar" />
-      <path d="M16.5 23c2.2 1.8 4.8 1.8 7 0" className="stroke-bg-sidebar" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M2 20 8 8l7 5 5-10 5 10 7-5 6 12-6 12-7-5-5 10-5-10-7 5L2 20Z" stroke="currentColor" strokeWidth="1.65" strokeLinejoin="round" />
+      <path d="M7 20c3.5-5 7.8-7.5 13-7.5S29.5 15 33 20c-3.5 5-7.8 7.5-13 7.5S10.5 25 7 20Z" fill="currentColor" />
+      <path d="M11 20c2.7-2.7 5.7-4 9-4s6.3 1.3 9 4c-2.7 2.7-5.7 4-9 4s-6.3-1.3-9-4Z" className="fill-bg-sidebar" />
+      <path d="m20 15 3.6 5-3.6 5-3.6-5 3.6-5Z" fill="currentColor" />
+      <circle cx="20" cy="20" r="1.45" className="fill-bg-sidebar" />
     </svg>
   )
 }
@@ -50,12 +49,11 @@ export function NexMascot({
     >
       <span className="absolute inset-[5%] rotate-45 border border-current/45 bg-[#090b0a]/90 shadow-[0_0_18px_currentColor]" />
       <svg viewBox="0 0 40 40" fill="none" className="relative overflow-visible" aria-hidden="true">
-        <path d="M1 9h8l5 6M1 31h8l5-6M39 9h-8l-5 6M39 31h-8l-5-6" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" opacity=".8" />
-        <path d="M20 3 34 20 20 37 6 20 20 3Z" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="20" cy="20" r="8.5" fill="#090b0a" stroke="currentColor" strokeWidth="1.4" />
-        <circle cx="17" cy="18.5" r="1.15" fill="currentColor" />
-        <circle cx="23" cy="18.5" r="1.15" fill="currentColor" />
-        <path d="M16.5 22.5c2.2 2 4.8 2 7 0" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" />
+        <path d="M2 20 8 8l7 5 5-10 5 10 7-5 6 12-6 12-7-5-5 10-5-10-7 5L2 20Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" opacity=".85" />
+        <path d="M7 20c3.5-5 7.8-7.5 13-7.5S29.5 15 33 20c-3.5 5-7.8 7.5-13 7.5S10.5 25 7 20Z" fill="#090b0a" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M11 20c2.7-2.7 5.7-4 9-4s6.3 1.3 9 4c-2.7 2.7-5.7 4-9 4s-6.3-1.3-9-4Z" fill="currentColor" opacity=".22" />
+        <path d="m20 14.5 4 5.5-4 5.5-4-5.5 4-5.5Z" fill="currentColor" />
+        <circle cx="20" cy="20" r="1.6" fill="#090b0a" />
         {iconStyle === 'ORBIT' && (
           <ellipse cx="20" cy="20" rx="18" ry="10" stroke="currentColor" strokeWidth=".8" opacity=".6" />
         )}
