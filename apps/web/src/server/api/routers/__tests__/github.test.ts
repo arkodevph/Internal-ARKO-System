@@ -117,11 +117,13 @@ describe('github router', () => {
       expect(res.error).toBe('Network failure')
     })
 
-    it('defaults to vercel/next.js/canary when no env overrides and no input', async () => {
+    it('defaults to the ARKO system repository when no overrides are provided', async () => {
       mockFetch(200, [])
       await githubRouter.createCaller(ctx()).recentCommits()
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('vercel/next.js/commits?sha=canary'),
+        expect.stringContaining(
+          'justinebacurin1927/Internal-ARKO-System/commits?sha=main',
+        ),
         expect.any(Object),
       )
     })

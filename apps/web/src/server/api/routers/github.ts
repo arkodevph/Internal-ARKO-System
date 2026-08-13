@@ -25,9 +25,9 @@ const CommitSchema = z.object({
 /**
  * Default repo shown on the dashboard (override via env or input).
  */
-const DEFAULT_OWNER = process.env.GITHUB_DEFAULT_OWNER ?? 'vercel'
-const DEFAULT_REPO = process.env.GITHUB_DEFAULT_REPO ?? 'next.js'
-const DEFAULT_BRANCH = process.env.GITHUB_DEFAULT_BRANCH ?? 'canary'
+const DEFAULT_OWNER = process.env.GITHUB_DEFAULT_OWNER ?? 'justinebacurin1927'
+const DEFAULT_REPO = process.env.GITHUB_DEFAULT_REPO ?? 'Internal-ARKO-System'
+const DEFAULT_BRANCH = process.env.GITHUB_DEFAULT_BRANCH ?? 'main'
 
 export const githubRouter = router({
   /**
