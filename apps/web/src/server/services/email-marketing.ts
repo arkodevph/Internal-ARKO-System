@@ -11,7 +11,7 @@ export const DEFAULT_EMAIL_MARKETING_SETTINGS = {
   id: "system",
   provider: "RESEND",
   fromName: "ARKO",
-  fromEmail: "onboarding@resend.dev",
+  fromEmail: "marketing@arkodevph.com",
   replyTo: null as string | null,
   inboundAddress: null as string | null,
   trackOpens: true,

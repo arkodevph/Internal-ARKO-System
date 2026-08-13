@@ -37,7 +37,7 @@ const emptyCampaign = {
   clientId: null as string | null,
   projectId: null as string | null,
   fromName: "ARKO",
-  fromEmail: "onboarding@resend.dev",
+  fromEmail: "marketing@arkodevph.com",
   replyTo: null as string | null,
   subject: "",
   previewText: "",
