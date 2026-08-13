@@ -104,9 +104,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         const absoluteMaxAge =
           dbUser.role === "DEMO" ? DEMO_MAX_AGE : SESSION_MAX_AGE;
+        const sessionStartedAt = token.sessionStartedAt;
         if (
-          !token.sessionStartedAt ||
-          Date.now() - token.sessionStartedAt > absoluteMaxAge * 1000
+          typeof sessionStartedAt !== "number" ||
+          Date.now() - sessionStartedAt > absoluteMaxAge * 1000
         ) {
           return null;
         }
