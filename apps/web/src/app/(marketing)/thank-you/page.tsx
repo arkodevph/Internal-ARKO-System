@@ -46,10 +46,10 @@ export default function ThankYouPage() {
           <p className="mono mt-6 text-xs font-bold uppercase tracking-[0.16em] text-ink/50">
             Need us sooner? Email{' '}
             <a
-              href="mailto:arkodevph@gmail.com"
+              href="mailto:contact@arkodevph.com"
               className="underline decoration-2 underline-offset-4"
             >
-              arkodevph@gmail.com
+              contact@arkodevph.com
             </a>
           </p>
 

@@ -40,7 +40,7 @@ const SCHEMA_JSONLD = {
       name: 'Arko',
       alternateName: 'Arko Software Studio',
       url: BASE,
-      email: 'arkodevph@gmail.com',
+      email: 'contact@arkodevph.com',
       description: DESCRIPTION,
       slogan: 'We build web, mobile, automation and AI',
       sameAs: ['https://github.com/justrhey'],

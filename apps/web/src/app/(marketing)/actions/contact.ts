@@ -9,7 +9,7 @@ export type ContactState = {
   message?: string
 }
 
-const TO = 'arkodevph@gmail.com'
+const TO = 'contact@arkodevph.com'
 const COOKIE_NAME = 'rl'
 const MAX_ATTEMPTS = 3
 const COOLDOWN_MS = 60_000

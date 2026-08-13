@@ -148,10 +148,10 @@ export default function ContactForm() {
         <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-white/70 md:text-lg">
           Thanks for reaching out. Reach us directly at{' '}
           <a
-            href="mailto:arkodevph@gmail.com"
+            href="mailto:contact@arkodevph.com"
             className="text-acid underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid"
           >
-            arkodevph@gmail.com
+            contact@arkodevph.com
           </a>
         </p>
       </div>

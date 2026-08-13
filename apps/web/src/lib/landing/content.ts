@@ -282,12 +282,12 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
     headingLine2: 'build',
     paragraph:
       'Tell us what you are trying to make. We will tell you the fastest honest way to get it shipped.',
-    email: 'arkodevph@gmail.com',
+    email: 'contact@arkodevph.com',
   },
   footer: {
     brandBlurb:
       'A software studio that designs, builds and ships web and mobile products — without the overhead.',
-    email: 'arkodevph@gmail.com',
+    email: 'contact@arkodevph.com',
     githubUrl: 'https://github.com/justrhey',
     whatWeDo: [
       { label: 'Product websites', href: '#work' },
