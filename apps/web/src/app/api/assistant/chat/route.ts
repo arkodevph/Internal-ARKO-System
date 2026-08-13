@@ -23,6 +23,55 @@ const requestSchema = z.object({
   conversationId: z.string().cuid().optional(),
 })
 
+function assistantFailureMessage(error: unknown) {
+  const details =
+    error && typeof error === 'object'
+      ? (error as { message?: unknown; status?: unknown; code?: unknown })
+      : undefined
+  const message =
+    typeof details?.message === 'string' ? details.message.toLowerCase() : ''
+  const status = details?.status ?? details?.code
+
+  if (
+    message.includes('not configured') ||
+    message.includes('deployment identity')
+  ) {
+    return 'NEX is not fully configured for this deployment. An administrator needs to finish the Vertex AI connection.'
+  }
+  if (
+    status === 401 ||
+    status === 403 ||
+    message.includes('unauthenticated') ||
+    message.includes('permission denied') ||
+    message.includes('credential')
+  ) {
+    return 'NEX could not authenticate with Vertex AI. An administrator needs to check the deployment identity and permissions.'
+  }
+  if (
+    status === 429 ||
+    status === 'RESOURCE_EXHAUSTED' ||
+    message.includes('quota') ||
+    message.includes('rate limit')
+  ) {
+    return 'Vertex AI has reached its usage limit. Please try again later or ask an administrator to check the quota.'
+  }
+  if (
+    message.includes('timeout') ||
+    message.includes('timed out') ||
+    message.includes('econnreset') ||
+    message.includes('fetch failed')
+  ) {
+    return 'Vertex AI did not respond in time. Your request was not applied; please try again.'
+  }
+  if (error instanceof SyntaxError || error instanceof z.ZodError) {
+    return 'NEX received a response it could not safely process. Rephrase the request with the key details and try again.'
+  }
+  if (typeof details?.code === 'string' && /^P\d{4}$/.test(details.code)) {
+    return 'NEX could not load or save the ARKO workspace data. Your requested change was not applied; please try again.'
+  }
+  return 'NEX hit an unexpected server error. Your request was not applied. Please try again; if it continues, contact an administrator.'
+}
+
 async function saveExchange({
   conversationId,
   userId,
@@ -317,7 +366,7 @@ export async function POST(request: Request) {
     }
     console.error('Assistant chat failed', error)
     return NextResponse.json(
-      { error: 'The assistant is temporarily unavailable.' },
+      { error: assistantFailureMessage(error) },
       { status: 503 },
     )
   }

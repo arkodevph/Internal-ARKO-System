@@ -235,6 +235,38 @@ describe('assistant chat route', () => {
     expect(generateReplyMock).not.toHaveBeenCalled()
   })
 
+  it.each([
+    [
+      new Error('GOOGLE_CLOUD_PROJECT is not configured'),
+      'NEX is not fully configured for this deployment.',
+    ],
+    [
+      Object.assign(new Error('Permission denied'), { status: 403 }),
+      'NEX could not authenticate with Vertex AI.',
+    ],
+    [
+      Object.assign(new Error('Resource exhausted'), {
+        code: 'RESOURCE_EXHAUSTED',
+      }),
+      'Vertex AI has reached its usage limit.',
+    ],
+    [
+      new SyntaxError('Unexpected token'),
+      'NEX received a response it could not safely process.',
+    ],
+  ])('explains assistant service failures without exposing raw errors', async (error, explanation) => {
+    generateReplyMock.mockRejectedValueOnce(error)
+
+    const response = await POST(
+      request({ messages: [{ role: 'user', content: 'Create an expense' }] }),
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({
+      error: expect.stringContaining(explanation),
+    })
+  })
+
   it('loads permitted task context and returns the model response', async () => {
     taskFindMany.mockResolvedValue([{ id: 'task-1', title: 'Ship', status: 'TODO' }])
 
