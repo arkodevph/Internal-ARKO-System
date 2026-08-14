@@ -30,6 +30,14 @@ const OpenPeepsAvatar = dynamic(
 type AvatarUser =
   { id: string; name?: string | null; avatar?: unknown } | undefined;
 
+type PendingMessage = {
+  clientId: string;
+  conversationId: string;
+  content: string;
+  createdAt: Date;
+  status: "sending" | "failed";
+};
+
 function Avatar({ user, size = 36 }: { user: AvatarUser; size?: number }) {
   return (
     <OpenPeepsAvatar
@@ -51,6 +59,7 @@ export default function MessagesPage() {
   const [groupName, setGroupName] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const messagesViewportRef = useRef<HTMLDivElement>(null);
   const initializedConversationRef = useRef<string | null>(null);
   const previousLastMessageIdRef = useRef<string | undefined>(undefined);
@@ -85,67 +94,7 @@ export default function MessagesPage() {
   });
 
   const utils = api.useUtils();
-  const messageQueryInput = selectedConv
-    ? { conversationId: selectedConv, limit: 50 }
-    : null;
-
-  const sendMsg = api.messages.sendMessage.useMutation({
-    onMutate: async (input) => {
-      if (!messageQueryInput || !currentUserId) return;
-
-      await utils.messages.getMessages.cancel(messageQueryInput);
-      const previous = utils.messages.getMessages.getData(messageQueryInput);
-      const optimisticId = `pending-${Date.now()}`;
-
-      utils.messages.getMessages.setData(messageQueryInput, (current) => ({
-        messages: [
-          ...(current?.messages ?? []),
-          {
-            id: optimisticId,
-            content: input.content,
-            conversationId: input.conversationId,
-            senderId: currentUserId,
-            createdAt: new Date(),
-            sender: {
-              id: currentUserId,
-              name: session?.user?.name ?? "You",
-              image: session?.user?.image ?? null,
-            },
-          },
-        ],
-        nextCursor: current?.nextCursor,
-      }));
-      setNewMsg("");
-
-      return { previous, optimisticId, queryInput: messageQueryInput };
-    },
-    onError: (_error, input, context) => {
-      if (context?.queryInput) {
-        utils.messages.getMessages.setData(
-          context.queryInput,
-          context.previous,
-        );
-      }
-      setNewMsg(input.content);
-    },
-    onSuccess: (message, _input, context) => {
-      if (context?.queryInput) {
-        utils.messages.getMessages.setData(context.queryInput, (current) => ({
-          messages: (current?.messages ?? []).map((item) =>
-            item.id === context.optimisticId ? message : item,
-          ),
-          nextCursor: current?.nextCursor,
-        }));
-      }
-      utils.messages.listConversations.invalidate();
-      utils.messages.unreadCount.invalidate();
-    },
-    onSettled: (_data, _error, _input, context) => {
-      if (context?.queryInput) {
-        utils.messages.getMessages.invalidate(context.queryInput);
-      }
-    },
-  });
+  const sendMsg = api.messages.sendMessage.useMutation();
 
   const createConv = api.messages.createConversation.useMutation({
     onSuccess: (conv) => {
@@ -197,7 +146,11 @@ export default function MessagesPage() {
     headerOther?.name ??
     headerOther?.email ??
     "Conversation";
-  const lastMessageId = messages?.messages.at(-1)?.id;
+  const visiblePendingMessages = pendingMessages.filter(
+    (message) => message.conversationId === selectedConv,
+  );
+  const lastMessageId =
+    visiblePendingMessages.at(-1)?.clientId ?? messages?.messages.at(-1)?.id;
   const selectableUsers = (isClient ? suggestions : users)?.filter(
     (user) =>
       user.id !== currentUserId &&
@@ -236,7 +189,10 @@ export default function MessagesPage() {
       previousLastMessageIdRef.current !== lastMessageId
     ) {
       const newestMessage = messages?.messages.at(-1);
-      if (newestMessage?.senderId === currentUserId) {
+      if (
+        visiblePendingMessages.length > 0 ||
+        newestMessage?.senderId === currentUserId
+      ) {
         requestAnimationFrame(() => {
           viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
         });
@@ -245,7 +201,13 @@ export default function MessagesPage() {
       }
     }
     previousLastMessageIdRef.current = lastMessageId;
-  }, [currentUserId, lastMessageId, messages?.messages, selectedConv]);
+  }, [
+    currentUserId,
+    lastMessageId,
+    messages?.messages,
+    selectedConv,
+    visiblePendingMessages.length,
+  ]);
 
   const scrollToNewest = () => {
     const viewport = messagesViewportRef.current;
@@ -254,10 +216,65 @@ export default function MessagesPage() {
     setHasNewMessages(false);
   };
 
+  const sendOptimisticMessage = (
+    conversationId: string,
+    content: string,
+    existingClientId?: string,
+  ) => {
+    const clientId = existingClientId ?? `pending-${crypto.randomUUID()}`;
+    const queryInput = { conversationId, limit: 50 };
+
+    setPendingMessages((current) =>
+      existingClientId
+        ? current.map((message) =>
+            message.clientId === clientId
+              ? { ...message, status: "sending" }
+              : message,
+          )
+        : [
+            ...current,
+            {
+              clientId,
+              conversationId,
+              content,
+              createdAt: new Date(),
+              status: "sending",
+            },
+          ],
+    );
+
+    void sendMsg
+      .mutateAsync({ conversationId, content })
+      .then((message) => {
+        utils.messages.getMessages.setData(queryInput, (current) => ({
+          messages: current?.messages.some((item) => item.id === message.id)
+            ? current.messages
+            : [...(current?.messages ?? []), message],
+          nextCursor: current?.nextCursor,
+        }));
+        setPendingMessages((current) =>
+          current.filter((item) => item.clientId !== clientId),
+        );
+        void utils.messages.listConversations.invalidate();
+        void utils.messages.unreadCount.invalidate();
+        void utils.messages.getMessages.invalidate(queryInput);
+      })
+      .catch(() => {
+        setPendingMessages((current) =>
+          current.map((message) =>
+            message.clientId === clientId
+              ? { ...message, status: "failed" }
+              : message,
+          ),
+        );
+      });
+  };
+
   const handleSend = () => {
     const content = newMsg.trim();
-    if (!content || !selectedConv || sendMsg.isPending) return;
-    sendMsg.mutate({ conversationId: selectedConv, content });
+    if (!content || !selectedConv) return;
+    setNewMsg("");
+    sendOptimisticMessage(selectedConv, content);
   };
 
   return (
@@ -569,46 +586,84 @@ export default function MessagesPage() {
                     </div>
                   ))}
                 </div>
-              ) : messages?.messages.length === 0 ? (
+              ) : messages?.messages.length === 0 &&
+                visiblePendingMessages.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
                   <p className="text-sm text-text-tertiary">
                     No messages yet. Send one to start the conversation.
                   </p>
                 </div>
               ) : (
-                messages?.messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.senderId === currentUserId ? "justify-end" : "justify-start"}`}
-                  >
+                <>
+                  {messages?.messages.map((msg) => (
                     <div
-                      className={`max-w-xs rounded-2xl px-4 py-2.5 text-sm ${
-                        msg.senderId === currentUserId
-                          ? "bg-primary-500 text-white"
-                          : "bg-white/[0.06] text-text-primary"
-                      }`}
+                      key={msg.id}
+                      className={`flex ${msg.senderId === currentUserId ? "justify-end" : "justify-start"}`}
                     >
-                      <p>{msg.content}</p>
-                      <p
-                        className={`mt-1 text-[10px] ${
+                      <div
+                        className={`max-w-xs rounded-2xl px-4 py-2.5 text-sm ${
                           msg.senderId === currentUserId
-                            ? "text-primary-200"
-                            : "text-text-tertiary"
+                            ? "bg-primary-500 text-white"
+                            : "bg-white/[0.06] text-text-primary"
                         }`}
                       >
-                        {new Date(msg.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                      {isGroup && msg.senderId !== currentUserId && (
-                        <p className="mt-1 text-[10px] font-medium text-text-secondary">
-                          {msg.sender.name ?? "Member"}
+                        <p>{msg.content}</p>
+                        <p
+                          className={`mt-1 text-[10px] ${
+                            msg.senderId === currentUserId
+                              ? "text-primary-200"
+                              : "text-text-tertiary"
+                          }`}
+                        >
+                          {new Date(msg.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </p>
-                      )}
+                        {isGroup && msg.senderId !== currentUserId && (
+                          <p className="mt-1 text-[10px] font-medium text-text-secondary">
+                            {msg.sender.name ?? "Member"}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                  {visiblePendingMessages.map((message) => (
+                    <div key={message.clientId} className="flex justify-end">
+                      <div
+                        className={`max-w-xs rounded-2xl px-4 py-2.5 text-sm text-white ${
+                          message.status === "failed"
+                            ? "bg-red-500/70"
+                            : "bg-primary-500/70"
+                        }`}
+                      >
+                        <p>{message.content}</p>
+                        <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-white/75">
+                          <span>
+                            {message.status === "sending"
+                              ? "Sending…"
+                              : "Failed"}
+                          </span>
+                          {message.status === "failed" && (
+                            <button
+                              type="button"
+                              className="font-semibold text-white underline underline-offset-2"
+                              onClick={() =>
+                                sendOptimisticMessage(
+                                  message.conversationId,
+                                  message.content,
+                                  message.clientId,
+                                )
+                              }
+                            >
+                              Retry
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
 
@@ -640,22 +695,12 @@ export default function MessagesPage() {
                 />
                 <Button
                   onClick={handleSend}
-                  disabled={!newMsg.trim() || sendMsg.isPending}
+                  disabled={!newMsg.trim()}
                   className="h-10 w-10 shrink-0 rounded-xl p-0"
                 >
-                  {sendMsg.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
+                  <Send className="h-4 w-4" />
                 </Button>
               </div>
-              {sendMsg.error && (
-                <p className="mt-2 text-xs text-red-400">
-                  Message was not sent. Your text has been restored so you can
-                  retry.
-                </p>
-              )}
             </div>
           </>
         ) : (
