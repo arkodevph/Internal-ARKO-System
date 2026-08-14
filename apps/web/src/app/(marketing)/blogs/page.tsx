@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowUpRight, Rss } from "lucide-react";
 import { getLandingContent } from "../../../lib/landing/get-content";
 import { getFacebookBlogPosts } from "../../../lib/landing/facebook-posts";
+import { RefreshButton } from "./refresh-button";
 
 export const metadata: Metadata = {
   title: "Blogs — ARKO Software Studio",
@@ -33,6 +34,7 @@ export default async function BlogsPage() {
         <p className="mt-8 max-w-2xl text-base font-semibold leading-relaxed text-ink/70 md:text-xl">
           {blogs.intro}
         </p>
+        <RefreshButton />
       </section>
 
       <section className="px-4 py-10 sm:px-6 md:px-10 md:py-16">

@@ -64,7 +64,7 @@ export async function getFacebookBlogPosts(): Promise<BlogItem[]> {
   url.searchParams.set("access_token", accessToken);
 
   try {
-    const response = await fetch(url, { next: { revalidate: 900 } });
+    const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) return [];
     const payload = (await response.json()) as FacebookFeedResponse;
     return (payload.data ?? [])

@@ -66,5 +66,8 @@ describe("Facebook blog posts", () => {
     expect(String(fetchSpy.mock.calls[0]?.[0])).toContain(
       "/page-id/published_posts?",
     );
+    expect(fetchSpy).toHaveBeenCalledWith(expect.any(URL), {
+      cache: "no-store",
+    });
   });
 });
