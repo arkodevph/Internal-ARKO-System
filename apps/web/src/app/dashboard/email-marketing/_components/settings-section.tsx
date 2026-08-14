@@ -15,7 +15,7 @@ import { Field, fieldClass } from "./shared";
 
 const defaults = {
   fromName: "ARKO",
-  fromEmail: "onboarding@resend.dev",
+  fromEmail: "contact@arkodevph.com",
   replyTo: "",
   inboundAddress: "",
   trackOpens: true,

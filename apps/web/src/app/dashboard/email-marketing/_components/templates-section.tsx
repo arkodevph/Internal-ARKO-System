@@ -38,6 +38,9 @@ export function TemplatesSection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [testAddress, setTestAddress] = useState("");
+  const [testFirstName, setTestFirstName] = useState("");
+  const [testLastName, setTestLastName] = useState("");
+  const [testCompany, setTestCompany] = useState("ARKO");
   const templates = api.emailMarketing.templates.list.useQuery();
   const utils = api.useUtils();
   const invalidate = () =>
@@ -329,11 +332,41 @@ export function TemplatesSection() {
                     placeholder="you@example.com"
                   />
                 </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="First name">
+                    <input
+                      className={fieldClass}
+                      value={testFirstName}
+                      onChange={(event) => setTestFirstName(event.target.value)}
+                      placeholder="Friend"
+                    />
+                  </Field>
+                  <Field label="Last name">
+                    <input
+                      className={fieldClass}
+                      value={testLastName}
+                      onChange={(event) => setTestLastName(event.target.value)}
+                    />
+                  </Field>
+                </div>
+                <Field label="Company">
+                  <input
+                    className={fieldClass}
+                    value={testCompany}
+                    onChange={(event) => setTestCompany(event.target.value)}
+                  />
+                </Field>
                 <Button
                   className="w-full"
                   disabled={!testAddress || testSend.isPending}
                   onClick={() =>
-                    testSend.mutate({ id: preview.id, to: testAddress })
+                    testSend.mutate({
+                      id: preview.id,
+                      to: testAddress,
+                      firstName: testFirstName,
+                      lastName: testLastName,
+                      company: testCompany,
+                    })
                   }
                 >
                   {testSend.isPending ? (

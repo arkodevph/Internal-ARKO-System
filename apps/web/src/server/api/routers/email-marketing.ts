@@ -622,7 +622,15 @@ const templatesRouter = router({
       }),
     ),
   testSend: marketingProcedure
-    .input(z.object({ id: z.string(), to: email }))
+    .input(
+      z.object({
+        id: z.string(),
+        to: email,
+        firstName: z.string().trim().max(120).optional(),
+        lastName: z.string().trim().max(120).optional(),
+        company: z.string().trim().max(200).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const template = await ctx.prisma.emailTemplate.findUnique({
         where: { id: input.id },
@@ -638,6 +646,9 @@ const templatesRouter = router({
           subject: template.subject,
           html: template.htmlBody,
           text: template.textBody,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          company: input.company,
         });
       } catch (error) {
         throw new TRPCError({

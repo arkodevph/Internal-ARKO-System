@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  marketingTestRecipient,
   normalizeMarketingEmail,
   renderMarketingTemplate,
   resolveCampaignAudience,
@@ -24,6 +25,14 @@ describe("email marketing service", () => {
         contact,
       ),
     ).toBe("Hi Ari Santos from ARKO (person@example.com / )");
+  });
+
+  it("renders fallback values instead of leaving template placeholders", () => {
+    expect(
+      renderMarketingTemplate("Welcome {{first_name}} from {{company}}", {
+        ...marketingTestRecipient({ to: "person@example.com" }),
+      }),
+    ).toBe("Welcome Friend from ARKO");
   });
 
   it("applies include/exclude rules and suppresses ineligible recipients", async () => {

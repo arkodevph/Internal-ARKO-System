@@ -11,7 +11,7 @@ export const DEFAULT_EMAIL_MARKETING_SETTINGS = {
   id: "system",
   provider: "RESEND",
   fromName: "ARKO",
-  fromEmail: "onboarding@resend.dev",
+  fromEmail: "contact@arkodevph.com",
   replyTo: null as string | null,
   inboundAddress: null as string | null,
   trackOpens: true,
@@ -281,18 +281,45 @@ function resendInboundClient() {
   return new Resend(apiKey);
 }
 
+export function marketingTestRecipient(input: {
+  to: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+}) {
+  return {
+    email: normalizeMarketingEmail(input.to),
+    firstName: input.firstName?.trim() || "Friend",
+    lastName: input.lastName?.trim() || "",
+    company: input.company?.trim() || "ARKO",
+    unsubscribeToken: "test",
+  };
+}
+
 export async function sendMarketingTestEmail(
   db: DbClient,
-  input: { to: string; subject: string; html: string; text?: string | null },
+  input: {
+    to: string;
+    subject: string;
+    html: string;
+    text?: string | null;
+    firstName?: string;
+    lastName?: string;
+    company?: string;
+  },
 ) {
   const settings = await marketingSettings(db);
+  const recipient = marketingTestRecipient(input);
   const response = await resendClient().emails.send({
     from: `${settings.fromName} <${settings.fromEmail}>`,
-    to: normalizeMarketingEmail(input.to),
+    to: recipient.email,
     ...(settings.replyTo && { replyTo: settings.replyTo }),
-    subject: `[TEST] ${input.subject}`,
-    html: input.html,
-    text: input.text || "ARKO email marketing test message",
+    subject: `[TEST] ${renderMarketingTemplate(input.subject, recipient)}`,
+    html: renderMarketingTemplate(input.html, recipient),
+    text: renderMarketingTemplate(
+      input.text || "ARKO email marketing test message",
+      recipient,
+    ),
     tags: [{ name: "message_type", value: "test" }],
   });
   if (response.error) throw new Error(response.error.message);
