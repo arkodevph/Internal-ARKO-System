@@ -8,6 +8,7 @@ import {
   Eye,
   FileCode2,
   Loader2,
+  Pencil,
   Plus,
   Send,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const defaults = {
 export function TemplatesSection() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(defaults);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [testAddress, setTestAddress] = useState("");
   const templates = api.emailMarketing.templates.list.useQuery();
@@ -48,8 +50,18 @@ export function TemplatesSection() {
     onSuccess: async () => {
       await invalidate();
       setForm(defaults);
+      setEditingId(null);
       setShowForm(false);
       toast("Template created");
+    },
+  });
+  const update = api.emailMarketing.templates.update.useMutation({
+    onSuccess: async () => {
+      await invalidate();
+      setForm(defaults);
+      setEditingId(null);
+      setShowForm(false);
+      toast("Template updated");
     },
   });
   const duplicate = api.emailMarketing.templates.duplicate.useMutation({
@@ -65,6 +77,11 @@ export function TemplatesSection() {
     onSuccess: () => toast("Test email sent"),
   });
   const preview = templates.data?.find((template) => template.id === previewId);
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(defaults);
+  };
 
   return (
     <div className="space-y-4">
@@ -77,7 +94,10 @@ export function TemplatesSection() {
             Reusable content with personalization variables.
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((value) => !value)}>
+        <Button
+          size="sm"
+          onClick={() => (showForm ? closeForm() : setShowForm(true))}
+        >
           <Plus className="h-3.5 w-3.5" /> Template
         </Button>
       </div>
@@ -85,14 +105,17 @@ export function TemplatesSection() {
       {showForm && (
         <Card className="hover:translate-y-0">
           <CardHeader>
-            <CardTitle className="text-sm">New template</CardTitle>
+            <CardTitle className="text-sm">
+              {editingId ? "Edit template" : "New template"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form
               className="space-y-4"
               onSubmit={(event) => {
                 event.preventDefault();
-                create.mutate(form);
+                if (editingId) update.mutate({ id: editingId, ...form });
+                else create.mutate(form);
               }}
             >
               <div className="grid gap-3 md:grid-cols-2">
@@ -161,22 +184,28 @@ export function TemplatesSection() {
                 {"{{full_name}}"}, {"{{company}}"}, and {"{{email}}"}.
               </p>
               <div className="flex gap-2">
-                <Button type="submit" disabled={create.isPending}>
-                  {create.isPending && (
+                <Button
+                  type="submit"
+                  disabled={create.isPending || update.isPending}
+                >
+                  {(create.isPending || update.isPending) && (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   )}{" "}
-                  Save template
+                  {editingId ? "Update template" : "Save template"}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={() => setShowForm(false)}
+                  onClick={closeForm}
                 >
                   Cancel
                 </Button>
               </div>
               {create.error && (
                 <p className="text-xs text-red-500">{create.error.message}</p>
+              )}
+              {update.error && (
+                <p className="text-xs text-red-500">{update.error.message}</p>
               )}
             </form>
           </CardContent>
@@ -220,6 +249,24 @@ export function TemplatesSection() {
                     onClick={() => setPreviewId(template.id)}
                   >
                     <Eye className="h-3.5 w-3.5" /> Preview
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingId(template.id);
+                      setForm({
+                        name: template.name,
+                        description: template.description ?? "",
+                        subject: template.subject,
+                        previewText: template.previewText ?? "",
+                        htmlBody: template.htmlBody,
+                        textBody: template.textBody ?? "",
+                      });
+                      setShowForm(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Edit
                   </Button>
                   <Button
                     size="sm"

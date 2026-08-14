@@ -632,12 +632,22 @@ const templatesRouter = router({
           code: "NOT_FOUND",
           message: "Template not found",
         });
-      return sendMarketingTestEmail(ctx.prisma, {
-        to: input.to,
-        subject: template.subject,
-        html: template.htmlBody,
-        text: template.textBody,
-      });
+      try {
+        return await sendMarketingTestEmail(ctx.prisma, {
+          to: input.to,
+          subject: template.subject,
+          html: template.htmlBody,
+          text: template.textBody,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to send the test email",
+        });
+      }
     }),
 });
 
