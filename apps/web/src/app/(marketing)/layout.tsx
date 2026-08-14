@@ -11,7 +11,7 @@ const DESCRIPTION =
   "Arko is a small software studio. We design and ship web and mobile products, then wire in the automation and AI that make them run on their own.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://arkodevph.vercel.app"),
+  metadataBase: new URL("https://arkodevph.com"),
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/" },
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
 };
 
-const BASE = "https://arkodevph.vercel.app";
+const BASE = "https://arkodevph.com";
 
 const SCHEMA_JSONLD = {
   "@context": "https://schema.org",

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-const BASE = 'https://arkodevph.vercel.app'
+const BASE = 'https://arkodevph.com'
 
 export type Crumb = { label: string; href?: string }
 

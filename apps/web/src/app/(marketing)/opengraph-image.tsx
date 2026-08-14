@@ -49,7 +49,7 @@ export default function OpengraphImage() {
           <span>We build web, mobile,</span>
           <span style={{ color: '#b8ff2e' }}>automation & AI</span>
         </div>
-        <div style={{ fontSize: 28, color: '#8a8a80' }}>arkodevph.vercel.app</div>
+        <div style={{ fontSize: 28, color: '#8a8a80' }}>arkodevph.com</div>
       </div>
     ),
     size,

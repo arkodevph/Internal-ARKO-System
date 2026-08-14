@@ -22,7 +22,7 @@ const SECTIONS: { heading: string; body: React.ReactNode }[] = [
       <p>
         Arko is a software studio based in the Philippines, working with clients
         worldwide. This policy covers information handled through this website
-        (arkodevph.vercel.app). You can reach us any time at{' '}
+        (arkodevph.com). You can reach us any time at{' '}
         <a
           href="mailto:contact@arkodevph.com"
           className="text-acid underline underline-offset-4"
