@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { Providers } from "./providers";
 import GoogleAnalytics from "./google-analytics";
@@ -25,6 +27,8 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <Providers>{children}</Providers>
         <GoogleAnalytics />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
