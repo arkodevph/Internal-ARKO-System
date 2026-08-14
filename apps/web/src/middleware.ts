@@ -25,7 +25,7 @@ const HEADERS: Record<string, string> = {
       'https://unofficial-omniscient-readers-viewpoint.vercel.app',
       'https://co-map.vercel.app',
       'https://yuenansichu-restaurant.vercel.app',
-      'https://kapetbalay.vercel.app',
+      'https://unofficial-kapetbalay.vercel.app',
       'https://arko-islas.vercel.app',
       'https://arko-locus-assembly.vercel.app',
       'https://dmarc-construction.vercel.app',

@@ -355,8 +355,8 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         title: "Kapet Balay",
         category: "Hospitality",
         type: "Cafe website",
-        domain: "kapetbalay.vercel.app",
-        href: "https://kapetbalay.vercel.app/",
+        domain: "unofficial-kapetbalay.vercel.app",
+        href: "https://unofficial-kapetbalay.vercel.app/",
         image: "/projects/kapetbalay-preview.png",
       },
       {
