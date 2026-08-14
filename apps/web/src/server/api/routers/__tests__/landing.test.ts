@@ -154,5 +154,23 @@ describe('landing router', () => {
       expect(merged.projects.items.filter((project) => project.domain === 'arko-islas.vercel.app')).toHaveLength(1)
       expect(merged.projects.items.filter((project) => project.domain === 'freshphonesph.vercel.app')).toHaveLength(1)
     })
+
+    it('removes the retired Kapet Balay project and keeps the current one', () => {
+      const retiredKapetBalay = {
+        ...DEFAULT_LANDING_CONTENT.projects.items.find((project) => project.title === 'Kapet Balay')!,
+        domain: 'kapetbalay.vercel.app',
+        href: 'https://kapetbalay.vercel.app/',
+      }
+      const merged = mergeLandingContent({
+        projects: { items: [retiredKapetBalay] },
+      })
+
+      expect(merged.projects.items.filter((project) => project.title === 'Kapet Balay')).toEqual([
+        expect.objectContaining({
+          domain: 'unofficial-kapetbalay.vercel.app',
+          href: 'https://unofficial-kapetbalay.vercel.app/',
+        }),
+      ])
+    })
   })
 })

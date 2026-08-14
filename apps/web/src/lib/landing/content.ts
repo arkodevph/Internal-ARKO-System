@@ -415,7 +415,10 @@ export function mergeLandingContent(stored: unknown): LandingContent {
   const d = DEFAULT_LANDING_CONTENT;
   if (!stored || typeof stored !== "object") return d;
   const s = stored as Partial<LandingContent>;
-  const storedProjects = s.projects?.items ?? [];
+  const storedProjects = (s.projects?.items ?? []).filter(
+    (project) =>
+      project.href.replace(/\/$/, "") !== "https://kapetbalay.vercel.app",
+  );
   const storedProjectUrls = new Set(
     storedProjects.map((project) => project.href.replace(/\/$/, "")),
   );
