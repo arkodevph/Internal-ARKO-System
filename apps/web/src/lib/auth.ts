@@ -94,7 +94,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, status: true, authVersion: true },
+          select: {
+            role: true,
+            permissions: true,
+            status: true,
+            authVersion: true,
+          },
         });
         if (!dbUser || dbUser.status !== "ACTIVE") return null;
         if (
@@ -112,6 +117,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
         token.role = dbUser.role;
+        token.permissions = dbUser.permissions;
         token.authVersion = dbUser.authVersion;
       }
       return token;
@@ -120,6 +126,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
+        session.user.permissions = token.permissions;
       }
       return session;
     },

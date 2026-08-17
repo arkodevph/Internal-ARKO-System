@@ -4,7 +4,7 @@ import {
   router,
   publicProcedure,
   protectedProcedure,
-  requireRole,
+  requirePermission,
 } from '../trpc'
 import {
   landingContentSchema,
@@ -22,13 +22,13 @@ export const landingRouter = router({
     return mergeLandingContent(row?.content)
   }),
 
-  stats: protectedProcedure.query(({ ctx }) =>
-    getLandingTrafficStats(ctx.prisma),
-  ),
+  stats: protectedProcedure
+    .use(requirePermission('landing:manage'))
+    .query(({ ctx }) => getLandingTrafficStats(ctx.prisma)),
 
   // Admin-only: replace the full landing content, then revalidate the public page.
   update: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('landing:manage'))
     .input(landingContentSchema)
     .mutation(async ({ ctx, input }) => {
       const saved = await ctx.prisma.landingContent.upsert({

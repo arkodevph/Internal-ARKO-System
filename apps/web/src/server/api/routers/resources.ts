@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { router, protectedProcedure, requireRole } from '../trpc'
+import { router, protectedProcedure, requirePermission } from '../trpc'
 
 const TYPE = ['LINK', 'FILE', 'DOC'] as const
 
@@ -32,6 +32,7 @@ async function manageableCategory(ctx: any, id: string) {
 export const resourcesRouter = router({
   /** Paginated, searchable list of resources the caller can see (public or own). */
   list: protectedProcedure
+    .use(requirePermission('resources:read'))
     .input(
       z
         .object({
@@ -87,7 +88,7 @@ export const resourcesRouter = router({
     }),
 
   create: protectedProcedure
-    .use(requireRole(['ADMIN', 'MEMBER', 'USER']))
+    .use(requirePermission('resources:create'))
     .input(
       z.object({
         title: z.string().min(1).max(255),
@@ -105,7 +106,7 @@ export const resourcesRouter = router({
     ),
 
   update: protectedProcedure
-    .use(requireRole(['ADMIN', 'MEMBER', 'USER']))
+    .use(requirePermission('resources:update'))
     .input(
       z.object({
         id: z.string(),
@@ -126,7 +127,7 @@ export const resourcesRouter = router({
     }),
 
   delete: protectedProcedure
-    .use(requireRole(['ADMIN', 'MEMBER', 'USER']))
+    .use(requirePermission('resources:delete'))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await manageableResource(ctx, input.id)
@@ -135,7 +136,7 @@ export const resourcesRouter = router({
 
   // ── Category (box) procedures ──
 
-  listCategories: protectedProcedure.query(async ({ ctx }) => {
+  listCategories: protectedProcedure.use(requirePermission('resources:read')).query(async ({ ctx }) => {
     const userId = ctx.user.id!
     const isAdmin = ctx.userRole === 'ADMIN'
     const rows = await ctx.prisma.resourceCategory.findMany({
@@ -153,7 +154,7 @@ export const resourcesRouter = router({
   }),
 
   createCategory: protectedProcedure
-    .use(requireRole(['ADMIN', 'MEMBER', 'USER']))
+    .use(requirePermission('resources:create'))
     .input(
       z.object({
         name: z.string().min(1).max(100),
@@ -168,7 +169,7 @@ export const resourcesRouter = router({
     ),
 
   updateCategory: protectedProcedure
-    .use(requireRole(['ADMIN', 'MEMBER', 'USER']))
+    .use(requirePermission('resources:update'))
     .input(
       z.object({
         id: z.string(),
@@ -184,7 +185,7 @@ export const resourcesRouter = router({
     }),
 
   deleteCategory: protectedProcedure
-    .use(requireRole(['ADMIN', 'MEMBER', 'USER']))
+    .use(requirePermission('resources:delete'))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await manageableCategory(ctx, input.id)

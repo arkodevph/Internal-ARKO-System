@@ -1,6 +1,13 @@
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { protectedProcedure, requireRole, router } from '../trpc'
+import {
+  protectedProcedure,
+  requirePermission,
+  requireRole,
+  requireRoleOrPermission,
+  router,
+} from '../trpc'
+import { hasPermission } from '../../../lib/rbac'
 
 const projectStatus = z.enum(['PLANNING', 'ACTIVE', 'REVIEW', 'COMPLETED', 'ON_HOLD'])
 const requestStatus = z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED'])
@@ -24,7 +31,7 @@ const projectInclude = {
 async function manageableProject(ctx: any, projectId: string) {
   const project = await ctx.prisma.clientProject.findUnique({ where: { id: projectId } })
   if (!project) throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
-  if (ctx.userRole !== 'ADMIN') {
+  if (!hasPermission(ctx.userRole, 'client-portal:manage', ctx.userPermissions)) {
     throw new TRPCError({ code: 'FORBIDDEN' })
   }
   return project
@@ -32,7 +39,7 @@ async function manageableProject(ctx: any, projectId: string) {
 
 export const clientPortalRouter = router({
   dashboard: protectedProcedure
-    .use(requireRole(['ADMIN', 'CLIENT']))
+    .use(requireRoleOrPermission(['CLIENT'], 'client-portal:manage'))
     .query(({ ctx }) =>
       ctx.prisma.clientProject.findMany({
         where:
@@ -45,7 +52,7 @@ export const clientPortalRouter = router({
     ),
 
   requests: protectedProcedure
-    .use(requireRole(['ADMIN', 'CLIENT']))
+    .use(requireRoleOrPermission(['CLIENT'], 'client-portal:manage'))
     .query(({ ctx }) =>
       ctx.prisma.clientRequest.findMany({
         where:
@@ -62,7 +69,7 @@ export const clientPortalRouter = router({
     ),
 
   createProject: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(
       z.object({
         name: z.string().trim().min(1).max(120),
@@ -87,7 +94,7 @@ export const clientPortalRouter = router({
     }),
 
   updateProject: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(
       z.object({
         id: z.string(),
@@ -123,7 +130,7 @@ export const clientPortalRouter = router({
     }),
 
   addUpdate: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(z.object({ projectId: z.string(), content: z.string().trim().min(1).max(2000) }))
     .mutation(async ({ ctx, input }) => {
       await manageableProject(ctx, input.projectId)
@@ -155,7 +162,7 @@ export const clientPortalRouter = router({
     }),
 
   addMilestone: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(
       z.object({
         projectId: z.string(),
@@ -170,7 +177,7 @@ export const clientPortalRouter = router({
     }),
 
   setMilestoneCompleted: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(z.object({ id: z.string(), completed: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const milestone = await ctx.prisma.projectMilestone.findUnique({
@@ -217,7 +224,7 @@ export const clientPortalRouter = router({
     }),
 
   addDeliverable: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(
       z.object({
         projectId: z.string(),
@@ -343,7 +350,7 @@ export const clientPortalRouter = router({
     }),
 
   updateRequest: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(z.object({ id: z.string(), status: requestStatus }))
     .mutation(async ({ ctx, input }) => {
       const request = await ctx.prisma.clientRequest.findUnique({
@@ -381,7 +388,7 @@ export const clientPortalRouter = router({
     }),
 
   convertRequestToTask: protectedProcedure
-    .use(requireRole(['ADMIN']))
+    .use(requirePermission('client-portal:manage'))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const request = await ctx.prisma.clientRequest.findUnique({ where: { id: input.id } })

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, requirePermission } from "../trpc";
 
 export const messagesRouter = router({
   /**
@@ -442,16 +442,9 @@ export const messagesRouter = router({
     }),
 
   deleteConversation: protectedProcedure
+    .use(requirePermission("messages:delete"))
     .input(z.object({ conversationId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.userRole !== "ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Only an administrator can permanently delete a conversation",
-        });
-      }
-
       // Cascades to participants + messages (onDelete: Cascade).
       await ctx.prisma.conversation.delete({
         where: { id: input.conversationId },

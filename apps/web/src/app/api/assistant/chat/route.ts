@@ -175,7 +175,8 @@ export async function POST(request: Request) {
   }
 
   const role = session.user.role;
-  const canReadTasks = hasPermission(role, "tasks:read");
+  const permissions = session.user.permissions;
+  const canReadTasks = hasPermission(role, "tasks:read", permissions);
 
   try {
     await consumeAssistantRequest(session.user.id);
@@ -195,7 +196,7 @@ export async function POST(request: Request) {
       : [];
     const contextTruncated = taskRows.length > 40;
     const tasks = taskRows.slice(0, 40);
-    const canReadEvents = hasPermission(role, "events:read");
+    const canReadEvents = hasPermission(role, "events:read", permissions);
     const events = canReadEvents
       ? await prisma.event.findMany({
           where: ownedOrCompany(session.user.id, role),
@@ -210,7 +211,7 @@ export async function POST(request: Request) {
           },
         })
       : [];
-    const canReadNotes = hasPermission(role, "notes:read");
+    const canReadNotes = hasPermission(role, "notes:read", permissions);
     const notes = canReadNotes
       ? await prisma.note.findMany({
           where: ownedOrCompany(session.user.id, role),
@@ -225,7 +226,11 @@ export async function POST(request: Request) {
       take: 30,
       select: { id: true, title: true, dueAt: true, isDone: true },
     });
-    const canReadTransactions = hasPermission(role, "transactions:read");
+    const canReadTransactions = hasPermission(
+      role,
+      "transactions:read",
+      permissions,
+    );
     const transactions = canReadTransactions
       ? await prisma.transaction.findMany({
           where: { userId: session.user.id, scope: "PERSONAL" },
@@ -240,7 +245,11 @@ export async function POST(request: Request) {
           },
         })
       : [];
-    const canCreateTransactions = hasPermission(role, "transactions:create");
+    const canCreateTransactions = hasPermission(
+      role,
+      "transactions:create",
+      permissions,
+    );
     const transactionCategories = canCreateTransactions
       ? await prisma.accountCategory.findMany({
           where: {
@@ -251,7 +260,7 @@ export async function POST(request: Request) {
           select: { id: true, name: true, type: true },
         })
       : [];
-    const canReadUsers = hasPermission(role, "users:read");
+    const canReadUsers = hasPermission(role, "users:read", permissions);
     const users = canReadUsers
       ? await prisma.user.findMany({
           orderBy: { name: "asc" },
@@ -334,22 +343,27 @@ export async function POST(request: Request) {
           },
         })
       : 0;
-    const landingAnalytics =
-      role === "ADMIN" ? await getLandingTrafficStats(prisma) : undefined;
+    const landingAnalytics = hasPermission(role, "landing:manage", permissions)
+      ? await getLandingTrafficStats(prisma)
+      : undefined;
     const config = await getAssistantConfig();
 
     const result = await generateAssistantReply({
       messages: input.data.messages,
       context: {
-        canCreateTasks: hasPermission(role, "tasks:create"),
-        canCreateEvents: hasPermission(role, "events:create"),
-        canCreateNotes: hasPermission(role, "notes:create"),
+        canCreateTasks: hasPermission(role, "tasks:create", permissions),
+        canCreateEvents: hasPermission(role, "events:create", permissions),
+        canCreateNotes: hasPermission(role, "notes:create", permissions),
         canCreateTransactions,
-        canCreateUsers: hasPermission(role, "users:create"),
-        canUpdateTasks: hasPermission(role, "tasks:update"),
-        canUpdateEvents: hasPermission(role, "events:update"),
-        canUpdateNotes: hasPermission(role, "notes:update"),
-        canUpdateTransactions: hasPermission(role, "transactions:update"),
+        canCreateUsers: hasPermission(role, "users:create", permissions),
+        canUpdateTasks: hasPermission(role, "tasks:update", permissions),
+        canUpdateEvents: hasPermission(role, "events:update", permissions),
+        canUpdateNotes: hasPermission(role, "notes:update", permissions),
+        canUpdateTransactions: hasPermission(
+          role,
+          "transactions:update",
+          permissions,
+        ),
         canCreateReminders: Boolean(role),
         contextTruncated,
         tasks,

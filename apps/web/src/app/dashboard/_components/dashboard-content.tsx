@@ -24,6 +24,7 @@ import { api } from '../../../lib/trpc/client'
 import { PerformanceChart } from './performance-chart'
 import { LandingTrafficChart } from './landing-traffic-chart'
 import { Sparkline } from './sparkline'
+import { hasPermission } from '../../../lib/rbac'
 
 function pctChange(current: number, previous: number) {
   return previous > 0 ? ((current - previous) / previous) * 100 : null
@@ -47,8 +48,11 @@ function timeAgo(date: string) {
 
 export default function DashboardContent() {
   const { data: session } = useSession()
-  const canUseCompany =
-    session?.user?.role === 'ADMIN' || session?.user?.role === 'ACCOUNTANT'
+  const canUseCompany = hasPermission(
+    session?.user?.role,
+    'transactions:manage-company',
+    session?.user?.permissions,
+  )
   const [financeScope, setFinanceScope] = useState<'PERSONAL' | 'COMPANY'>(
     'PERSONAL',
   )

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { router, protectedProcedure } from '../trpc'
+import { router, protectedProcedure, requirePermission } from '../trpc'
 import { canManageOwnedRecord, ownedOrCompany, recordScopeSchema } from '../../../lib/record-scope'
 
 async function ownEvent(ctx: any, id: string) {
@@ -17,7 +17,7 @@ async function ownSprint(ctx: any, id: string) {
 
 export const eventsRouter = router({
   // ----- Events -----
-  list: protectedProcedure.query(({ ctx }) =>
+  list: protectedProcedure.use(requirePermission('events:read')).query(({ ctx }) =>
     ctx.prisma.event.findMany({
       where: ownedOrCompany(ctx.user.id!, ctx.userRole),
       orderBy: { date: 'asc' },
@@ -25,6 +25,7 @@ export const eventsRouter = router({
   ),
 
   create: protectedProcedure
+    .use(requirePermission('events:create'))
     .input(
       z.object({
         title: z.string().min(1).max(255),
@@ -40,6 +41,7 @@ export const eventsRouter = router({
     .mutation(({ ctx, input }) => ctx.prisma.event.create({ data: { ...input, userId: ctx.user.id! } })),
 
   update: protectedProcedure
+    .use(requirePermission('events:update'))
     .input(
       z.object({
         id: z.string(),
@@ -59,13 +61,13 @@ export const eventsRouter = router({
       return ctx.prisma.event.update({ where: { id }, data })
     }),
 
-  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+  delete: protectedProcedure.use(requirePermission('events:delete')).input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     await ownEvent(ctx, input.id)
     return ctx.prisma.event.delete({ where: { id: input.id } })
   }),
 
   // ----- Sprints -----
-  listSprints: protectedProcedure.query(({ ctx }) =>
+  listSprints: protectedProcedure.use(requirePermission('events:read')).query(({ ctx }) =>
     ctx.prisma.sprint.findMany({
       where: ownedOrCompany(ctx.user.id!, ctx.userRole),
       orderBy: { startDate: 'desc' },
@@ -73,6 +75,7 @@ export const eventsRouter = router({
   ),
 
   createSprint: protectedProcedure
+    .use(requirePermission('events:create'))
     .input(
       z.object({
         name: z.string().min(1).max(255),
@@ -87,6 +90,7 @@ export const eventsRouter = router({
     .mutation(({ ctx, input }) => ctx.prisma.sprint.create({ data: { ...input, userId: ctx.user.id! } })),
 
   updateSprint: protectedProcedure
+    .use(requirePermission('events:update'))
     .input(
       z.object({
         id: z.string(),
@@ -105,7 +109,7 @@ export const eventsRouter = router({
       return ctx.prisma.sprint.update({ where: { id }, data })
     }),
 
-  deleteSprint: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+  deleteSprint: protectedProcedure.use(requirePermission('events:delete')).input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     await ownSprint(ctx, input.id)
     return ctx.prisma.sprint.delete({ where: { id: input.id } })
   }),

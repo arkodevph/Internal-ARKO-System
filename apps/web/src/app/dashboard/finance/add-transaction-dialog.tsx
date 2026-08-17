@@ -6,6 +6,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { Button } from '@arko/ui'
 import { X, Loader2, Users, Plus, Trash2 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
+import { hasPermission } from '../../../lib/rbac'
 
 interface AddTransactionDialogProps {
   open: boolean
@@ -32,7 +33,11 @@ interface SplitEntry {
 
 export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRemove, defaultScope = 'PERSONAL' }: AddTransactionDialogProps) {
   const { data: session } = useSession()
-  const canUseCompany = session?.user?.role === 'ADMIN' || session?.user?.role === 'ACCOUNTANT'
+  const canUseCompany = hasPermission(
+    session?.user?.role,
+    'transactions:manage-company',
+    session?.user?.permissions,
+  )
   const [type, setType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE')
   const [scope, setScope] = useState<'PERSONAL' | 'COMPANY'>('PERSONAL')
   const [amount, setAmount] = useState('')

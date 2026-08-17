@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { router, protectedProcedure } from '../trpc'
+import { router, protectedProcedure, requirePermission } from '../trpc'
 import { canManageOwnedRecord, ownedOrCompany, recordScopeSchema, userCanSeeCompanyRecords } from '../../../lib/record-scope'
 
 export const notesRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: protectedProcedure.use(requirePermission('notes:read')).query(async ({ ctx }) => {
     const userId = ctx.user.id!
     return ctx.prisma.note.findMany({
       where: ownedOrCompany(userId, ctx.userRole),
@@ -20,7 +20,7 @@ export const notesRouter = router({
     })
   }),
 
-  get: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+  get: protectedProcedure.use(requirePermission('notes:read')).input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
     const userId = ctx.user.id!
 
     const note = await ctx.prisma.note.findUnique({
@@ -34,6 +34,7 @@ export const notesRouter = router({
   }),
 
   create: protectedProcedure
+    .use(requirePermission('notes:create'))
     .input(
       z.object({
         title: z.string().min(1).max(500),
@@ -53,6 +54,7 @@ export const notesRouter = router({
     }),
 
   update: protectedProcedure
+    .use(requirePermission('notes:update'))
     .input(
       z.object({
         id: z.string(),
@@ -84,7 +86,7 @@ export const notesRouter = router({
       })
     }),
 
-  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+  delete: protectedProcedure.use(requirePermission('notes:delete')).input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     const userId = ctx.user.id!
 
     const note = await ctx.prisma.note.findUnique({

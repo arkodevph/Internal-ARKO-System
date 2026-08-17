@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { router, protectedProcedure } from '../trpc'
+import { router, protectedProcedure, requirePermission } from '../trpc'
+import { hasPermission } from '../../../lib/rbac'
 
 const categoryTypes = {
   INCOME: ['INVESTMENT'],
@@ -11,7 +12,7 @@ const categoryTypes = {
 type FinanceScope = 'PERSONAL' | 'COMPANY'
 
 function canManageCompanyFinance(ctx: any) {
-  return ctx.userRole === 'ADMIN' || ctx.userRole === 'ACCOUNTANT'
+  return hasPermission(ctx.userRole, 'transactions:manage-company', ctx.userPermissions)
 }
 
 function financeWhere(ctx: any, scope: FinanceScope) {
@@ -48,6 +49,7 @@ async function assertCategoryAccess(
 
 export const financeRouter = router({
   getTransactions: protectedProcedure
+    .use(requirePermission('transactions:read'))
     .input(
       z
         .object({
@@ -74,6 +76,7 @@ export const financeRouter = router({
     }),
 
   createTransaction: protectedProcedure
+    .use(requirePermission('transactions:create'))
     .input(
       z.object({
         amount: z.number().positive(),
@@ -137,6 +140,7 @@ export const financeRouter = router({
     }),
 
   updateTransaction: protectedProcedure
+    .use(requirePermission('transactions:update'))
     .input(
       z.object({
         id: z.string(),
@@ -159,6 +163,7 @@ export const financeRouter = router({
     }),
 
   deleteTransaction: protectedProcedure
+    .use(requirePermission('transactions:delete'))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const row = await ctx.prisma.transaction.findUnique({ where: { id: input.id } })
@@ -169,6 +174,7 @@ export const financeRouter = router({
     }),
 
   getCategories: protectedProcedure
+    .use(requirePermission('transactions:read'))
     .input(z.object({ scope: z.enum(['PERSONAL', 'COMPANY']).default('PERSONAL') }).optional())
     .query(async ({ ctx, input }) => {
     const scope = input?.scope ?? 'PERSONAL'
@@ -182,6 +188,7 @@ export const financeRouter = router({
     }),
 
   createCategory: protectedProcedure
+    .use(requirePermission('transactions:create'))
     .input(
       z.object({
         name: z.string().trim().min(1).max(80),
@@ -208,6 +215,7 @@ export const financeRouter = router({
     }),
 
   updateCategory: protectedProcedure
+    .use(requirePermission('transactions:update'))
     .input(z.object({ id: z.string(), name: z.string().trim().min(1).max(80) }))
     .mutation(async ({ ctx, input }) => {
       const category = await ctx.prisma.accountCategory.findUnique({ where: { id: input.id } })
@@ -221,6 +229,7 @@ export const financeRouter = router({
     }),
 
   deleteCategory: protectedProcedure
+    .use(requirePermission('transactions:delete'))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const category = await ctx.prisma.accountCategory.findUnique({
@@ -244,6 +253,7 @@ export const financeRouter = router({
     }),
 
   getBalance: protectedProcedure
+    .use(requirePermission('transactions:read'))
     .input(
       z
         .object({
@@ -271,7 +281,7 @@ export const financeRouter = router({
     }),
 
   /** Get all pending (unsettled) splits for the current user */
-  getPendingSplits: protectedProcedure.query(async ({ ctx }) => {
+  getPendingSplits: protectedProcedure.use(requirePermission('transactions:read')).query(async ({ ctx }) => {
     const userId = ctx.user.id!
     return ctx.prisma.splitShare.findMany({
       where: { userId, settled: false },
@@ -289,6 +299,7 @@ export const financeRouter = router({
 
   /** Mark a split share as settled */
   settleSplit: protectedProcedure
+    .use(requirePermission('transactions:update'))
     .input(z.object({ splitId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.user.id!
@@ -307,7 +318,7 @@ export const financeRouter = router({
     }),
 
   // ----- Business metrics -----
-  listMetrics: protectedProcedure.query(async ({ ctx }) => {
+  listMetrics: protectedProcedure.use(requirePermission('transactions:read')).query(async ({ ctx }) => {
     return ctx.prisma.businessMetric.findMany({
       where: { userId: ctx.user.id! },
       orderBy: { name: 'asc' },
@@ -315,6 +326,7 @@ export const financeRouter = router({
   }),
 
   upsertMetric: protectedProcedure
+    .use(requirePermission('transactions:update'))
     .input(
       z.object({
         key: z.string().min(1),
@@ -348,6 +360,7 @@ export const financeRouter = router({
     }),
 
   getInsights: protectedProcedure
+    .use(requirePermission('transactions:read'))
     .input(z.object({ scope: z.enum(['PERSONAL', 'COMPANY']).default('PERSONAL') }))
     .query(async ({ ctx, input }) => {
       const where = financeWhere(ctx, input.scope)
@@ -402,6 +415,7 @@ export const financeRouter = router({
     }),
 
   listBudgets: protectedProcedure
+    .use(requirePermission('transactions:read'))
     .input(z.object({ scope: z.enum(['PERSONAL', 'COMPANY']).default('PERSONAL') }))
     .query(async ({ ctx, input }) => {
       const where = financeWhere(ctx, input.scope)
@@ -432,6 +446,7 @@ export const financeRouter = router({
     }),
 
   createBudget: protectedProcedure
+    .use(requirePermission('transactions:create'))
     .input(z.object({
       name: z.string().trim().min(1).max(100),
       amount: z.number().positive(),
@@ -465,6 +480,7 @@ export const financeRouter = router({
     }),
 
   deleteBudget: protectedProcedure
+    .use(requirePermission('transactions:delete'))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const budget = await ctx.prisma.budget.findUnique({ where: { id: input.id } })
@@ -476,6 +492,7 @@ export const financeRouter = router({
 
   // ----- Recurring transactions -----
   listRecurring: protectedProcedure
+    .use(requirePermission('transactions:read'))
     .input(z.object({ scope: z.enum(['PERSONAL', 'COMPANY']).default('PERSONAL') }).optional())
     .query(async ({ ctx, input }) => {
     const scope = input?.scope ?? 'PERSONAL'
@@ -487,6 +504,7 @@ export const financeRouter = router({
     }),
 
   createRecurring: protectedProcedure
+    .use(requirePermission('transactions:create'))
     .input(
       z.object({
         description: z.string().min(1),
@@ -507,6 +525,7 @@ export const financeRouter = router({
     }),
 
   updateRecurring: protectedProcedure
+    .use(requirePermission('transactions:update'))
     .input(
       z.object({
         id: z.string(),
@@ -531,6 +550,7 @@ export const financeRouter = router({
     }),
 
   deleteRecurring: protectedProcedure
+    .use(requirePermission('transactions:delete'))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const row = await ctx.prisma.recurringTransaction.findUnique({ where: { id: input.id } })

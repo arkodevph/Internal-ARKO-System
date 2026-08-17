@@ -54,7 +54,10 @@ export async function POST(request: Request) {
   }
 
   const permission = ACTION_PERMISSIONS[action.data.type];
-  if (permission && !hasPermission(session.user.role, permission)) {
+  if (
+    permission &&
+    !hasPermission(session.user.role, permission, session.user.permissions)
+  ) {
     await prisma.assistantActivity
       .create({
         data: {

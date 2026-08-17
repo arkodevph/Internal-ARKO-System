@@ -6,6 +6,7 @@ import { Loader2, Check, AlertCircle, Cloud, ShieldCheck } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import dynamic from 'next/dynamic'
 import type { AvatarConfigJson } from '../../../lib/avatar'
+import { hasPermission } from '../../../lib/rbac'
 import {
   NEX_COLOR_OPTIONS,
   NEX_ICON_OPTIONS,
@@ -694,7 +695,11 @@ export default function SettingsPage() {
       </div>
 
       <ProfileForm />
-      {session?.user?.role === 'ADMIN' && <VertexAssistantForm />}
+      {hasPermission(
+        session?.user?.role,
+        'assistant:manage',
+        session?.user?.permissions,
+      ) && <VertexAssistantForm />}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <NotificationsForm />
         <PasswordForm />

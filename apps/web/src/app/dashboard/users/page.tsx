@@ -42,6 +42,14 @@ import {
 import { api } from "../../../lib/trpc/client";
 import { generateAvatarSeed, avatarConfigToJson } from "../../../lib/avatar";
 import { formatPresence } from "../../../lib/presence";
+import {
+  PERMISSION_GROUPS,
+  defaultPermissionsForRole,
+  resolvePermissions,
+  type Permission,
+} from "../../../lib/rbac";
+
+type RolePreset = keyof typeof roleConfig;
 
 const roleConfig = {
   ADMIN: { label: "Admin", color: "bg-red-50 text-red-700", icon: ShieldAlert },
@@ -128,9 +136,7 @@ function UserAvatar({
 export default function UsersPage() {
   const { data: session } = useSession();
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"ALL" | keyof typeof roleConfig>(
-    "ALL",
-  );
+  const [roleFilter, setRoleFilter] = useState<"ALL" | RolePreset>("ALL");
   const [statusFilter, setStatusFilter] = useState<
     "ALL" | keyof typeof statusConfig
   >("ALL");
@@ -140,6 +146,13 @@ export default function UsersPage() {
     name: string;
     phone: string | null;
     title: string | null;
+  } | null>(null);
+  const [showAccessModal, setShowAccessModal] = useState<{
+    id: string;
+    name: string;
+    role: RolePreset;
+    permissions: unknown;
+    status: keyof typeof statusConfig;
   } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -164,9 +177,6 @@ export default function UsersPage() {
   } | null>(null);
   const [copiedPass, setCopiedPass] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const updateRole = api.users.updateRole.useMutation({
-    onSuccess: () => utils.users.list.invalidate(),
-  });
   const updateStatus = api.users.updateStatus.useMutation({
     onSuccess: () => utils.users.list.invalidate(),
   });
@@ -500,55 +510,24 @@ export default function UsersPage() {
                                   </button>
                                 </div>
 
-                                {/* Role */}
+                                {/* Access */}
                                 <div className="mb-1 px-1">
-                                  <p className="text-[9px] font-semibold uppercase tracking-wider text-text-tertiary mb-1">
-                                    Role
-                                  </p>
-                                  <div className="space-y-0.5">
-                                    {(
-                                      [
-                                        "ADMIN",
-                                        "ACCOUNTANT",
-                                        "MEMBER",
-                                        "USER",
-                                        "CLIENT",
-                                        "DEMO",
-                                      ] as const
-                                    ).map((role) => (
-                                      <button
-                                        key={role}
-                                        onClick={() => {
-                                          updateRole.mutate({
-                                            userId: user.id,
-                                            role,
-                                          });
-                                          setOpenDropdown(null);
-                                        }}
-                                        disabled={updateRole.isPending}
-                                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] transition-colors ${
-                                          user.role === role
-                                            ? "bg-primary-50 text-primary-700 font-medium"
-                                            : "text-text-secondary hover:bg-card"
-                                        }`}
-                                      >
-                                        {role === "ADMIN" ? (
-                                          <ShieldAlert className="h-3 w-3" />
-                                        ) : role === "ACCOUNTANT" ? (
-                                          <Calculator className="h-3 w-3" />
-                                        ) : role === "MEMBER" ? (
-                                          <ShieldCheck className="h-3 w-3" />
-                                        ) : role === "CLIENT" ? (
-                                          <BriefcaseBusiness className="h-3 w-3" />
-                                        ) : role === "DEMO" ? (
-                                          <Eye className="h-3 w-3" />
-                                        ) : (
-                                          <Shield className="h-3 w-3" />
-                                        )}
-                                        {roleConfig[role].label}
-                                      </button>
-                                    ))}
-                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setShowAccessModal({
+                                        id: user.id,
+                                        name: user.name ?? user.email,
+                                        role: user.role,
+                                        permissions: user.permissions,
+                                        status: user.status,
+                                      });
+                                      setOpenDropdown(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-text-secondary transition-colors hover:bg-card"
+                                  >
+                                    <UserCog className="h-3 w-3" />
+                                    Edit access & permissions
+                                  </button>
                                 </div>
 
                                 {/* Status toggle */}
@@ -675,6 +654,12 @@ export default function UsersPage() {
           onClose={() => setShowEditModal(null)}
         />
       )}
+      {showAccessModal && (
+        <EditAccessModal
+          user={showAccessModal}
+          onClose={() => setShowAccessModal(null)}
+        />
+      )}
       {resetPasswordData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-xl">
@@ -787,6 +772,224 @@ export default function UsersPage() {
   );
 }
 
+function PermissionChecklist({
+  permissions,
+  onChange,
+}: {
+  permissions: Permission[];
+  onChange: (permissions: Permission[]) => void;
+}) {
+  const selected = new Set(permissions);
+  const toggle = (permission: Permission) => {
+    onChange(
+      selected.has(permission)
+        ? permissions.filter((item) => item !== permission)
+        : [...permissions, permission],
+    );
+  };
+
+  return (
+    <fieldset className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <legend className="text-[9px] font-semibold uppercase tracking-wider text-text-tertiary">
+          Allowed actions
+        </legend>
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() =>
+              onChange(
+                PERMISSION_GROUPS.flatMap((group) =>
+                  group.permissions.map(([permission]) => permission),
+                ),
+              )
+            }
+            className="rounded-lg border border-border-subtle px-2 py-1 text-[10px] font-medium text-text-secondary hover:bg-card"
+          >
+            Select all
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="rounded-lg border border-border-subtle px-2 py-1 text-[10px] font-medium text-text-secondary hover:bg-card"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {PERMISSION_GROUPS.map((group) => (
+          <div
+            key={group.label}
+            className="rounded-xl border border-border-subtle bg-card p-3"
+          >
+            <p className="mb-2 text-[10px] font-semibold text-text-primary">
+              {group.label}
+            </p>
+            <div className="space-y-1.5">
+              {group.permissions.map(([permission, label]) => (
+                <label
+                  key={permission}
+                  className="flex min-h-8 cursor-pointer items-center gap-2 rounded-lg px-1.5 text-[11px] text-text-secondary hover:bg-white/[0.03]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(permission)}
+                    onChange={() => toggle(permission)}
+                    className="h-4 w-4 rounded border-border-subtle accent-primary-600"
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function EditAccessModal({
+  user,
+  onClose,
+}: {
+  user: {
+    id: string;
+    name: string;
+    role: RolePreset;
+    permissions: unknown;
+    status: keyof typeof statusConfig;
+  };
+  onClose: () => void;
+}) {
+  const [role, setRole] = useState<RolePreset>(user.role);
+  const [permissions, setPermissions] = useState<Permission[]>(() =>
+    resolvePermissions(user.role, user.permissions),
+  );
+  const [canAccess, setCanAccess] = useState(user.status === "ACTIVE");
+  const utils = api.useUtils();
+  const updateAccess = api.users.updateAccess.useMutation({
+    onSuccess: () => {
+      utils.users.list.invalidate();
+      onClose();
+    },
+  });
+
+  const selectPreset = (nextRole: RolePreset) => {
+    setRole(nextRole);
+    setPermissions(defaultPermissionsForRole(nextRole));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
+      <div className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border-subtle bg-bg-app shadow-2xl">
+        <div className="flex items-start justify-between border-b border-border-subtle p-5">
+          <div>
+            <h2 className="text-sm font-bold text-text-primary">Edit access</h2>
+            <p className="mt-1 text-[11px] text-text-tertiary">{user.name}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close access editor"
+            className="rounded-lg p-1.5 text-text-tertiary hover:bg-card"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-5 overflow-y-auto p-5">
+          <div>
+            <label
+              htmlFor="access-role-preset"
+              className="mb-1.5 block text-[9px] font-semibold uppercase tracking-wider text-text-tertiary"
+            >
+              Permission preset
+            </label>
+            <select
+              id="access-role-preset"
+              value={role}
+              onChange={(event) =>
+                selectPreset(event.target.value as RolePreset)
+              }
+              className="min-h-11 w-full rounded-xl border border-border-subtle bg-card px-3 text-[12px] text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            >
+              {Object.entries(roleConfig).map(([value, config]) => (
+                <option key={value} value={value}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[10px] text-text-tertiary">
+              Changing the preset resets the checklist. You can customize it
+              afterward.
+            </p>
+          </div>
+
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border-subtle bg-card p-3">
+            <span>
+              <span className="block text-[12px] font-semibold text-text-primary">
+                Can access the system
+              </span>
+              <span className="mt-0.5 block text-[10px] text-text-tertiary">
+                Turning this off blocks sign-in and revokes the current session.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={canAccess}
+              onChange={(event) => setCanAccess(event.target.checked)}
+              className="h-5 w-5 rounded border-border-subtle accent-primary-600"
+            />
+          </label>
+
+          <PermissionChecklist
+            permissions={permissions}
+            onChange={setPermissions}
+          />
+
+          {updateAccess.error && (
+            <div
+              role="alert"
+              className="rounded-xl bg-red-50 px-3 py-2 text-[11px] text-red-600"
+            >
+              {updateAccess.error.message}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 border-t border-border-subtle p-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-border-subtle px-3 py-2.5 text-[12px] font-medium text-text-secondary hover:bg-card"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              updateAccess.mutate({
+                userId: user.id,
+                role,
+                permissions,
+                canAccess,
+              })
+            }
+            disabled={updateAccess.isPending}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 px-3 py-2.5 text-[12px] font-semibold text-white disabled:opacity-50"
+          >
+            {updateAccess.isPending && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            )}
+            Save access
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Add User Modal (auto-generated credentials) ─────────
 
 function AddUserModal({ onClose }: { onClose: () => void }) {
@@ -794,9 +997,11 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [title, setTitle] = useState("");
-  const [role, setRole] = useState<
-    "ADMIN" | "ACCOUNTANT" | "MEMBER" | "USER" | "CLIENT" | "DEMO"
-  >("MEMBER");
+  const [role, setRole] = useState<RolePreset>("MEMBER");
+  const [permissions, setPermissions] = useState<Permission[]>(() =>
+    defaultPermissionsForRole("MEMBER"),
+  );
+  const [canAccess, setCanAccess] = useState(true);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [validationError, setValidationError] = useState("");
   const [success, setSuccess] = useState<{
@@ -819,10 +1024,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
     return `${slugify(firstName, lastName)}@arkodevph.com`;
   }, [firstName, lastName]);
 
-  const generatedPassword = useMemo(
-    () => generatePassword(),
-    [firstName, lastName],
-  );
+  const [generatedPassword] = useState(generatePassword);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -838,6 +1040,8 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
       title: title || undefined,
       password: generatedPassword,
       role,
+      permissions,
+      canAccess,
     });
   };
 
@@ -959,8 +1163,8 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
 
   // ── Form state ─────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3">
+      <div className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border-subtle bg-bg-app p-6 shadow-xl">
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-sm font-bold text-text-primary">Add User</h2>
@@ -1113,12 +1317,12 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Role */}
+          {/* Permission preset */}
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-wider text-text-tertiary mb-2">
-              Permission Level
+              Permission preset
             </p>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {(
                 [
                   "MEMBER",
@@ -1132,8 +1336,11 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setRole(r)}
-                  className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-medium transition-colors ${
+                  onClick={() => {
+                    setRole(r);
+                    setPermissions(defaultPermissionsForRole(r));
+                  }}
+                  className={`rounded-lg px-3 py-2 text-[11px] font-medium transition-colors ${
                     role === r
                       ? "bg-primary-50 text-primary-700 ring-1 ring-primary-200"
                       : "bg-card text-text-tertiary hover:bg-card"
@@ -1153,7 +1360,32 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
                 </button>
               ))}
             </div>
+            <p className="mt-1.5 text-[10px] text-text-tertiary">
+              Selecting a preset resets the checklist. Customize it below.
+            </p>
           </div>
+
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border-subtle bg-card p-3">
+            <span>
+              <span className="block text-[12px] font-semibold text-text-primary">
+                Can access the system
+              </span>
+              <span className="mt-0.5 block text-[10px] text-text-tertiary">
+                Turn off to create the account without allowing sign-in.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={canAccess}
+              onChange={(event) => setCanAccess(event.target.checked)}
+              className="h-5 w-5 rounded border-border-subtle accent-primary-600"
+            />
+          </label>
+
+          <PermissionChecklist
+            permissions={permissions}
+            onChange={setPermissions}
+          />
 
           {/* Error */}
           {validationError && (

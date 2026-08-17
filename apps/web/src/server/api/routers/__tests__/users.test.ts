@@ -16,6 +16,7 @@ interface MockUser {
   email: string;
   password: string | null;
   role: string;
+  permissions: string[] | null;
   status: string;
   phone: string | null;
   title: string | null;
@@ -29,6 +30,7 @@ const defaultUser: MockUser = {
   email: "alice@test.com",
   password: "$2a$12$hashed",
   role: "USER",
+  permissions: null,
   status: "ACTIVE",
   phone: null,
   title: null,
@@ -90,7 +92,8 @@ const ctx = (over: any = {}) => {
           email: data.email,
           password: data.password,
           role: data.role ?? "MEMBER",
-          status: "ACTIVE",
+          permissions: data.permissions ?? null,
+          status: data.status ?? "ACTIVE",
           phone: data.phone ?? null,
           title: data.title ?? null,
           image: data.image ?? null,
@@ -124,6 +127,7 @@ const ctx = (over: any = {}) => {
     user: { id: over.userId ?? "u1" },
     session: { user: { id: over.userId ?? "u1" } },
     userRole: over.userRole ?? "USER",
+    userPermissions: over.userPermissions,
     prisma,
   } as any;
 };
@@ -326,6 +330,93 @@ describe("create", () => {
     const c = ctx({ userId: "u1", userRole: "USER" });
     const caller = usersRouter.createCaller(c);
     await expect(caller.create({ name: "Hacker" })).rejects.toThrow();
+  });
+
+  it("allows a custom preset user with users:create permission", async () => {
+    const c = ctx({
+      userId: "creator-1",
+      userRole: "USER",
+      userPermissions: ["users:create"],
+    });
+    const caller = usersRouter.createCaller(c);
+    const res = await caller.create({
+      name: "Custom Creator",
+      permissions: ["tasks:read"],
+      canAccess: false,
+    });
+
+    expect(res.permissions).toEqual(["tasks:read"]);
+    expect(res.status).toBe("RESTRICTED");
+  });
+
+  it("rejects an admin preset with an explicit empty permission list", async () => {
+    const c = ctx({
+      userId: "admin-1",
+      userRole: "ADMIN",
+      userPermissions: [],
+    });
+    const caller = usersRouter.createCaller(c);
+    await expect(caller.create({ name: "Blocked" })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+});
+
+describe("updateAccess", () => {
+  it("persists custom permissions, access state, and revokes sessions", async () => {
+    const c = ctx({
+      userId: "admin-1",
+      userRole: "ADMIN",
+      _existingUsers: {
+        u2: {
+          id: "u2",
+          name: "Bob",
+          role: "MEMBER",
+          status: "ACTIVE",
+        } as any,
+      },
+    });
+    const caller = usersRouter.createCaller(c);
+    const res = await caller.updateAccess({
+      userId: "u2",
+      role: "MEMBER",
+      permissions: ["tasks:read", "notes:create"],
+      canAccess: false,
+    });
+
+    expect(res.permissions).toEqual(["tasks:read", "notes:create"]);
+    expect(res.status).toBe("RESTRICTED");
+    expect(c.prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          authVersion: { increment: 1 },
+        }),
+      }),
+    );
+  });
+
+  it("prevents an administrator from removing their own access permission", async () => {
+    const c = ctx({
+      userId: "admin-1",
+      userRole: "ADMIN",
+      _existingUsers: {
+        "admin-1": {
+          id: "admin-1",
+          name: "Admin",
+          role: "ADMIN",
+          status: "ACTIVE",
+        } as any,
+      },
+    });
+    const caller = usersRouter.createCaller(c);
+    await expect(
+      caller.updateAccess({
+        userId: "admin-1",
+        role: "ADMIN",
+        permissions: ["users:read"],
+        canAccess: true,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
 

@@ -11,7 +11,7 @@ import { generateDocumentTemplate } from "../../../lib/documents/templates";
 import {
   protectedProcedure,
   publicProcedure,
-  requireRole,
+  requirePermission,
   router,
 } from "../trpc";
 
@@ -35,6 +35,7 @@ const lineItemSchema = z.object({
 
 export const documentsRouter = router({
   list: protectedProcedure
+    .use(requirePermission("documents:read"))
     .input(
       z
         .object({
@@ -87,6 +88,7 @@ export const documentsRouter = router({
     }),
 
   get: protectedProcedure
+    .use(requirePermission("documents:read"))
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const doc = await ctx.prisma.document.findUnique({
@@ -114,7 +116,7 @@ export const documentsRouter = router({
     }),
 
   create: protectedProcedure
-    .use(requireRole(["ADMIN", "MEMBER", "USER"]))
+    .use(requirePermission("documents:create"))
     .input(
       z.object({
         projectId: z.string(),
@@ -165,7 +167,7 @@ export const documentsRouter = router({
     }),
 
   update: protectedProcedure
-    .use(requireRole(["ADMIN", "MEMBER", "USER"]))
+    .use(requirePermission("documents:update"))
     .input(
       z.object({
         id: z.string(),
@@ -276,7 +278,7 @@ export const documentsRouter = router({
     }),
 
   delete: protectedProcedure
-    .use(requireRole(["ADMIN", "MEMBER", "USER"]))
+    .use(requirePermission("documents:delete"))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const doc = await ctx.prisma.document.findUnique({
@@ -304,7 +306,7 @@ export const documentsRouter = router({
     }),
 
   generateShareToken: protectedProcedure
-    .use(requireRole(["ADMIN", "MEMBER", "USER"]))
+    .use(requirePermission("documents:update"))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const doc = await ctx.prisma.document.findUnique({

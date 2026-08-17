@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { router, protectedProcedure } from '../trpc'
+import { router, protectedProcedure, requirePermission } from '../trpc'
 import { canManageOwnedRecord, ownedOrCompany, recordScopeSchema, userCanSeeCompanyRecords } from '../../../lib/record-scope'
 
 // Minimal, typed workflow definition. A workflow is a sequence of steps; each
@@ -59,7 +59,7 @@ async function assertWorkflowViewer(ctx: any, workflowId: string) {
 }
 
 export const workflowsRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: protectedProcedure.use(requirePermission('workflows:read')).query(async ({ ctx }) => {
     const userId = ctx.user.id!
     return ctx.prisma.workflow.findMany({
       where: ownedOrCompany(userId, ctx.userRole),
@@ -68,6 +68,7 @@ export const workflowsRouter = router({
   }),
 
   create: protectedProcedure
+    .use(requirePermission('workflows:create'))
     .input(
       z.object({
         name: z.string().min(1),
@@ -94,7 +95,7 @@ export const workflowsRouter = router({
 
   // NOTE: execution is synchronous and bounded (see MAX_STEPS). A long-running or
   // externally-calling step model would need a queue/worker — out of scope here.
-  execute: protectedProcedure.input(z.object({ workflowId: z.string() })).mutation(async ({ ctx, input }) => {
+  execute: protectedProcedure.use(requirePermission('workflows:execute')).input(z.object({ workflowId: z.string() })).mutation(async ({ ctx, input }) => {
     const workflow = await assertWorkflowOwner(ctx, input.workflowId)
     const definition = parseDefinition(workflow.definition)
 
@@ -149,6 +150,7 @@ export const workflowsRouter = router({
   }),
 
   update: protectedProcedure
+    .use(requirePermission('workflows:update'))
     .input(
       z.object({
         id: z.string(),
@@ -184,7 +186,7 @@ export const workflowsRouter = router({
     return { success: true }
   }),
 
-  getExecution: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+  getExecution: protectedProcedure.use(requirePermission('workflows:read')).input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
     const execution = await ctx.prisma.workflowExecution.findUnique({
       where: { id: input.id },
       include: {
@@ -207,7 +209,7 @@ export const workflowsRouter = router({
     return execution
   }),
 
-  listExecutions: protectedProcedure.input(z.object({ workflowId: z.string() })).query(async ({ ctx, input }) => {
+  listExecutions: protectedProcedure.use(requirePermission('workflows:read')).input(z.object({ workflowId: z.string() })).query(async ({ ctx, input }) => {
     await assertWorkflowViewer(ctx, input.workflowId)
     return ctx.prisma.workflowExecution.findMany({
       where: { workflowId: input.workflowId },

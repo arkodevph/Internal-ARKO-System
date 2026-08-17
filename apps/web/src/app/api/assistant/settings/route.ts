@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@arko/db'
+import type { Session } from 'next-auth'
 import { auth } from '../../../../lib/auth'
+import { hasPermission } from '../../../../lib/rbac'
 import {
   assistantConfigSchema,
   getAssistantConfig,
@@ -8,8 +10,12 @@ import {
 import { generateAssistantReply } from '../../../../server/services/assistant'
 import { consumeAssistantRequest } from '../../../../server/services/assistant-rate-limit'
 
-function isAdmin(role: string | undefined) {
-  return role === 'ADMIN'
+function canManageAssistant(session: Session | null) {
+  return hasPermission(
+    session?.user?.role,
+    'assistant:manage',
+    session?.user?.permissions,
+  )
 }
 
 export async function GET() {
@@ -17,7 +23,7 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (!isAdmin(session.user.role)) {
+  if (!canManageAssistant(session)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -34,7 +40,7 @@ export async function PUT(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (!isAdmin(session.user.role)) {
+  if (!canManageAssistant(session)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -72,7 +78,7 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (!isAdmin(session.user.role)) {
+  if (!canManageAssistant(session)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../lib/auth";
 import { EmailMarketingDashboard } from "./_components/email-marketing-dashboard";
+import { hasPermission } from "../../../lib/rbac";
 
 const sections = [
   "overview",
@@ -21,7 +22,7 @@ export default async function EmailMarketingPage({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/auth/login");
-  if (!["ADMIN", "MEMBER"].includes(session.user.role ?? ""))
+  if (!hasPermission(session.user.role, "email-marketing:read", session.user.permissions))
     redirect("/dashboard");
   const requested = (await searchParams).section;
   const initialSection = sections.includes(requested as EmailMarketingSection)
@@ -31,7 +32,11 @@ export default async function EmailMarketingPage({
   return (
     <EmailMarketingDashboard
       initialSection={initialSection}
-      role={session.user.role ?? "USER"}
+      canManage={hasPermission(
+        session.user.role,
+        "email-marketing:manage",
+        session.user.permissions,
+      )}
     />
   );
 }

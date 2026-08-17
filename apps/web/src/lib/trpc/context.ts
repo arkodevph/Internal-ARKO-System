@@ -9,12 +9,14 @@ export async function createTRPCContext() {
 
   // Fetch the user's role from DB (fresh on every request)
   let userRole: Role | undefined
+  let userPermissions: unknown
   if (session?.user?.id) {
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { role: true, permissions: true },
     })
     userRole = dbUser?.role ?? undefined
+    userPermissions = dbUser?.permissions ?? undefined
   }
 
   return {
@@ -22,6 +24,7 @@ export async function createTRPCContext() {
     session,
     user: session?.user,
     userRole,
+    userPermissions,
   }
 }
 

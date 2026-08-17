@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { hash, compare } from "bcryptjs";
-import { router, protectedProcedure, requireRole } from "../trpc";
+import { router, protectedProcedure, requirePermission } from "../trpc";
+import {
+  PERMISSIONS,
+  defaultPermissionsForRole,
+  hasPermission,
+  resolvePermissions,
+  type Permission,
+} from "../../../lib/rbac";
 import type { AvatarConfigJson } from "../../../lib/avatar";
 import { generateAvatarSeed, avatarConfigToJson } from "../../../lib/avatar";
 
@@ -125,6 +132,7 @@ export const usersRouter = router({
         title: true,
         image: true,
         role: true,
+        permissions: true,
         status: true,
         createdAt: true,
         avatar: true,
@@ -134,7 +142,7 @@ export const usersRouter = router({
 
   /** List all users — admin only */
   list: protectedProcedure
-    .use(requireRole(["ADMIN"]))
+    .use(requirePermission("users:update"))
     .input(
       z
         .object({
@@ -163,6 +171,7 @@ export const usersRouter = router({
           image: true,
           title: true,
           role: true,
+          permissions: true,
           status: true,
           createdAt: true,
           lastActiveAt: true,
@@ -184,7 +193,7 @@ export const usersRouter = router({
 
   /** Create a user — admin only. Email and password auto-generate if omitted. */
   create: protectedProcedure
-    .use(requireRole(["ADMIN"]))
+    .use(requirePermission("users:create"))
     .input(
       z.object({
         name: z.string().min(1, "Name is required"),
@@ -195,6 +204,10 @@ export const usersRouter = router({
         role: z
           .enum(["ADMIN", "ACCOUNTANT", "MEMBER", "USER", "CLIENT", "DEMO"])
           .default("MEMBER"),
+        permissions: z
+          .array(z.enum(PERMISSIONS as [Permission, ...Permission[]]))
+          .optional(),
+        canAccess: z.boolean().default(true),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -231,6 +244,9 @@ export const usersRouter = router({
           title: input.title || null,
           password: hashedPassword,
           role: input.role,
+          permissions:
+            input.permissions ?? defaultPermissionsForRole(input.role),
+          status: input.canAccess ? "ACTIVE" : "RESTRICTED",
         },
         select: {
           id: true,
@@ -240,6 +256,7 @@ export const usersRouter = router({
           title: true,
           image: true,
           role: true,
+          permissions: true,
           status: true,
           createdAt: true,
           avatar: true,
@@ -286,7 +303,10 @@ export const usersRouter = router({
       const targetId = input.userId ?? ctx.user.id;
 
       // If editing another user, must be ADMIN
-      if (targetId !== ctx.user.id && ctx.userRole !== "ADMIN") {
+      if (
+        targetId !== ctx.user.id &&
+        !hasPermission(ctx.userRole, "users:update", ctx.userPermissions)
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You can only edit your own profile",
@@ -318,6 +338,7 @@ export const usersRouter = router({
           title: true,
           email: true,
           role: true,
+          permissions: true,
           status: true,
           image: true,
           avatar: true,
@@ -327,7 +348,7 @@ export const usersRouter = router({
 
   /** Update a user's role — admin only */
   updateRole: protectedProcedure
-    .use(requireRole(["ADMIN"]))
+    .use(requirePermission("users:update"))
     .input(
       z.object({
         userId: z.string(),
@@ -359,14 +380,88 @@ export const usersRouter = router({
 
       return ctx.prisma.user.update({
         where: { id: input.userId },
-        data: { role: input.role, authVersion: { increment: 1 } },
-        select: { id: true, name: true, email: true, role: true },
+        data: {
+          role: input.role,
+          permissions: defaultPermissionsForRole(input.role),
+          authVersion: { increment: 1 },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          permissions: true,
+        },
+      });
+    }),
+
+  /** Update a user's preset, custom permissions, and sign-in access. */
+  updateAccess: protectedProcedure
+    .use(requirePermission("users:update"))
+    .input(
+      z.object({
+        userId: z.string(),
+        role: z.enum([
+          "ADMIN",
+          "ACCOUNTANT",
+          "MEMBER",
+          "USER",
+          "CLIENT",
+          "DEMO",
+        ]),
+        permissions: z.array(
+          z.enum(PERMISSIONS as [Permission, ...Permission[]]),
+        ),
+        canAccess: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (
+        input.userId === ctx.user.id &&
+        (input.role !== "ADMIN" ||
+          !input.canAccess ||
+          !input.permissions.includes("users:update"))
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Cannot remove your own administrative access",
+        });
+      }
+
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: input.userId },
+        select: { id: true, status: true },
+      });
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      return ctx.prisma.user.update({
+        where: { id: input.userId },
+        data: {
+          role: input.role,
+          permissions: resolvePermissions(input.role, input.permissions),
+          status: input.canAccess
+            ? "ACTIVE"
+            : user.status === "SUSPENDED"
+              ? "SUSPENDED"
+              : "RESTRICTED",
+          authVersion: { increment: 1 },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          permissions: true,
+          status: true,
+        },
       });
     }),
 
   /** Update a user's status (restrict/activate/suspend) — admin only */
   updateStatus: protectedProcedure
-    .use(requireRole(["ADMIN"]))
+    .use(requirePermission("users:update"))
     .input(
       z.object({
         userId: z.string(),
@@ -398,7 +493,7 @@ export const usersRouter = router({
 
   /** Reset a user's password — admin only. Generates a new password, returns the plaintext once. */
   resetPassword: protectedProcedure
-    .use(requireRole(["ADMIN"]))
+    .use(requirePermission("users:update"))
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
@@ -422,7 +517,7 @@ export const usersRouter = router({
 
   /** Delete a user — admin only. Blocks if the user has transactions. */
   delete: protectedProcedure
-    .use(requireRole(["ADMIN"]))
+    .use(requirePermission("users:delete"))
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       if (input.userId === ctx.user.id) {

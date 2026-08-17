@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
+import { hasPermission } from '../../../lib/rbac'
 import { FileUploader } from '../../../components/file-uploader'
 import { AttachmentList } from '../../../components/attachment-list'
 import { ResourcesForm } from './resources-form'
@@ -52,7 +53,11 @@ function CategoryIcon({ name, className }: { name: string; className?: string })
 
 export default function ResourcesPage() {
   const { data: session } = useSession()
-  const canEdit = session?.user?.role !== 'CLIENT'
+  const canEdit = hasPermission(
+    session?.user?.role,
+    'resources:update',
+    session?.user?.permissions,
+  )
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | undefined>()
   const [editResource, setEditResource] = useState<{

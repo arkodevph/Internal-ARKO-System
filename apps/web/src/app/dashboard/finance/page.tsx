@@ -9,6 +9,7 @@ import { formatCurrency } from '@arko/finance'
 import { AddTransactionDialog, type GhostTransaction } from './add-transaction-dialog'
 import { RecurringTransactionDialog } from './recurring-transaction-dialog'
 import { AnalyticsCharts } from './analytics-charts'
+import { hasPermission } from '../../../lib/rbac'
 
 function StatsSkeleton() {
   return (
@@ -29,7 +30,11 @@ function StatsSkeleton() {
 
 export default function FinancePage() {
   const { data: session } = useSession()
-  const canUseCompany = session?.user?.role === 'ADMIN' || session?.user?.role === 'ACCOUNTANT'
+  const canUseCompany = hasPermission(
+    session?.user?.role,
+    'transactions:manage-company',
+    session?.user?.permissions,
+  )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [scopeFilter, setScopeFilter] = useState<'PERSONAL' | 'COMPANY'>('PERSONAL')
   const [recurringOpen, setRecurringOpen] = useState(false)

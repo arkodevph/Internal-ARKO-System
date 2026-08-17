@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { router, protectedProcedure } from '../trpc'
+import { router, protectedProcedure, requirePermission } from '../trpc'
 import { assignedOrCompany, recordScopeSchema } from '../../../lib/record-scope'
 
 const assigneeInclude = {
@@ -63,7 +63,7 @@ async function wouldCreateCycle(ctx: any, taskId: string, blockerId: string): Pr
 }
 
 export const tasksRouter = router({
-  availableProjects: protectedProcedure.query(({ ctx }) =>
+  availableProjects: protectedProcedure.use(requirePermission('tasks:read')).query(({ ctx }) =>
     ctx.prisma.clientProject.findMany({
       where: ctx.userRole === 'ADMIN' ? {} : { ownerId: ctx.user.id! },
       select: { id: true, name: true, status: true },
@@ -71,7 +71,7 @@ export const tasksRouter = router({
     }),
   ),
 
-  list: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ ctx }) => {
+  list: protectedProcedure.use(requirePermission('tasks:read')).input(z.object({ status: z.string().optional() }).optional()).query(async ({ ctx }) => {
     const userId = ctx.user.id!
     return ctx.prisma.task.findMany({
       where: assignedOrCompany(userId, ctx.userRole),
@@ -89,6 +89,7 @@ export const tasksRouter = router({
   }),
 
   create: protectedProcedure
+    .use(requirePermission('tasks:create'))
     .input(
       z.object({
         title: z.string().min(1),
@@ -168,6 +169,7 @@ export const tasksRouter = router({
     }),
 
   update: protectedProcedure
+    .use(requirePermission('tasks:update'))
     .input(
       z.object({
         id: z.string(),
@@ -201,7 +203,7 @@ export const tasksRouter = router({
       })
     }),
 
-  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+  delete: protectedProcedure.use(requirePermission('tasks:delete')).input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     await assertTaskAccess(ctx, input.id)
 
     // Promote any subtasks to top-level rather than cascade-deleting them
@@ -214,6 +216,7 @@ export const tasksRouter = router({
   }),
 
   assignTask: protectedProcedure
+    .use(requirePermission('tasks:update'))
     .input(
       z.object({
         taskId: z.string(),
@@ -261,6 +264,7 @@ export const tasksRouter = router({
     }),
 
   updateStatus: protectedProcedure
+    .use(requirePermission('tasks:update'))
     .input(
       z.object({
         id: z.string(),
@@ -282,7 +286,7 @@ export const tasksRouter = router({
       })
     }),
 
-  addDependency: protectedProcedure.input(z.object({ taskId: z.string(), blockerId: z.string() })).mutation(async ({ ctx, input }) => {
+  addDependency: protectedProcedure.use(requirePermission('tasks:update')).input(z.object({ taskId: z.string(), blockerId: z.string() })).mutation(async ({ ctx, input }) => {
     if (input.taskId === input.blockerId) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -315,7 +319,7 @@ export const tasksRouter = router({
     })
   }),
 
-  removeDependency: protectedProcedure.input(z.object({ taskId: z.string(), blockerId: z.string() })).mutation(async ({ ctx, input }) => {
+  removeDependency: protectedProcedure.use(requirePermission('tasks:update')).input(z.object({ taskId: z.string(), blockerId: z.string() })).mutation(async ({ ctx, input }) => {
     await assertTaskAccess(ctx, input.taskId)
     return ctx.prisma.taskDependency.deleteMany({
       where: { blockingId: input.blockerId, blockedId: input.taskId },

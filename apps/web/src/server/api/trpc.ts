@@ -1,7 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { type TRPCContext } from "../../lib/trpc/context";
-import { hasRole } from "../../lib/rbac";
+import { hasPermission, hasRole, type Permission } from "../../lib/rbac";
 
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
@@ -25,6 +25,7 @@ const enforceAuth = t.middleware(({ ctx, next }) => {
     ctx: {
       user: ctx.session.user,
       userRole: ctx.userRole,
+      userPermissions: ctx.userPermissions,
     },
   });
 });
@@ -50,6 +51,57 @@ export function requireRole(allowedRoles: string[]) {
       ctx: {
         user: ctx.session.user,
         userRole: ctx.userRole,
+      },
+    });
+  });
+}
+
+export function requirePermission(permission: Permission) {
+  return t.middleware(({ ctx, next }) => {
+    if (!ctx.session?.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+    if (!hasPermission(ctx.userRole, permission, ctx.userPermissions)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Insufficient permissions",
+      });
+    }
+    return next({
+      ctx: {
+        user: ctx.session.user,
+        userRole: ctx.userRole,
+        userPermissions: ctx.userPermissions,
+      },
+    });
+  });
+}
+
+export function requireRoleOrPermission(
+  allowedRoles: string[],
+  permission: Permission,
+) {
+  return t.middleware(({ ctx, next }) => {
+    if (!ctx.session?.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+    const allowedByRole = hasRole(ctx.userRole as any, allowedRoles as any);
+    const allowedByPermission = hasPermission(
+      ctx.userRole,
+      permission,
+      ctx.userPermissions,
+    );
+    if (!allowedByRole && !allowedByPermission) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Insufficient permissions",
+      });
+    }
+    return next({
+      ctx: {
+        user: ctx.session.user,
+        userRole: ctx.userRole,
+        userPermissions: ctx.userPermissions,
       },
     });
   });

@@ -1,7 +1,7 @@
 import { Prisma } from "@arko/db";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, requireRole, router } from "../trpc";
+import { protectedProcedure, requirePermission, router } from "../trpc";
 import {
   DEFAULT_EMAIL_MARKETING_SETTINGS,
   enrollContactForTrigger,
@@ -13,10 +13,18 @@ import {
   sendMarketingTestEmail,
 } from "../../services/email-marketing";
 
-const marketingProcedure = protectedProcedure.use(
-  requireRole(["ADMIN", "MEMBER"]),
+const marketingReadProcedure = protectedProcedure.use(
+  requirePermission("email-marketing:read"),
 );
-const marketingAdminProcedure = protectedProcedure.use(requireRole(["ADMIN"]));
+const marketingCreateProcedure = protectedProcedure.use(
+  requirePermission("email-marketing:create"),
+);
+const marketingUpdateProcedure = protectedProcedure.use(
+  requirePermission("email-marketing:update"),
+);
+const marketingAdminProcedure = protectedProcedure.use(
+  requirePermission("email-marketing:manage"),
+);
 
 const optionalText = z.string().trim().max(2_000).optional().nullable();
 const email = z.string().trim().email().transform(normalizeMarketingEmail);
@@ -170,7 +178,7 @@ async function replaceCampaignRules(
 }
 
 const contactsRouter = router({
-  list: marketingProcedure
+  list: marketingReadProcedure
     .input(
       z
         .object({
@@ -217,7 +225,7 @@ const contactsRouter = router({
       return { items, total, page: input.page, pageSize: input.pageSize };
     }),
 
-  create: marketingProcedure
+  create: marketingCreateProcedure
     .input(contactFields)
     .mutation(async ({ ctx, input }) => {
       try {
@@ -281,7 +289,7 @@ const contactsRouter = router({
       }
     }),
 
-  update: marketingProcedure
+  update: marketingUpdateProcedure
     .input(contactFields.partial().extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { id, tagIds, segmentIds, ...fields } = input;
@@ -365,7 +373,7 @@ const contactsRouter = router({
       }),
     ),
 
-  import: marketingProcedure
+  import: marketingCreateProcedure
     .input(
       z.object({
         rows: z.array(contactRecordFields).min(1).max(2_000),
@@ -434,7 +442,7 @@ const contactsRouter = router({
       return result;
     }),
 
-  export: marketingProcedure.query(({ ctx }) =>
+  export: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.marketingContact.findMany({
       include: {
         tags: { include: { tag: true } },
@@ -447,13 +455,13 @@ const contactsRouter = router({
 });
 
 const tagsRouter = router({
-  list: marketingProcedure.query(({ ctx }) =>
+  list: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.marketingTag.findMany({
       include: { _count: { select: { contacts: true } } },
       orderBy: { name: "asc" },
     }),
   ),
-  create: marketingProcedure
+  create: marketingCreateProcedure
     .input(
       z.object({
         name: z.string().trim().min(1).max(100),
@@ -474,13 +482,13 @@ const tagsRouter = router({
 });
 
 const segmentsRouter = router({
-  list: marketingProcedure.query(({ ctx }) =>
+  list: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.marketingSegment.findMany({
       include: { _count: { select: { members: true } } },
       orderBy: { name: "asc" },
     }),
   ),
-  create: marketingProcedure
+  create: marketingCreateProcedure
     .input(
       z.object({
         name: z.string().trim().min(1).max(120),
@@ -503,7 +511,7 @@ const segmentsRouter = router({
         },
       }),
     ),
-  updateMembers: marketingProcedure
+  updateMembers: marketingUpdateProcedure
     .input(
       z.object({ id: z.string(), contactIds: z.array(z.string()).max(10_000) }),
     )
@@ -528,13 +536,13 @@ const segmentsRouter = router({
 });
 
 const sourcesRouter = router({
-  list: marketingProcedure.query(({ ctx }) =>
+  list: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.marketingSource.findMany({
       include: { _count: { select: { contacts: true } } },
       orderBy: { name: "asc" },
     }),
   ),
-  create: marketingProcedure
+  create: marketingCreateProcedure
     .input(
       z.object({
         name: z.string().trim().min(1).max(120),
@@ -550,13 +558,13 @@ const sourcesRouter = router({
 });
 
 const templatesRouter = router({
-  list: marketingProcedure.query(({ ctx }) =>
+  list: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.emailTemplate.findMany({
       include: { _count: { select: { campaigns: true } } },
       orderBy: { updatedAt: "desc" },
     }),
   ),
-  create: marketingProcedure
+  create: marketingCreateProcedure
     .input(
       z.object({
         name: z.string().trim().min(1).max(160),
@@ -572,7 +580,7 @@ const templatesRouter = router({
         data: { ...input, createdById: ctx.user.id! },
       }),
     ),
-  update: marketingProcedure
+  update: marketingUpdateProcedure
     .input(
       z.object({
         id: z.string(),
@@ -587,7 +595,7 @@ const templatesRouter = router({
     .mutation(({ ctx, input: { id, ...data } }) =>
       ctx.prisma.emailTemplate.update({ where: { id }, data }),
     ),
-  duplicate: marketingProcedure
+  duplicate: marketingCreateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const template = await ctx.prisma.emailTemplate.findUnique({
@@ -613,7 +621,7 @@ const templatesRouter = router({
         },
       });
     }),
-  archive: marketingProcedure
+  archive: marketingUpdateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ ctx, input }) =>
       ctx.prisma.emailTemplate.update({
@@ -621,7 +629,7 @@ const templatesRouter = router({
         data: { status: "ARCHIVED" },
       }),
     ),
-  testSend: marketingProcedure
+  testSend: marketingUpdateProcedure
     .input(
       z.object({
         id: z.string(),
@@ -663,7 +671,7 @@ const templatesRouter = router({
 });
 
 const campaignsRouter = router({
-  list: marketingProcedure.query(({ ctx }) =>
+  list: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.emailCampaign.findMany({
       include: {
         createdBy: { select: { id: true, name: true } },
@@ -673,7 +681,7 @@ const campaignsRouter = router({
       orderBy: { createdAt: "desc" },
     }),
   ),
-  get: marketingProcedure
+  get: marketingReadProcedure
     .input(z.object({ id: z.string() }))
     .query(({ ctx, input }) =>
       ctx.prisma.emailCampaign.findUnique({
@@ -686,7 +694,7 @@ const campaignsRouter = router({
         },
       }),
     ),
-  create: marketingProcedure
+  create: marketingCreateProcedure
     .input(campaignFields)
     .mutation(async ({ ctx, input }) =>
       ctx.prisma.$transaction(async (tx) => {
@@ -698,7 +706,7 @@ const campaignsRouter = router({
         return campaign;
       }),
     ),
-  update: marketingProcedure
+  update: marketingUpdateProcedure
     .input(
       campaignFields
         .partial()
@@ -725,10 +733,10 @@ const campaignsRouter = router({
         return campaign;
       }),
     ),
-  audiencePreview: marketingProcedure
+  audiencePreview: marketingReadProcedure
     .input(z.object({ id: z.string() }))
     .query(({ ctx, input }) => resolveCampaignAudience(ctx.prisma, input.id)),
-  duplicate: marketingProcedure
+  duplicate: marketingCreateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const source = await ctx.prisma.emailCampaign.findUnique({
@@ -830,7 +838,7 @@ const automationStep = z.object({
 });
 
 const automationsRouter = router({
-  list: marketingProcedure.query(({ ctx }) =>
+  list: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.emailAutomation.findMany({
       include: {
         steps: { orderBy: { position: "asc" } },
@@ -886,7 +894,7 @@ const automationsRouter = router({
         data: { status: input.active ? "ACTIVE" : "PAUSED" },
       }),
     ),
-  enrollments: marketingProcedure
+  enrollments: marketingReadProcedure
     .input(z.object({ automationId: z.string() }))
     .query(({ ctx, input }) =>
       ctx.prisma.emailAutomationEnrollment.findMany({
@@ -899,7 +907,7 @@ const automationsRouter = router({
 });
 
 const inboxRouter = router({
-  list: marketingProcedure
+  list: marketingReadProcedure
     .input(
       z
         .object({
@@ -922,7 +930,7 @@ const inboxRouter = router({
         take: 200,
       }),
     ),
-  update: marketingProcedure
+  update: marketingUpdateProcedure
     .input(
       z.object({
         id: z.string(),
@@ -933,7 +941,7 @@ const inboxRouter = router({
     .mutation(({ ctx, input: { id, ...data } }) =>
       ctx.prisma.marketingInboundMessage.update({ where: { id }, data }),
     ),
-  addNote: marketingProcedure
+  addNote: marketingUpdateProcedure
     .input(
       z.object({
         messageId: z.string(),
@@ -948,7 +956,7 @@ const inboxRouter = router({
 });
 
 const settingsRouter = router({
-  get: marketingProcedure.query(async ({ ctx }) => {
+  get: marketingReadProcedure.query(async ({ ctx }) => {
     const stored = await ctx.prisma.emailMarketingSettings.findUnique({
       where: { id: "system" },
     });
@@ -990,7 +998,7 @@ const settingsRouter = router({
 });
 
 export const emailMarketingRouter = router({
-  overview: marketingProcedure.query(async ({ ctx }) => {
+  overview: marketingReadProcedure.query(async ({ ctx }) => {
     const [
       contacts,
       subscribers,
@@ -1042,7 +1050,7 @@ export const emailMarketingRouter = router({
       recentCampaigns,
     };
   }),
-  lookups: marketingProcedure.query(async ({ ctx }) => {
+  lookups: marketingReadProcedure.query(async ({ ctx }) => {
     const [contacts, tags, segments, templates, clients, projects, users] =
       await Promise.all([
         ctx.prisma.marketingContact.findMany({
@@ -1074,7 +1082,7 @@ export const emailMarketingRouter = router({
       ]);
     return { contacts, tags, segments, templates, clients, projects, users };
   }),
-  delivery: marketingProcedure
+  delivery: marketingReadProcedure
     .input(
       z
         .object({
@@ -1111,7 +1119,7 @@ export const emailMarketingRouter = router({
         take: 250,
       }),
     ),
-  suppressions: marketingProcedure.query(({ ctx }) =>
+  suppressions: marketingReadProcedure.query(({ ctx }) =>
     ctx.prisma.emailSuppression.findMany({
       orderBy: { suppressedAt: "desc" },
       take: 500,

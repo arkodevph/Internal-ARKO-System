@@ -39,14 +39,14 @@ const sections: Array<{
 
 export function EmailMarketingDashboard({
   initialSection,
-  role,
+  canManage,
 }: {
   initialSection: EmailMarketingSection;
-  role: string;
+  canManage: boolean;
 }) {
   const [section, setSection] = useState(initialSection);
   const router = useRouter();
-  const isAdmin = role === "ADMIN";
+  const isAdmin = canManage;
 
   function choose(next: EmailMarketingSection) {
     setSection(next);

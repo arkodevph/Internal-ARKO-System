@@ -22,6 +22,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { api } from "../../../lib/trpc/client";
+import { hasPermission } from "../../../lib/rbac";
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -43,7 +44,11 @@ const quickLinks = [
 export default function ClientPortalPage() {
   const { data: session } = useSession();
   const isClient = session?.user?.role === "CLIENT";
-  const isAdmin = session?.user?.role === "ADMIN";
+  const isAdmin = hasPermission(
+    session?.user?.role,
+    "client-portal:manage",
+    session?.user?.permissions,
+  );
   const [requestTitle, setRequestTitle] = useState("");
   const [requestDescription, setRequestDescription] = useState("");
   const [requestProjectId, setRequestProjectId] = useState("");

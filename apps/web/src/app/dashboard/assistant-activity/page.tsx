@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@arko/db'
 import { auth } from '../../../lib/auth'
+import { hasPermission } from '../../../lib/rbac'
 
 const STATUS_STYLE: Record<string, string> = {
   PROPOSED: 'border-amber-500/25 bg-amber-500/10 text-amber-500',
@@ -11,7 +12,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function AssistantActivityPage() {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
+  if (!hasPermission(session?.user?.role, 'assistant-activity:read', session?.user?.permissions)) redirect('/dashboard')
 
   const activities = await prisma.assistantActivity.findMany({
     orderBy: { createdAt: 'desc' },

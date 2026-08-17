@@ -39,6 +39,7 @@ import { DashboardThemeToggle } from "./dashboard-theme-toggle";
 import { DemoNexTour } from "./demo-nex-tour";
 import { DemoSystemPage } from "./demo-system-page";
 import { NotificationDrawer } from "./notification-drawer";
+import { hasPermission, type Permission } from "../../../lib/rbac";
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -53,9 +54,8 @@ type NavCategory = {
   icon: ComponentType<{ className?: string }>;
   label: string;
   end?: boolean;
-  /** Only shown to ADMIN users. */
-  adminOnly?: boolean;
   roles?: string[];
+  permission?: Permission;
 };
 
 type NavGroup = { label: string; items: NavCategory[] };
@@ -71,17 +71,37 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Dashboard",
         end: true,
       },
-      { to: "/dashboard/finance", icon: TrendingUp, label: "Finance" },
+      {
+        to: "/dashboard/finance",
+        icon: TrendingUp,
+        label: "Finance",
+        permission: "transactions:read",
+      },
       { to: "/dashboard/assistant", icon: NexMark, label: "NEX Assistant" },
     ],
   },
   {
     label: "Workspace",
     items: [
-      { to: "/dashboard/tasks", icon: CheckSquare, label: "Tasks" },
-      { to: "/dashboard/events", icon: CalendarDays, label: "Calendar" },
+      {
+        to: "/dashboard/tasks",
+        icon: CheckSquare,
+        label: "Tasks",
+        permission: "tasks:read",
+      },
+      {
+        to: "/dashboard/events",
+        icon: CalendarDays,
+        label: "Calendar",
+        permission: "events:read",
+      },
       { to: "/dashboard/reminders", icon: Bell, label: "Reminders" },
-      { to: "/dashboard/notes", icon: FileText, label: "Notes" },
+      {
+        to: "/dashboard/notes",
+        icon: FileText,
+        label: "Notes",
+        permission: "notes:read",
+      },
       { to: "/dashboard/journal", icon: Book, label: "Journal" },
       { to: "/dashboard/ideas", icon: Lightbulb, label: "Ideas" },
     ],
@@ -89,14 +109,24 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Content",
     items: [
-      { to: "/dashboard/documents", icon: FileCheck, label: "Documents" },
-      { to: "/dashboard/resources", icon: Bookmark, label: "Resources" },
+      {
+        to: "/dashboard/documents",
+        icon: FileCheck,
+        label: "Documents",
+        permission: "documents:read",
+      },
+      {
+        to: "/dashboard/resources",
+        icon: Bookmark,
+        label: "Resources",
+        permission: "resources:read",
+      },
       { to: "/dashboard/messages", icon: MessageSquare, label: "Messages" },
       {
         to: "/dashboard/email-marketing",
         icon: Mail,
         label: "Email Marketing",
-        roles: ["ADMIN", "MEMBER"],
+        permission: "email-marketing:read",
       },
     ],
   },
@@ -107,20 +137,25 @@ const NAV_GROUPS: NavGroup[] = [
         to: "/dashboard/client-portal",
         icon: BriefcaseBusiness,
         label: "Client Portal",
-        adminOnly: true,
+        permission: "client-portal:manage",
       },
-      { to: "/dashboard/users", icon: Users, label: "Users" },
+      {
+        to: "/dashboard/users",
+        icon: Users,
+        label: "Users",
+        permission: "users:update",
+      },
       {
         to: "/dashboard/landing",
         icon: Palette,
         label: "Landing",
-        adminOnly: true,
+        permission: "landing:manage",
       },
       {
         to: "/dashboard/assistant-activity",
         icon: ClipboardList,
         label: "AI Activity",
-        adminOnly: true,
+        permission: "assistant-activity:read",
       },
     ],
   },
@@ -357,7 +392,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const requestSignOut = useRequestSignOut();
   const handleLogout = () => requestSignOut();
 
-  const isAdmin = sessionUser?.role === "ADMIN";
+  const canUse = (item: NavCategory) =>
+    !item.permission ||
+    hasPermission(sessionUser?.role, item.permission, sessionUser?.permissions);
   const navGroups: NavGroup[] = isClient
     ? [{ label: "Portal", items: CLIENT_CATEGORIES }]
     : isDemo
@@ -365,7 +402,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       : NAV_GROUPS.map((g) => ({
           label: g.label,
           items: g.items
-            .filter((it) => !it.adminOnly || isAdmin)
+            .filter(canUse)
             .filter(
               (it) => !it.roles || it.roles.includes(sessionUser?.role ?? ""),
             )
@@ -384,7 +421,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     ? CLIENT_CATEGORIES
     : isDemo
       ? DEMO_CATEGORIES
-      : BOTTOM_NAV;
+      : BOTTOM_NAV.filter(canUse);
   return (
     <div className="dashboard-theme-root h-dvh bg-bg-app text-text-primary">
       <MobileDrawer

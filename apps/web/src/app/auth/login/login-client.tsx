@@ -63,57 +63,110 @@ function RedirectSplash({ email, name }: { email: string; name?: string }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-[#09090B] px-6">
-      {/* ambient green glow */}
+    <div
+      className="fixed inset-0 z-[100] overflow-hidden bg-acid text-ink"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading your dashboard"
+    >
       <div
-        className="pointer-events-none absolute left-1/2 top-1/3 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 blur-3xl"
+        className="pointer-events-none absolute inset-0 opacity-25"
         style={{
-          background: "radial-gradient(circle, #22c55e 0%, transparent 70%)",
+          backgroundImage:
+            "linear-gradient(rgba(10,10,10,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(10,10,10,.18) 1px, transparent 1px)",
+          backgroundSize:
+            "clamp(3rem, 7vw, 7rem) clamp(3rem, 7vw, 7rem)",
         }}
       />
 
-      {/* avatar */}
-      <div className="relative z-10">
-        <span className="absolute -inset-1.5 animate-ping rounded-full bg-primary-500/20" />
-        <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#101214] ring-2 ring-primary-500/40 shadow-[0_0_50px_rgba(34,197,94,0.35)]">
-          <OpenPeepsAvatar
-            userId={email || "guest"}
-            userName={name}
-            size={96}
-          />
+      <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between border-b border-ink/25 px-5 py-4 sm:px-8 md:px-10">
+        <span className="display text-2xl md:text-3xl">ARKO</span>
+        <span className="eyebrow text-[0.55rem] text-ink/55 sm:text-xs">
+          Secure workspace / System entry
+        </span>
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="display pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none text-[clamp(8rem,31vw,32rem)] leading-none text-ink/[0.055]"
+      >
+        ARKO
+      </div>
+
+      <main className="relative z-10 flex min-h-[100dvh] items-center justify-center px-5 py-28 sm:px-8">
+        <div className="w-full max-w-2xl">
+          <div className="mb-6 flex items-center justify-between border-b-2 border-ink pb-3">
+            <span className="eyebrow text-[0.6rem] text-ink/60 sm:text-xs">
+              01 / Identity confirmed
+            </span>
+            <ShieldCheck className="h-5 w-5" strokeWidth={2.5} />
+          </div>
+
+          <div className="grid items-center gap-7 sm:grid-cols-[7rem_1fr] sm:gap-9">
+            <div className="relative mx-auto h-28 w-28 sm:mx-0">
+              <span className="absolute inset-0 translate-x-2 translate-y-2 bg-ink/20" />
+              <div className="relative flex h-full w-full items-center justify-center overflow-hidden border-4 border-ink bg-acid">
+                <OpenPeepsAvatar
+                  userId={email || "guest"}
+                  userName={name}
+                  size={112}
+                />
+              </div>
+            </div>
+
+            <div className="text-center sm:text-left">
+              <p className="eyebrow mb-3 text-[0.6rem] text-ink/55 sm:text-xs">
+                Workspace access granted
+              </p>
+              <h1 className="display text-[clamp(3rem,9vw,6.5rem)] leading-[0.82]">
+                Welcome
+                <br />
+                back{name ? `, ${name.split(" ")[0]}` : ""}.
+              </h1>
+            </div>
+          </div>
+
+          <div className="mt-9">
+            <div className="mono mb-2 flex items-center justify-between text-[0.6rem] font-bold uppercase tracking-[0.14em]">
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                Loading dashboard
+              </span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="h-4 border-2 border-ink p-[2px]">
+              <div
+                className="h-full bg-ink transition-[width] duration-200 ease-out motion-reduce:transition-none"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-7 flex min-h-[3.5rem] items-start gap-3 border-t border-ink/25 pt-4">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+            <p
+              key={factIndex}
+              className="mono animate-[fade-in_0.5s_ease-out] text-[0.65rem] font-bold uppercase leading-relaxed tracking-[0.08em] text-ink/65 motion-reduce:animate-none"
+            >
+              <span className="text-ink">Did you know? </span>
+              {LOADING_FACTS[factIndex]}
+            </p>
+          </div>
         </div>
-      </div>
+      </main>
 
-      <div className="z-10 text-center">
-        <p className="text-lg font-semibold text-white">
-          Welcome back{name ? `, ${name.split(" ")[0]}` : ""}
-        </p>
-        <p className="mt-0.5 flex items-center justify-center gap-1.5 text-xs text-zinc-500">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-400" />
-          Loading your dashboard…
-        </p>
-      </div>
-
-      {/* load bar */}
-      <div className="z-10 w-full max-w-xs">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400 transition-[width] duration-200 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
-      {/* rotating fact */}
-      <div className="z-10 flex min-h-[3.5rem] max-w-sm items-start gap-2 text-center">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-400" />
-        <p
-          key={factIndex}
-          className="animate-[fade-in_0.5s_ease-out] text-xs leading-relaxed text-zinc-400"
-        >
-          <span className="font-semibold text-zinc-300">Did you know? </span>
-          {LOADING_FACTS[factIndex]}
-        </p>
+      <div className="absolute inset-x-0 bottom-0 z-20 grid grid-cols-3 border-t border-ink/25">
+        {["Authenticate", "Load workspace", "Enter system"].map(
+          (label, index) => (
+            <div
+              key={label}
+              className="eyebrow border-r border-ink/15 px-4 py-3 text-[0.5rem] text-ink/55 last:border-r-0 sm:px-8 sm:text-[0.6rem]"
+            >
+              <span className="mr-2 text-ink">0{index + 1}</span>
+              {label}
+            </div>
+          ),
+        )}
       </div>
     </div>
   );
