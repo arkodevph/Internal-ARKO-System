@@ -87,7 +87,7 @@ export function StatusBadge({ value }: { value: string }) {
 }
 
 export function formatDate(value: Date | string | null | undefined) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Intl.DateTimeFormat("en-PH", {
     dateStyle: "medium",
     timeStyle: "short",

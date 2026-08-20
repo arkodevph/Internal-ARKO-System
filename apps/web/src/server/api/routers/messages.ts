@@ -4,7 +4,7 @@ import { router, protectedProcedure, requirePermission } from "../trpc";
 
 export const messagesRouter = router({
   /**
-   * Total unread messages across all of the caller's conversations — for the
+   * Total unread messages across all of the caller's conversations - for the
    * sidebar "Messages (n)" badge. Unread = sent by someone else after the
    * participant's lastReadAt (or ever, if never read).
    */
@@ -317,7 +317,7 @@ export const messagesRouter = router({
           AND: [
             { participants: { some: { userId } } },
             { participants: { some: { userId: input.participantId } } },
-            // exactly these two participants — a 1:1 conversation
+            // exactly these two participants - a 1:1 conversation
             {
               participants: {
                 none: { userId: { notIn: [userId, input.participantId] } },

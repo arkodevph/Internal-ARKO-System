@@ -72,7 +72,7 @@ function buildLineItems(
   }
 
   return source.map((item, sortOrder) => ({
-    description: `${item.title}${item.description ? ` — ${item.description}` : ""}`,
+    description: `${item.title}${item.description ? ` - ${item.description}` : ""}`,
     quantity: 1,
     unitPrice: 0,
     sortOrder,
@@ -93,7 +93,7 @@ export function generateDocumentTemplate(
 
   if (type === "INVOICE") {
     return {
-      title: `Invoice — ${project.name}`,
+      title: `Invoice - ${project.name}`,
       dueDate: defaultDueDate,
       content: {
         ...parties,
@@ -114,7 +114,7 @@ export function generateDocumentTemplate(
       : "[ADD AGREED DELIVERABLES]";
 
     return {
-      title: `Service Agreement — ${project.name}`,
+      title: `Service Agreement - ${project.name}`,
       dueDate: defaultDueDate,
       content: {
         ...parties,
@@ -122,7 +122,7 @@ export function generateDocumentTemplate(
           project.summary ||
           `Services for ${project.name}. [ADD AGREEMENT CONTEXT]`,
         legalNotice:
-          "Boilerplate only — this document is not legal advice. Have qualified counsel review it before signing.",
+          "Boilerplate only - this document is not legal advice. Have qualified counsel review it before signing.",
         sections: [
           {
             title: "1. Parties and effective date",
@@ -172,13 +172,13 @@ export function generateDocumentTemplate(
       ? project.deliverables
           .map(
             (item) =>
-              `• ${item.title}${item.description ? ` — ${item.description}` : ""}`,
+              `• ${item.title}${item.description ? ` - ${item.description}` : ""}`,
           )
           .join("\n")
       : "[ADD PROPOSED DELIVERABLES]";
 
     return {
-      title: `Proposal — ${project.name}`,
+      title: `Proposal - ${project.name}`,
       dueDate: defaultDueDate,
       content: {
         ...parties,
@@ -223,7 +223,7 @@ export function generateDocumentTemplate(
   }));
 
   return {
-    title: `Project Timeline — ${project.name}`,
+    title: `Project Timeline - ${project.name}`,
     dueDate: project.dueDate ? new Date(project.dueDate) : defaultDueDate,
     content: {
       ...parties,

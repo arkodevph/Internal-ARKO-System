@@ -12,7 +12,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30_000, // don't refetch for 30s — avoids churn on nav
+            staleTime: 30_000, // don't refetch for 30s - avoids churn on nav
             gcTime: 5 * 60_000,
             retry: 1,
             refetchOnWindowFocus: false,
@@ -25,7 +25,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
     api.createClient({
       links: [
         splitLink({
-          // GitHub API fetches are slow + external — don't block the batch
+          // GitHub API fetches are slow + external - don't block the batch
           condition: (op) => op.path.startsWith('github.'),
           true: httpLink({ url: '/api/trpc', transformer: superjson }),
           false: httpBatchLink({ url: '/api/trpc', transformer: superjson }),

@@ -88,7 +88,7 @@ describe('avatarConfigToJson', () => {
         return
       }
     }
-    // If we get here, no seed in 500 had both — test the absence
+    // If we get here, no seed in 500 had both - test the absence
     expect(true).toBe(true)
   })
 

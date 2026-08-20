@@ -464,6 +464,13 @@ export default function Services3DScene({
           className="h-full w-full object-cover"
         >
           <source src={videoSrc} type="video/mp4" />
+          <track
+            kind="captions"
+            src="/decorative-captions.vtt"
+            srcLang="en"
+            label="English"
+            default
+          />
         </video>
       )}
     </div>

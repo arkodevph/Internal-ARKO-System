@@ -31,7 +31,7 @@ export function DashboardHeader() {
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-border-subtle bg-card px-4 lg:px-6">
-      {/* Left side — greeting */}
+      {/* Left side - greeting */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold text-text-primary">
           {status === 'loading' ? (
@@ -49,7 +49,7 @@ export function DashboardHeader() {
         </span>
       </div>
 
-      {/* Right side — user menu */}
+      {/* Right side - user menu */}
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowMenu(!showMenu)}

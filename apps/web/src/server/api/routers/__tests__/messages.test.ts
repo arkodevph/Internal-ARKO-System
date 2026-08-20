@@ -203,7 +203,7 @@ const ctx = (over: any = {}) => {
         // Execute each operation in sequence
         const results = []
         for (const op of txnArray) {
-          // op is a prisma call — the mock create/update return promises, just call the mock's implementation
+          // op is a prisma call - the mock create/update return promises, just call the mock's implementation
           results.push(await op)
         }
         return results

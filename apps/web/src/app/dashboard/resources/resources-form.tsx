@@ -116,7 +116,7 @@ export function ResourcesForm({
               className="h-3.5 w-3.5 rounded border-border-subtle"
             />
             <span>
-              {isPublic ? 'Public' : 'Private'} —{' '}
+              {isPublic ? 'Public' : 'Private'} - {' '}
               <span className="text-text-tertiary">
                 {isPublic ? 'visible to everyone' : 'only you can see this'}
               </span>

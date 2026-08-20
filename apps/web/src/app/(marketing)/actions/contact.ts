@@ -35,7 +35,7 @@ function checkLimit(
   next: RateData
   exhausted: boolean
 } {
-  // Hard cap — 3 submissions max
+  // Hard cap - 3 submissions max
   if (data && data.a >= MAX_ATTEMPTS) {
     return { allowed: false, retryAfterSec: 0, next: data, exhausted: true }
   }
@@ -132,7 +132,7 @@ export async function sendContact(
     return { status: 'error', message: 'That email does not look right.' }
   }
 
-  // — Gibberish guard (no API needed) —
+  // Gibberish guard (no API needed)
   if (message.length < 3) {
     return {
       status: 'error',
@@ -155,7 +155,7 @@ export async function sendContact(
   if (/(.)\1{4,}|(?:^|\s)[a-z]{1,2}(?:\s|$)/i.test(message)) {
     return {
       status: 'error',
-      message: 'Please write a real message — we are people, not robots.',
+      message: 'Please write a real message - we are people, not robots.',
     }
   }
 
@@ -168,7 +168,7 @@ export async function sendContact(
     }
   }
 
-  // Low character variety — mash patterns like "asdf", "qwerty"
+  // Low character variety - mash patterns like "asdf", "qwerty"
   const chars = new Set(lower.replace(/\s/g, ''))
   if (chars.size < 4) {
     return {
@@ -177,7 +177,7 @@ export async function sendContact(
     }
   }
 
-  // — Rate limit via signed cookie (survives page refresh)
+  // - Rate limit via signed cookie (survives page refresh)
   const cookieStore = await cookies()
   const existing = cookieStore.get(COOKIE_NAME)?.value
   const data = existing ? decode(existing) : null
@@ -185,7 +185,7 @@ export async function sendContact(
 
   const { allowed, retryAfterSec, next, exhausted } = checkLimit(data, now)
 
-  // Write cookie — survives refresh
+  // Write cookie - survives refresh
   cookieStore.set(COOKIE_NAME, encode(next), {
     httpOnly: true,
     secure: true,

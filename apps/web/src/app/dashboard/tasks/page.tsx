@@ -67,7 +67,7 @@ export default function TasksPage() {
   // Derive from the live list so the drawer reflects fresh data after invalidation
   const selected = tasks?.find((t) => t.id === selectedId) ?? null
 
-  // Inline, dismissible notice (replaces native alert()) — matches the dashboard's
+  // Inline, dismissible notice (replaces native alert()) - matches the dashboard's
   // inline error-card convention rather than browser dialogs.
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -487,7 +487,7 @@ export default function TasksPage() {
                                   )}
                                   {/* Comment-count badge intentionally deferred: Comment has no FK
                                   to Task (generic resourceType/resourceId), so a per-card count
-                                  needs a batched count proc — out of scope for this story. */}
+                                  needs a batched count proc - out of scope for this story. */}
                                 </div>
                                 <div className="mt-4 flex items-center gap-2 text-[10px] text-text-tertiary">
                                   <CalendarDays className="h-3.5 w-3.5" />
@@ -768,7 +768,7 @@ function TaskDetail({
           </div>
         </div>
 
-        {/* Delete — two-step inline confirm (no native dialog) */}
+        {/* Delete - two-step inline confirm (no native dialog) */}
         <div className="border-t border-border-subtle pt-4">
           {confirmDelete ? (
             <div className="flex items-center gap-3">

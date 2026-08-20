@@ -397,7 +397,7 @@ export function AudienceSection({ isAdmin }: { isAdmin: boolean }) {
                           <p className="text-text-tertiary">{item.email}</p>
                         </td>
                         <td className="px-2 py-3 text-text-secondary">
-                          {item.company || "—"}
+                          {item.company || "-"}
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex flex-wrap gap-1">

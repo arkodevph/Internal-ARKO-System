@@ -140,7 +140,7 @@ export const usersRouter = router({
     });
   }),
 
-  /** List all users — admin only */
+  /** List all users - admin only */
   list: protectedProcedure
     .use(requirePermission("users:update"))
     .input(
@@ -182,7 +182,7 @@ export const usersRouter = router({
       });
     }),
 
-  /** Heartbeat — mark the current user active. Called periodically by the client. */
+  /** Heartbeat - mark the current user active. Called periodically by the client. */
   heartbeat: protectedProcedure.mutation(async ({ ctx }) => {
     await ctx.prisma.user.update({
       where: { id: ctx.user.id },
@@ -191,7 +191,7 @@ export const usersRouter = router({
     return { ok: true };
   }),
 
-  /** Create a user — admin only. Email and password auto-generate if omitted. */
+  /** Create a user - admin only. Email and password auto-generate if omitted. */
   create: protectedProcedure
     .use(requirePermission("users:create"))
     .input(
@@ -275,7 +275,7 @@ export const usersRouter = router({
       return { ...user, avatar: avatarJson, generatedPassword: plainPassword };
     }),
 
-  /** Update a user's profile (name, phone, title, avatar) — self-service or admin. */
+  /** Update a user's profile (name, phone, title, avatar) - self-service or admin. */
   updateProfile: protectedProcedure
     .input(
       z.object({
@@ -299,7 +299,7 @@ export const usersRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Determine target user — if userId is provided, admin override; otherwise self-service
+      // Determine target user - if userId is provided, admin override; otherwise self-service
       const targetId = input.userId ?? ctx.user.id;
 
       // If editing another user, must be ADMIN
@@ -346,7 +346,7 @@ export const usersRouter = router({
       });
     }),
 
-  /** Update a user's role — admin only */
+  /** Update a user's role - admin only */
   updateRole: protectedProcedure
     .use(requirePermission("users:update"))
     .input(
@@ -459,7 +459,7 @@ export const usersRouter = router({
       });
     }),
 
-  /** Update a user's status (restrict/activate/suspend) — admin only */
+  /** Update a user's status (restrict/activate/suspend) - admin only */
   updateStatus: protectedProcedure
     .use(requirePermission("users:update"))
     .input(
@@ -491,7 +491,7 @@ export const usersRouter = router({
       });
     }),
 
-  /** Reset a user's password — admin only. Generates a new password, returns the plaintext once. */
+  /** Reset a user's password - admin only. Generates a new password, returns the plaintext once. */
   resetPassword: protectedProcedure
     .use(requirePermission("users:update"))
     .input(z.object({ userId: z.string() }))
@@ -515,7 +515,7 @@ export const usersRouter = router({
       return { email: user.email, generatedPassword: plainPassword };
     }),
 
-  /** Delete a user — admin only. Blocks if the user has transactions. */
+  /** Delete a user - admin only. Blocks if the user has transactions. */
   delete: protectedProcedure
     .use(requirePermission("users:delete"))
     .input(z.object({ userId: z.string() }))
@@ -550,7 +550,7 @@ export const usersRouter = router({
       return { success: true };
     }),
 
-  /** Change password — self-service only. Verifies current password before updating. */
+  /** Change password - self-service only. Verifies current password before updating. */
   changePassword: protectedProcedure
     .input(
       z.object({

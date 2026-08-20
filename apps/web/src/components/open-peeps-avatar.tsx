@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react'
 import { generateAvatarSeed, avatarConfigFromJson, type AvatarConfigJson } from '../lib/avatar'
 
 interface OpenPeepsAvatarProps {
-  /** User ID — used to seed a deterministic avatar when no config is stored */
+  /** User ID - used to seed a deterministic avatar when no config is stored */
   userId?: string
   /** Stored avatar configuration (JSON string from DB, or pre-parsed object) */
   avatarJson?: string | object | null
@@ -48,14 +48,14 @@ export function OpenPeepsAvatar({
     if (avatarJson) {
       try {
         const parsed = typeof avatarJson === 'string' ? JSON.parse(avatarJson) : avatarJson
-        // Guard against empty/default objects {} from the DB — body, head,
+        // Guard against empty/default objects {} from the DB - body, head,
         // and face are all required; missing any crashes Effigy's
         // require("./category/undefined") → Cannot find module './undefined'
         if (parsed && typeof parsed.body === 'string' && typeof parsed.head === 'string' && typeof parsed.face === 'string') {
           return parsed as AvatarConfigJson
         }
       } catch {
-        // Invalid JSON or object — fall through to seed
+        // Invalid JSON or object - fall through to seed
       }
     }
 
@@ -77,7 +77,7 @@ export function OpenPeepsAvatar({
   })()
 
   if (!cfg) {
-    // No data: render a fallback placeholder (silent — no broken image)
+    // No data: render a fallback placeholder (silent - no broken image)
     return (
       <div
         className={className}

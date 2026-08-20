@@ -34,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!authIpLimiter.check(ipKey).success) return null;
 
         // Account lockout: if this email has too many recent failures, block without
-        // consuming (peek). Generic failure — no distinction from a bad password.
+        // consuming (peek). Generic failure - no distinction from a bad password.
         if (!loginLockout.peek(email).success) return null;
 
         // Rate limit: 10 login attempts per minute per email
@@ -61,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        // Successful login — clear the failure counter for this email.
+        // Successful login - clear the failure counter for this email.
         loginLockout.clear(email);
 
         return {

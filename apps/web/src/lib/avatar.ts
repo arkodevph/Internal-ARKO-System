@@ -1,5 +1,5 @@
 /**
- * Open Peeps Avatar — seed generator + types
+ * Open Peeps Avatar - seed generator + types
  *
  * Provides deterministic avatar configuration from a user ID,
  * and the TypeScript types used by the OpenPeepsAvatar component.
@@ -17,8 +17,8 @@
  *   Beard  → outlineColor only
  *   Accessory → outlineColor only
  *
- * @see /mnt/storage/tools/open-peeps-mono.sketch — Sketch source
- * @see @opeepsfun/open-peeps — npm package (Effigy component)
+ * @see /mnt/storage/tools/open-peeps-mono.sketch - Sketch source
+ * @see @opeepsfun/open-peeps - npm package (Effigy component)
  */
 
 // ── Parts catalog (mirrors @opeepsfun/open-peeps exports) ─────────
@@ -202,7 +202,7 @@ export function avatarConfigFromJson(json: AvatarConfigJson): AvatarConfig {
 
   return {
     body: {
-      // Use a fallback body type if none provided — prevents Effigy crashing
+      // Use a fallback body type if none provided - prevents Effigy crashing
       // with require("./body/effigy/undefined") when the DB stores a bare {}.
       type: body || 'Tee',
       options: {

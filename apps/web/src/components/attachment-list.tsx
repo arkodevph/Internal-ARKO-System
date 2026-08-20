@@ -53,7 +53,7 @@ export function AttachmentList({ resourceType, resourceId }: AttachmentListProps
       const { url } = await utils.storage.getDownloadUrl.fetch({ id })
       window.open(url, '_blank')
     } catch {
-      // Silently fail — the console will show the error
+      // Silently fail - the console will show the error
     } finally {
       setDownloading((prev) => {
         const next = new Set(prev)

@@ -5,9 +5,9 @@ import Breadcrumbs from "../_components/Breadcrumbs";
 import ContactForm from "../_components/ContactForm";
 import { getLandingContent } from "../../../lib/landing/get-content";
 
-const TITLE = "Projects — Arko Software Studio";
+const TITLE = "Projects - Arko Software Studio";
 const DESCRIPTION =
-  "Selected websites and digital products designed and built by Arko.";
+  "Explore selected websites, product interfaces, and digital systems designed and built by Arko for businesses, founders, and growing teams.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -18,6 +18,20 @@ export const metadata: Metadata = {
     url: "/projects",
     title: TITLE,
     description: DESCRIPTION,
+    images: [
+      {
+        url: "/social-card?v=2",
+        width: 1200,
+        height: 630,
+        alt: "Selected Arko projects",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/social-card?v=2"],
   },
 };
 
@@ -37,18 +51,40 @@ export default async function ProjectsPage() {
               items={[{ label: "Home", href: "/" }, { label: "Projects" }]}
             />
             <p className="eyebrow text-ink/60">{projects.eyebrow}</p>
-            <h1 className="display mt-3 text-[3.3rem] leading-[0.84] md:mt-5 md:text-[clamp(4rem,10vw,9rem)]">{projects.heading}</h1>
-            <p className="mt-5 max-w-2xl text-base font-semibold leading-relaxed text-ink/70 md:mt-10 md:text-2xl">{projects.intro}</p>
+            <h1 className="display mt-3 text-[3.3rem] leading-[0.84] md:mt-5 md:text-[clamp(4rem,10vw,9rem)]">
+              {projects.heading}
+            </h1>
+            <p className="mt-5 max-w-2xl text-base font-semibold leading-relaxed text-ink/70 md:mt-10 md:text-2xl">
+              {projects.intro}
+            </p>
             <div className="mono mt-6 flex flex-nowrap gap-1.5 overflow-x-auto pb-1 text-[0.5rem] font-bold uppercase tracking-wider md:mt-10 md:flex-wrap md:gap-2 md:text-[0.58rem]">
-              <span className="border-2 border-ink bg-ink px-3 py-2 text-acid">{projects.items.length} live builds</span>
-              <span className="border-2 border-ink px-3 py-2">Click to explore</span>
-              <span className="border-2 border-ink px-3 py-2">Real websites</span>
+              <span className="border-2 border-ink bg-ink px-3 py-2 text-acid">
+                {projects.items.length} live builds
+              </span>
+              <span className="border-2 border-ink px-3 py-2">
+                Click to explore
+              </span>
+              <span className="border-2 border-ink px-3 py-2">
+                Real websites
+              </span>
             </div>
           </div>
-          <div className="project-hero-model relative mx-auto aspect-[4/3] w-full max-w-[20rem] md:aspect-square md:max-w-[34rem]" aria-hidden>
+          <div
+            className="project-hero-model relative mx-auto aspect-[4/3] w-full max-w-[20rem] md:aspect-square md:max-w-[34rem]"
+            aria-hidden
+          >
             <div className="absolute inset-[11%] border-2 border-dashed border-ink/20" />
-            <Image src="/projects/models/project-browser-halftone.png" alt="" fill priority sizes="(min-width:1024px) 42vw, 80vw" className="relative z-10 object-contain p-[5%]" />
-            <span className="mono absolute bottom-[12%] right-[4%] z-20 border-2 border-ink bg-ink px-3 py-2 text-[0.55rem] font-bold text-acid">LIVE / 09</span>
+            <Image
+              src="/projects/models/project-browser-halftone.png"
+              alt=""
+              fill
+              priority
+              sizes="(min-width:1024px) 42vw, 80vw"
+              className="relative z-10 object-contain p-[5%]"
+            />
+            <span className="mono absolute bottom-[12%] right-[4%] z-20 border-2 border-ink bg-ink px-3 py-2 text-[0.55rem] font-bold text-acid">
+              LIVE / 09
+            </span>
           </div>
         </div>
       </section>

@@ -1,0 +1,14 @@
+# Arko Software Studio
+
+> Arko is a Philippine software studio that builds web products, mobile apps, automation systems, and practical AI tools.
+
+## Main pages
+
+- Home: https://arkodevph.com/
+- Projects: https://arkodevph.com/projects
+- Blogs: https://arkodevph.com/blogs
+- Privacy and terms: https://arkodevph.com/privacy
+
+## Contact
+
+- Email: contact@arkodevph.com

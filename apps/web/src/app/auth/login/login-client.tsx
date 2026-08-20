@@ -27,7 +27,7 @@ const OpenPeepsAvatar = dynamic(
 /* ─── Post-login splash: avatar + rotating fact + load bar ─── */
 
 const LOADING_FACTS = [
-  "Honey never spoils — archaeologists found 3,000-year-old honey still edible.",
+  "Honey never spoils - archaeologists found 3,000-year-old honey still edible.",
   "Octopuses have three hearts and blue blood.",
   "A day on Venus is longer than its year.",
   "The first computer bug was a real moth, found in 1947.",
@@ -74,8 +74,7 @@ function RedirectSplash({ email, name }: { email: string; name?: string }) {
         style={{
           backgroundImage:
             "linear-gradient(rgba(10,10,10,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(10,10,10,.18) 1px, transparent 1px)",
-          backgroundSize:
-            "clamp(3rem, 7vw, 7rem) clamp(3rem, 7vw, 7rem)",
+          backgroundSize: "clamp(3rem, 7vw, 7rem) clamp(3rem, 7vw, 7rem)",
         }}
       />
 
@@ -476,12 +475,14 @@ function LoginForm() {
           >
             <div>
               <label
+                htmlFor="login-email"
                 className="mb-1.5 block text-sm font-medium text-zinc-300"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Email
               </label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -498,6 +499,7 @@ function LoginForm() {
 
             <div>
               <label
+                htmlFor="login-password"
                 className="mb-1.5 block text-sm font-medium text-zinc-300"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
@@ -505,6 +507,7 @@ function LoginForm() {
               </label>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -565,7 +568,7 @@ function LoginForm() {
                 </span>
               </label>
               <a
-                href="/forgot-password"
+                href="mailto:contact@arkodevph.com?subject=Password%20reset%20request"
                 className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
@@ -678,7 +681,7 @@ function LoginForm() {
           style={{ animation: "fade-in-up 0.5s ease-out 0.6s both" }}
         >
           <a
-            href="/terms"
+            href="/privacy#terms"
             className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
@@ -694,7 +697,7 @@ function LoginForm() {
           </a>
           <span className="text-zinc-700 select-none text-[6px]">&#x25C9;</span>
           <a
-            href="/cookies"
+            href="/privacy#cookies"
             className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >

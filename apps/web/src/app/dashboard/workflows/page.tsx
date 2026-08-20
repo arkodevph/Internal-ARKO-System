@@ -120,7 +120,7 @@ export default function WorkflowsPage() {
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary">
-                  Definition (JSON — steps of action <code>log</code> or <code>noop</code>)
+                  Definition (JSON - steps of action <code>log</code> or <code>noop</code>)
                 </label>
                 <textarea
                   value={definition}

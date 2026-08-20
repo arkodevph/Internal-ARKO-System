@@ -21,7 +21,7 @@
   --color-primary-900: #14532d;
   --color-primary-950: #052e16;
 
-  /* Accent — forest green (ported from the production login design) */
+  /* Accent - forest green (ported from the production login design) */
   --color-accent-50: #eaf5ef;
   --color-accent-100: #d1e8da;
   --color-accent-200: #a8d1b9;
@@ -31,7 +31,7 @@
   --color-accent-600: #1b4332;
   --color-accent-700: #143828;
 
-  /* Neutral surface + text + status tokens — DARK (black + green) */
+  /* Neutral surface + text + status tokens - DARK (black + green) */
   --color-background: #0a0b0d;
   --color-foreground: #f4f6f5;
   --color-card-foreground: #f4f6f5;
@@ -115,7 +115,7 @@
   --font-heading: var(--font-sora);
   --font-body: var(--font-figtree);
 
-  /* Landing (marketing route group) — brutalist palette + fonts */
+  /* Landing (marketing route group) - brutalist palette + fonts */
   --color-ink: #0a0a0a;
   --color-ink-soft: #141414;
   --color-acid: #b8ff2e;
@@ -126,7 +126,7 @@
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
-/* ── Landing / marketing styles — scoped to .landing-root so the
+/* ── Landing / marketing styles - scoped to .landing-root so the
    dashboard theme is never affected ─────────────────────────────── */
 .landing-root {
   background: var(--color-ink);
@@ -210,7 +210,7 @@ html.system-theme-iris-transition::view-transition-old(root) {
   color: var(--color-ink);
 }
 
-/* Auth page — landing-page geometry without WebGL. */
+/* Auth page - landing-page geometry without WebGL. */
 .auth-art-grid {
   background-image:
     linear-gradient(rgb(10 10 10 / 12%) 1px, transparent 1px),

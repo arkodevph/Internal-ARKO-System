@@ -309,9 +309,9 @@ export function LandingEditor() {
         <CardContent className="space-y-4">
           <Field label="Heading"><Text value={c.intro.heading} onChange={(v) => update((d) => { d.intro.heading = v })} /></Field>
           <Field label="Eyebrow note"><Text value={c.intro.eyebrowNote} onChange={(v) => update((d) => { d.intro.eyebrowNote = v })} /></Field>
-          <Field label="Body — before highlight"><Area value={c.intro.bodyBefore} onChange={(v) => update((d) => { d.intro.bodyBefore = v })} /></Field>
-          <Field label="Body — highlighted phrase"><Text value={c.intro.bodyHighlight} onChange={(v) => update((d) => { d.intro.bodyHighlight = v })} /></Field>
-          <Field label="Body — after highlight"><Area value={c.intro.bodyAfter} onChange={(v) => update((d) => { d.intro.bodyAfter = v })} /></Field>
+          <Field label="Body - before highlight"><Area value={c.intro.bodyBefore} onChange={(v) => update((d) => { d.intro.bodyBefore = v })} /></Field>
+          <Field label="Body - highlighted phrase"><Text value={c.intro.bodyHighlight} onChange={(v) => update((d) => { d.intro.bodyHighlight = v })} /></Field>
+          <Field label="Body - after highlight"><Area value={c.intro.bodyAfter} onChange={(v) => update((d) => { d.intro.bodyAfter = v })} /></Field>
         </CardContent>
       </Card>
 

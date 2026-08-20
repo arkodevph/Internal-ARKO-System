@@ -6,7 +6,7 @@ const config: Config = {
   roots: ['<rootDir>/src'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    // superjson is ESM-only — substitute a CJS mock
+    // superjson is ESM-only - substitute a CJS mock
     '^superjson$': '<rootDir>/src/__mocks__/superjson.ts',
   },
   transform: {

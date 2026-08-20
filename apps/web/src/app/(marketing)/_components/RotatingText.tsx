@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-// Adapted from React Bits — Text Animations / Rotating Text (MIT)
+// Adapted from React Bits - Text Animations / Rotating Text (MIT)
 type Props = {
   texts: string[]
   interval?: number

@@ -242,7 +242,7 @@ export default function ResourcesPage() {
         )}
       </div>
 
-      {/* Category "boxes" — click one to open it */}
+      {/* Category "boxes" - click one to open it */}
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setCategoryFilter(undefined)}

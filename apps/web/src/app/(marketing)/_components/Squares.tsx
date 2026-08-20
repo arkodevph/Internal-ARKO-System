@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-// Adapted from React Bits — Backgrounds / Squares (MIT)
+// Adapted from React Bits - Backgrounds / Squares (MIT)
 type Props = {
   direction?: 'right' | 'left' | 'up' | 'down' | 'diagonal'
   speed?: number

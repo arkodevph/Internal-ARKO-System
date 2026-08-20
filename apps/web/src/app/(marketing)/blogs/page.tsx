@@ -5,10 +5,34 @@ import { getLandingContent } from "../../../lib/landing/get-content";
 import { getFacebookBlogPosts } from "../../../lib/landing/facebook-posts";
 import { RefreshButton } from "./refresh-button";
 
+const TITLE = "Arko Studio Journal | Product, Design and Engineering";
+const DESCRIPTION =
+  "Read practical notes from Arko on product strategy, interface design, software engineering, automation, AI implementation, and recent studio launches.";
+
 export const metadata: Metadata = {
-  title: "Blogs — ARKO Software Studio",
-  description: "Ideas, launches, and studio updates from ARKO.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/blogs" },
+  openGraph: {
+    type: "website",
+    url: "/blogs",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [
+      {
+        url: "/social-card?v=2",
+        width: 1200,
+        height: 630,
+        alt: "Arko Studio Journal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/social-card?v=2"],
+  },
 };
 
 export default async function BlogsPage() {

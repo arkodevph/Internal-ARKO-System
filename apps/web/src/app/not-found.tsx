@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Page not found — Arko',
+  title: 'Page not found - Arko',
   description: 'That page does not exist. Head back to Arko or explore our work.',
 }
 

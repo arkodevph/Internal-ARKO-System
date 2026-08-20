@@ -70,7 +70,7 @@ export default function TeamSection() {
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-8 text-ink/70 md:text-lg">
             We&apos;re a small team that designs, builds, and ships together. You
-            work directly with the people making the product—without an account
+            work directly with the people making the product - without an account
             layer between you and the work.
           </p>
         </header>

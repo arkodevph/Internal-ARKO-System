@@ -159,7 +159,7 @@ describe("documents router", () => {
         type: "INVOICE",
       });
 
-      expect(doc.title).toBe("Invoice — Client Portal Redesign");
+      expect(doc.title).toBe("Invoice - Client Portal Redesign");
       expect(doc.type).toBe("INVOICE");
       expect(doc.status).toBe("DRAFT");
     });

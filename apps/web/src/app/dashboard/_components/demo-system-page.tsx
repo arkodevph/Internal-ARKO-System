@@ -243,7 +243,7 @@ function TasksDemo() {
       <DemoHeader
         eyebrow="Delivery cockpit"
         title="Work moves here."
-        description="A tactile board for priorities, ownership, and momentum—built for fast weekly standups."
+        description="A tactile board for priorities, ownership, and momentum - built for fast weekly standups."
         action="Create task"
       />
       <div className="flex flex-wrap items-center gap-2">
@@ -948,7 +948,7 @@ function DemoFrame({ children }: { children: React.ReactNode }) {
       return;
     const action = target.dataset.demoAction;
     if (action) {
-      showToast(`${action} — saved in your private demo sandbox`);
+      showToast(`${action} - saved in your private demo sandbox`);
       return;
     }
     const title =
@@ -1056,7 +1056,7 @@ function DemoFrame({ children }: { children: React.ReactNode }) {
                   onClick={() => {
                     setDetail(null);
                     showToast(
-                      "Action completed — saved in your private demo sandbox",
+                      "Action completed - saved in your private demo sandbox",
                     );
                   }}
                   className="min-h-12 w-full rounded-full bg-primary-500 px-5 text-sm font-bold text-white"

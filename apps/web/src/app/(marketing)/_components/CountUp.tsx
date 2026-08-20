@@ -3,7 +3,7 @@
 import { useInView, useMotionValue, useSpring } from 'motion/react'
 import { useEffect, useRef } from 'react'
 
-// Adapted from React Bits — Text Animations / Count Up (MIT)
+// Adapted from React Bits - Text Animations / Count Up (MIT)
 type Props = {
   to: number
   from?: number

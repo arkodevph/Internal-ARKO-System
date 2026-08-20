@@ -200,7 +200,7 @@ export function OpenPeepsPicker({ currentAvatar, onChange }: OpenPeepsPickerProp
         </div>
       </div>
 
-      {/* Part selectors — 3 columns on wider screens */}
+      {/* Part selectors - 3 columns on wider screens */}
       <div className="grid grid-cols-3 gap-2">
         <PartSelect label="Body" parts={bodyNames} value={body} onChange={(v) => v && setBody(v)} />
         <PartSelect label="Head" parts={headNames} value={head} onChange={(v) => v && setHead(v)} />

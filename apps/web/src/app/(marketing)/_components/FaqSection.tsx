@@ -3,7 +3,7 @@ import Link from 'next/link'
 const FAQS: { q: string; a: string }[] = [
   {
     q: 'How soon will you reply?',
-    a: 'We reply within 24 hours. Send a short brief and we will come back with next steps, questions, or a call time — usually the same working day.',
+    a: 'We reply within 24 hours. Send a short brief and we will come back with next steps, questions, or a call time - usually the same working day.',
   },
   {
     q: 'What do you build?',
@@ -11,7 +11,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How much does a project cost?',
-    a: 'It depends on scope. Share a rough budget in the brief and we will tell you honestly what is realistic — and where the money is best spent — before any commitment.',
+    a: 'It depends on scope. Share a rough budget in the brief and we will tell you honestly what is realistic - and where the money is best spent - before any commitment.',
   },
   {
     q: 'How long does a project take?',
@@ -23,7 +23,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Who owns the code and the work?',
-    a: 'You do. On handoff, the code, accounts, and assets are yours — no lock-in.',
+    a: 'You do. On handoff, the code, accounts, and assets are yours - no lock-in.',
   },
 ]
 
@@ -67,7 +67,7 @@ export default function FaqSection() {
             >
               Ask us directly
             </Link>{' '}
-            — we reply within 24 hours.
+ - we reply within 24 hours.
           </p>
         </div>
 

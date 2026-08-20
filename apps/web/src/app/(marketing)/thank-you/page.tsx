@@ -3,9 +3,9 @@ import Link from 'next/link'
 import Breadcrumbs from '../_components/Breadcrumbs'
 import ThankYouTracker from '../_components/ThankYouTracker'
 
-const TITLE = 'Thank you — Arko'
+const TITLE = 'Thank you - Arko'
 const DESCRIPTION =
-  'Your message reached Arko. We reply within 24 hours — usually the same working day.'
+  'Your message reached Arko. We reply within 24 hours - usually the same working day.'
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -41,7 +41,7 @@ export default function ThankYouPage() {
           <p className="mt-8 max-w-xl text-lg font-semibold leading-relaxed text-ink/75 md:text-2xl">
             Your brief is in. We read every message and{' '}
             <span className="bg-ink px-2 text-acid">reply within 24 hours</span>{' '}
-            — usually the same working day.
+ - usually the same working day.
           </p>
           <p className="mono mt-6 text-xs font-bold uppercase tracking-[0.16em] text-ink/50">
             Need us sooner? Email{' '}

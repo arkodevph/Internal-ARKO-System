@@ -111,10 +111,10 @@ export function DeliverySection() {
                           {formatDate(item.updatedAt)}
                         </td>
                         <td className="max-w-48 truncate px-2 py-3 font-mono text-[10px] text-text-tertiary">
-                          {item.providerEmailId || "—"}
+                          {item.providerEmailId || "-"}
                         </td>
                         <td className="max-w-56 truncate px-2 py-3 text-red-500">
-                          {item.errorMessage || item.events[0]?.type || "—"}
+                          {item.errorMessage || item.events[0]?.type || "-"}
                         </td>
                       </tr>
                     ))}

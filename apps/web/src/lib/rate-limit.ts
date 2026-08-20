@@ -2,7 +2,7 @@
  * In-memory sliding-window rate limiter.
  *
  * Stores attempt timestamps per key in a Map. Windows are millisecond-precision
- * sliding windows — old entries beyond the window are purged on every check.
+ * sliding windows - old entries beyond the window are purged on every check.
  *
  * Not shared across process restarts (dev) or across multiple instances
  * (production). For multi-instance deployments, swap the store for Redis.
@@ -99,13 +99,13 @@ export const authLimiter = createRateLimiter('auth', {
   maxRequests: 10,
 })
 
-/** Per-IP login throttle — catches password spraying across many accounts from one source. */
+/** Per-IP login throttle - catches password spraying across many accounts from one source. */
 export const authIpLimiter = createRateLimiter('auth-ip', {
   windowMs: 60_000,
   maxRequests: 20,
 })
 
-/** Per-email account lockout — after 5 failed attempts in 15 min, the account is temporarily locked. */
+/** Per-email account lockout - after 5 failed attempts in 15 min, the account is temporarily locked. */
 export const loginLockout = createRateLimiter('login-lockout', {
   windowMs: 15 * 60_000,
   maxRequests: 5,

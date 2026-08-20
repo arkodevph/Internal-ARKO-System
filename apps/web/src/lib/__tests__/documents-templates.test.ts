@@ -48,7 +48,7 @@ describe("generateDocumentTemplate", () => {
       client: sampleClient,
     });
 
-    expect(doc.title).toBe("Invoice — Mobile App Redesign");
+    expect(doc.title).toBe("Invoice - Mobile App Redesign");
     expect(doc.content.billTo?.name).toBe("Acme Corp");
     expect(doc.content.billTo?.email).toBe("client@acme.com");
     expect(doc.lineItems).toHaveLength(2);
@@ -65,7 +65,7 @@ describe("generateDocumentTemplate", () => {
       client: sampleClient,
     });
 
-    expect(doc.title).toBe("Service Agreement — Mobile App Redesign");
+    expect(doc.title).toBe("Service Agreement - Mobile App Redesign");
     expect(doc.content.sections).toBeDefined();
     expect(doc.content.sections!.length).toBeGreaterThan(0);
     expect(doc.content.legalNotice).toContain("not legal advice");
@@ -79,7 +79,7 @@ describe("generateDocumentTemplate", () => {
       client: sampleClient,
     });
 
-    expect(doc.title).toBe("Proposal — Mobile App Redesign");
+    expect(doc.title).toBe("Proposal - Mobile App Redesign");
     expect(doc.lineItems).toHaveLength(1);
     expect(doc.lineItems[0].description).toContain("Deliverable: Figma UI Kit");
   });
@@ -91,7 +91,7 @@ describe("generateDocumentTemplate", () => {
       client: sampleClient,
     });
 
-    expect(doc.title).toBe("Project Timeline — Mobile App Redesign");
+    expect(doc.title).toBe("Project Timeline - Mobile App Redesign");
     expect(doc.content.timelineEvents).toHaveLength(2);
     expect(doc.content.timelineEvents![0].status).toBe("COMPLETED");
     expect(doc.content.timelineEvents![1].status).toBe("NOT_STARTED");

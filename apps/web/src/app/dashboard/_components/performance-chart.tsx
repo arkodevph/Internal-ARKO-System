@@ -45,7 +45,7 @@ const PerformanceChart = memo(function PerformanceChart({
   const [hoverIdx, setHoverIdx] = useState(-1)
   const svgRef = useRef<SVGSVGElement>(null)
 
-  // ── Mouse handlers — MUST be before any early return (Rules of Hooks) ──
+  // ── Mouse handlers - MUST be before any early return (Rules of Hooks) ──
   const ptsCountRef = useRef(0)
   const onMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return
@@ -62,7 +62,7 @@ const PerformanceChart = memo(function PerformanceChart({
     return (
       <div className="flex items-center justify-center h-full text-[11px] text-text-muted select-none">
         <div className="flex flex-col items-center gap-1">
-          <span className="text-2xl font-light text-text-muted">—</span>
+          <span className="text-2xl font-light text-text-muted"> - </span>
           <span>Loading data...</span>
         </div>
       </div>

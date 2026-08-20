@@ -1,21 +1,21 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import CountUp from './_components/CountUp'
-import RotatingText from './_components/RotatingText'
-import ScrollServices from './_components/ScrollServices'
-import ScrollProcess from './_components/ScrollProcess'
-import ScrollWork from './_components/ScrollWork'
-import ContactForm from './_components/ContactForm'
-import HeroFunnel from './_components/HeroFunnel'
-import ScrollReveal from './_components/ScrollReveal'
-import Squares from './_components/Squares'
-import LandingViewTracker from './_components/LandingViewTracker'
-import FaqSection from './_components/FaqSection'
-import TeamSection from './_components/TeamSection'
-import { getLandingContent } from '../../lib/landing/get-content'
-import type { LandingContent } from '../../lib/landing/content'
+import Image from "next/image";
+import Link from "next/link";
+import CountUp from "./_components/CountUp";
+import RotatingText from "./_components/RotatingText";
+import ScrollServices from "./_components/ScrollServices";
+import ScrollProcess from "./_components/ScrollProcess";
+import ScrollWork from "./_components/ScrollWork";
+import ContactForm from "./_components/ContactForm";
+import HeroFunnel from "./_components/HeroFunnel";
+import ScrollReveal from "./_components/ScrollReveal";
+import Squares from "./_components/Squares";
+import LandingViewTracker from "./_components/LandingViewTracker";
+import FaqSection from "./_components/FaqSection";
+import TeamSection from "./_components/TeamSection";
+import { getLandingContent } from "../../lib/landing/get-content";
+import type { LandingContent } from "../../lib/landing/content";
 
-function Hero({ hero }: { hero: LandingContent['hero'] }) {
+function Hero({ hero }: { hero: LandingContent["hero"] }) {
   return (
     <section
       id="top"
@@ -37,7 +37,10 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
             {hero.headingLead}
             <br />
             <span className="mt-2 inline-flex bg-ink px-3 py-1 text-acid">
-              <RotatingText texts={hero.roles} className="text-[clamp(2.1rem,8.5vw,7rem)]" />
+              <RotatingText
+                texts={hero.roles}
+                className="text-[clamp(2.1rem,8.5vw,7rem)]"
+              />
             </span>
           </h1>
           <div className="mt-10 flex flex-col gap-6">
@@ -64,16 +67,16 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
         ARKO
       </div>
     </section>
-  )
+  );
 }
 
-function Stats({ stats }: { stats: LandingContent['stats'] }) {
+function Stats({ stats }: { stats: LandingContent["stats"] }) {
   return (
     <section className="grid grid-cols-2 border-b-4 border-ink bg-ink md:grid-cols-4">
       {stats.map((s, i) => (
         <div
           key={s.label}
-          className={`border-acid/20 p-8 md:p-10 ${i !== 0 ? 'border-l-4' : ''} ${i < 2 ? 'border-b-4 md:border-b-0' : ''}`}
+          className={`border-acid/20 p-8 md:p-10 ${i !== 0 ? "border-l-4" : ""} ${i < 2 ? "border-b-4 md:border-b-0" : ""}`}
         >
           {s.displayText !== undefined ? (
             <span className="display text-5xl text-acid md:text-6xl">
@@ -90,10 +93,10 @@ function Stats({ stats }: { stats: LandingContent['stats'] }) {
         </div>
       ))}
     </section>
-  )
+  );
 }
 
-function Intro({ intro }: { intro: LandingContent['intro'] }) {
+function Intro({ intro }: { intro: LandingContent["intro"] }) {
   return (
     <section
       className="bg-acid px-6 py-20 text-ink md:px-10 md:py-28"
@@ -118,10 +121,10 @@ function Intro({ intro }: { intro: LandingContent['intro'] }) {
         </div>
       </ScrollReveal>
     </section>
-  )
+  );
 }
 
-function Contact({ contact }: { contact: LandingContent['contact'] }) {
+function Contact({ contact }: { contact: LandingContent["contact"] }) {
   return (
     <section id="contact" className="bg-ink px-6 py-24 md:px-10">
       <ScrollReveal>
@@ -132,6 +135,8 @@ function Contact({ contact }: { contact: LandingContent['contact'] }) {
               src="/world-dots.svg"
               alt=""
               aria-hidden
+              width={1190}
+              height={600}
               className="pointer-events-none absolute left-1/2 top-1/2 w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-20"
             />
             <div className="relative z-10">
@@ -150,13 +155,13 @@ function Contact({ contact }: { contact: LandingContent['contact'] }) {
         </div>
       </ScrollReveal>
     </section>
-  )
+  );
 }
 
-function Footer({ footer }: { footer: LandingContent['footer'] }) {
+function Footer({ footer }: { footer: LandingContent["footer"] }) {
   return (
     <footer className="relative overflow-hidden bg-ink text-white">
-      {/* ——— ghost watermark ——— */}
+      {/* - ghost watermark - */}
       <div
         aria-hidden
         className="display pointer-events-none absolute -bottom-4 right-0 select-none text-[clamp(12rem,30vw,36rem)] leading-none text-white/[0.02]"
@@ -164,7 +169,7 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         ARKO
       </div>
 
-      {/* ——— Squares texture ——— */}
+      {/* - Squares texture - */}
       <div className="absolute inset-0 opacity-[0.08]">
         <Squares
           direction="diagonal"
@@ -175,7 +180,7 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         />
       </div>
 
-      {/* ——— code-native contact-to-footer seam ——— */}
+      {/* - code-native contact-to-footer seam - */}
       <div
         aria-hidden
         data-contact-footer-seam
@@ -208,16 +213,16 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         </div>
       </div>
 
-      {/* ——— thick acid-green top border with badge ——— */}
+      {/* - thick acid-green top border with badge - */}
       <div className="relative z-10 border-t-8 border-acid">
         <span className="mono absolute left-6 top-0 -translate-y-1/2 bg-acid px-3 py-1 text-[0.6rem] font-bold uppercase tracking-[0.18em] text-ink">
           Est. 2025
         </span>
       </div>
 
-      {/* ——— main grid ——— */}
+      {/* - main grid - */}
       <div className="relative z-10 grid border-t border-white/10 md:grid-cols-[1.5fr_1.5fr_2fr]">
-        {/* col 1 — brand */}
+        {/* col 1 - brand */}
         <div className="border-b border-white/10 p-8 md:border-b-0 md:border-r md:p-10">
           <div className="display text-4xl tracking-tighter text-acid">
             ARKO
@@ -252,7 +257,7 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
           </div>
         </div>
 
-        {/* col 2 — what we do */}
+        {/* col 2 - what we do */}
         <div className="border-b border-white/10 p-8 md:border-b-0 md:border-r md:p-10">
           <p className="eyebrow text-acid">What we do</p>
           <ul className="mono mt-6 space-y-3 text-sm">
@@ -272,7 +277,7 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
           </ul>
         </div>
 
-        {/* col 3 — CTA (featured) */}
+        {/* col 3 - CTA (featured) */}
         <div className="relative flex flex-col items-start p-8 md:p-10">
           <p className="eyebrow text-acid/60">Start building</p>
           <p className="display mt-4 text-[clamp(2rem,5vw,3.5rem)] leading-[0.85] text-white">
@@ -292,7 +297,7 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
             </span>
           </a>
           <p className="mono mt-6 text-xs text-white/30">
-            Or email{' '}
+            Or email{" "}
             <a
               href={`mailto:${footer.email}`}
               className="text-white/60 underline underline-offset-4 transition-colors hover:text-acid"
@@ -303,7 +308,7 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         </div>
       </div>
 
-      {/* ——— bottom stripe ——— */}
+      {/* - bottom stripe - */}
       <div className="relative z-10 flex flex-col items-start justify-between gap-3 px-8 py-5 md:flex-row md:items-center md:px-10">
         <p className="mono text-[0.65rem] text-white/25">
           © {new Date().getFullYear()} Arko Studio
@@ -331,13 +336,13 @@ function Footer({ footer }: { footer: LandingContent['footer'] }) {
         <p className="mono text-[0.65rem] text-white/25">{footer.location}</p>
       </div>
     </footer>
-  )
+  );
 }
 
 export default async function Home() {
-  const content = await getLandingContent()
+  const content = await getLandingContent();
   return (
-    <main>
+    <>
       <LandingViewTracker />
       <Hero hero={content.hero} />
       {content.sections.stats && <Stats stats={content.stats} />}
@@ -349,6 +354,6 @@ export default async function Home() {
       <FaqSection />
       {content.sections.contact && <Contact contact={content.contact} />}
       <Footer footer={content.footer} />
-    </main>
-  )
+    </>
+  );
 }

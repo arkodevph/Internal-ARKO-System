@@ -13,10 +13,10 @@ const serverEnvSchema = z
     // NextAuth v5 reads AUTH_SECRET; NEXTAUTH_SECRET is the v4 name. Accept either.
     AUTH_SECRET: z.string().min(1).optional(),
     NEXTAUTH_SECRET: z.string().min(1).optional(),
-    DATABASE_URL: z.string().min(1, "required — Postgres connection string"),
+    DATABASE_URL: z.string().min(1, "required - Postgres connection string"),
     DIRECT_URL: z.string().min(1).optional(),
     NEXT_PUBLIC_APP_URL: z.string().url().optional(),
-    // Storage / email integrations — optional; features degrade if unset.
+    // Storage / email integrations - optional; features degrade if unset.
     S3_BUCKET: z.string().optional(),
     S3_ENDPOINT: z.string().optional(),
     S3_ACCESS_KEY_ID: z.string().optional(),
@@ -38,7 +38,7 @@ const serverEnvSchema = z
   })
   .refine((e) => Boolean(e.AUTH_SECRET || e.NEXTAUTH_SECRET), {
     message:
-      "AUTH_SECRET (or NEXTAUTH_SECRET) is required — session signing secret",
+      "AUTH_SECRET (or NEXTAUTH_SECRET) is required - session signing secret",
     path: ["AUTH_SECRET"],
   });
 

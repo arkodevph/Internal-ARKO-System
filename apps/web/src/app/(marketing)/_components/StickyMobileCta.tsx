@@ -44,7 +44,7 @@ export default function StickyMobileCta() {
         href="/#contact"
         className="mono flex min-h-12 items-center justify-center gap-2 border-2 border-ink bg-acid px-5 text-xs font-bold uppercase tracking-[0.16em] text-ink shadow-[4px_4px_0_#0a0a0a]"
       >
-        Start a project — reply in 24h
+        Start a project - reply in 24h
         <span aria-hidden>→</span>
       </Link>
     </div>

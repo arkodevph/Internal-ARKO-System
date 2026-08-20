@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-// Adapted from React Bits — Animations / Star Border (MIT). Pure CSS, no deps.
+// Adapted from React Bits - Animations / Star Border (MIT). Pure CSS, no deps.
 type Props = {
   as?: 'a' | 'button'
   href?: string

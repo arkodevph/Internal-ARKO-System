@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumbs from "../../_components/Breadcrumbs";
 
-const TITLE = "Client document workflow — Arko project system";
+const TITLE = "Client document workflow - Arko project system";
 const DESCRIPTION =
   "A product walkthrough of Arko’s project-to-document workflow: editable invoices, agreements, proposals, timelines, private links, and printable PDF handoff.";
 
@@ -15,11 +15,20 @@ export const metadata: Metadata = {
     url: "/projects/client-document-workflow",
     title: TITLE,
     description: DESCRIPTION,
+    images: [
+      {
+        url: "/social-card?v=2",
+        width: 1200,
+        height: 630,
+        alt: "Arko client document workflow",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
+    images: ["/social-card?v=2"],
   },
 };
 
@@ -160,8 +169,8 @@ export default function ClientDocumentWorkflowPage() {
               </h1>
               <p className="mt-8 max-w-xl text-lg font-semibold leading-relaxed text-ink/75 md:text-2xl">
                 A working document system that turns project facts into editable
-                client material—then carries it through review, private sharing,
-                and PDF output.
+                client material - then carries it through review, private
+                sharing, and PDF output.
               </p>
             </div>
             <div className="relative lg:translate-y-24">

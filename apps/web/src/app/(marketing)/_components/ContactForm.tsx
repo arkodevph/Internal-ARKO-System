@@ -1,97 +1,96 @@
-'use client'
+"use client";
 
-import { useActionState, useEffect, useState } from 'react'
-import { CheckCircle2, Clock3, ShieldCheck } from 'lucide-react'
-import { type ContactState, sendContact } from '../actions/contact'
-import StarBorder from './StarBorder'
-import { useMarketingPageTransition } from './MarketingPageTransition'
+import { useActionState, useEffect, useState } from "react";
+import { CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
+import { type ContactState, sendContact } from "../actions/contact";
+import StarBorder from "./StarBorder";
+import { useMarketingPageTransition } from "./MarketingPageTransition";
 
-const LS_KEY = 'arko_submitted'
-const initial: ContactState = { status: 'idle' }
+const LS_KEY = "arko_submitted";
+const initial: ContactState = { status: "idle" };
 
 const FIELDS = [
-  { name: 'name', label: 'Your name', type: 'text' },
-  { name: 'email', label: 'Work email', type: 'email' },
-] as const
+  { name: "name", label: "Your name", type: "text" },
+  { name: "email", label: "Work email", type: "email" },
+] as const;
 
 const PROJECT_TYPES = [
-  'Website',
-  'Mobile app',
-  'Automation',
-  'AI feature',
-] as const
+  "Website",
+  "Mobile app",
+  "Automation",
+  "AI feature",
+] as const;
 
 function readPersisted(): ContactState | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(LS_KEY)
-    if (!raw) return null
-    const p = JSON.parse(raw) as ContactState
-    if (p.status === 'success' || p.status === 'exhausted') return p
-    return null
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as ContactState;
+    if (p.status === "success" || p.status === "exhausted") return p;
+    return null;
   } catch {
-    return null
+    return null;
   }
 }
 
 function persist(st: ContactState) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(st))
+    localStorage.setItem(LS_KEY, JSON.stringify(st));
   } catch {
     /* noop */
   }
 }
 
 export default function ContactForm() {
-  const navigate = useMarketingPageTransition()
-  const [doneState, setDoneState] = useState<ContactState | null>(null)
-  const [message, setMessage] = useState('')
-  const [state, formAction, pending] = useActionState(sendContact, initial)
+  const navigate = useMarketingPageTransition();
+  const [doneState, setDoneState] = useState<ContactState | null>(null);
+  const [message, setMessage] = useState("");
+  const [state, formAction, pending] = useActionState(sendContact, initial);
 
   // Hydration-safe: restore from localStorage after mount
   useEffect(() => {
-    setDoneState(readPersisted())
-  }, [])
+    setDoneState(readPersisted());
+  }, []);
 
   useEffect(() => {
     const receiveIdea = (event: Event) => {
-      const idea = (event as CustomEvent<string>).detail
-      if (idea) setMessage(idea)
-    }
-    window.addEventListener('arko:funnel', receiveIdea)
-    return () => window.removeEventListener('arko:funnel', receiveIdea)
-  }, [])
+      const idea = (event as CustomEvent<string>).detail;
+      if (idea) setMessage(idea);
+    };
+    window.addEventListener("arko:funnel", receiveIdea);
+    return () => window.removeEventListener("arko:funnel", receiveIdea);
+  }, []);
 
   // Persist done states so they survive future refreshes
   useEffect(() => {
-    if (state.status === 'success' || state.status === 'exhausted') {
-      persist(state)
-      setDoneState(state)
+    if (state.status === "success" || state.status === "exhausted") {
+      persist(state);
+      setDoneState(state);
     }
     // Send successful submissions to the dedicated thank-you page
     // (dedicated URL for analytics conversion tracking).
-    if (state.status === 'success') {
-      navigate('/thank-you')
+    if (state.status === "success") {
+      navigate("/thank-you");
     }
-  }, [state, navigate])
+  }, [state, navigate]);
 
-  // — render —
-  // Use live state if done, otherwise fall back to persisted state
+  // - render -   // Use live state if done, otherwise fall back to persisted state
   const final: ContactState | null =
-    state.status === 'success' || state.status === 'exhausted'
+    state.status === "success" || state.status === "exhausted"
       ? state
-      : doneState
+      : doneState;
 
   const startAnotherBrief = () => {
     try {
-      localStorage.removeItem(LS_KEY)
+      localStorage.removeItem(LS_KEY);
     } catch {
       // Reloading still clears the in-memory confirmation state.
     }
-    window.location.reload()
-  }
+    window.location.reload();
+  };
 
-  if (final && final.status === 'success') {
+  if (final && final.status === "success") {
     return (
       <div
         role="status"
@@ -135,10 +134,10 @@ export default function ContactForm() {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
-  if (final && final.status === 'exhausted') {
+  if (final && final.status === "exhausted") {
     return (
       <div className="flex min-h-[26rem] w-full min-w-0 flex-col justify-center border-2 border-white/15 bg-white/[0.025] p-4 shadow-[6px_6px_0_rgba(184,255,46,.12)] sm:min-h-[32rem] sm:p-6 sm:shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8">
         <p className="eyebrow mb-8 text-white/40">Project brief / fallback</p>
@@ -146,7 +145,7 @@ export default function ContactForm() {
           Inbox full.
         </p>
         <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-white/70 md:text-lg">
-          Thanks for reaching out. Reach us directly at{' '}
+          Thanks for reaching out. Reach us directly at{" "}
           <a
             href="mailto:contact@arkodevph.com"
             className="text-acid underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid"
@@ -155,7 +154,7 @@ export default function ContactForm() {
           </a>
         </p>
       </div>
-    )
+    );
   }
 
   // SSR / first paint: match the form so hydration doesn't mismatch
@@ -184,6 +183,7 @@ export default function ContactForm() {
                 type="radio"
                 name="projectType"
                 value={type}
+                aria-label={type}
                 required
               />
               <span className="mono flex min-h-12 items-center justify-between border border-white/15 px-3 text-[0.62rem] font-bold uppercase tracking-wider text-white/50 transition-all group-hover:border-acid/50 group-hover:text-white peer-checked:border-acid peer-checked:bg-acid peer-checked:text-ink">
@@ -202,12 +202,13 @@ export default function ContactForm() {
             <input
               name={f.name}
               type={f.type}
+              aria-label={f.label}
               required
               autoComplete={f.name}
               placeholder={
-                f.name === 'name'
-                  ? 'How should we address you?'
-                  : 'you@company.com'
+                f.name === "name"
+                  ? "How should we address you?"
+                  : "you@company.com"
               }
               className="min-h-12 border border-white/15 bg-ink px-4 text-base font-medium text-white outline-none transition-all placeholder:text-white/20 hover:border-white/30 focus:border-acid focus:ring-2 focus:ring-acid/15"
             />
@@ -223,6 +224,7 @@ export default function ContactForm() {
         </span>
         <textarea
           name="message"
+          aria-label="What are you building?"
           rows={3}
           required
           value={message}
@@ -258,6 +260,7 @@ export default function ContactForm() {
             </datalist>
             <input
               name="budget"
+              aria-label="Working budget amount"
               type="number"
               min="0"
               step="1"
@@ -271,6 +274,7 @@ export default function ContactForm() {
           <span className="eyebrow text-white/50">Ideal timeline</span>
           <input
             name="timeline"
+            aria-label="Ideal timeline"
             type="text"
             placeholder="e.g. Start in June, launch in August"
             className="min-h-12 border border-white/15 bg-ink px-4 text-base font-medium text-white outline-none placeholder:text-white/20 hover:border-white/30 focus:border-acid sm:text-sm"
@@ -278,7 +282,7 @@ export default function ContactForm() {
         </label>
       </div>
 
-      {state.status === 'error' && (
+      {state.status === "error" && (
         <p className="mono text-sm text-red-400" aria-live="polite">
           {state.message}
         </p>
@@ -298,9 +302,9 @@ export default function ContactForm() {
           disabled={pending}
           className="w-full sm:w-auto sm:shrink-0"
         >
-          {pending ? 'Sending brief...' : 'Start the conversation →'}
+          {pending ? "Sending brief..." : "Start the conversation →"}
         </StarBorder>
       </div>
     </form>
-  )
+  );
 }

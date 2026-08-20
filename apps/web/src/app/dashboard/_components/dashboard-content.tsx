@@ -274,7 +274,7 @@ export default function DashboardContent() {
                     className="mt-1 truncate text-sm font-semibold text-text-primary"
                     title={insights?.topCategory?.name ?? undefined}
                   >
-                    {insights?.topCategory?.name ?? '—'}
+                    {insights?.topCategory?.name ?? '-'}
                   </p>
                   {insights?.topCategory && (
                     <p className="text-[11px] tabular-nums text-text-tertiary">

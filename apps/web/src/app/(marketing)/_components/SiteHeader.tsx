@@ -18,6 +18,7 @@ const NAV = [
   { label: "Projects", href: "/projects" },
   { label: "Blogs", href: "/blogs" },
   { label: "Services", href: "/#services" },
+  { label: "About", href: "/#team" },
   { label: "Process", href: "/#process" },
   { label: "Contact", href: "/#contact" },
 ];
@@ -70,6 +71,7 @@ export default function SiteHeader() {
             priority
             className="h-10 w-10 object-contain md:h-14 md:w-14"
           />
+          <span className="sr-only">Arko home</span>
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">

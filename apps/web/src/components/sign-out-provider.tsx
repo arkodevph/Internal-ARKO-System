@@ -29,7 +29,7 @@ export function SignOutProvider({ children }: { children: React.ReactNode }) {
     // doesn't briefly render this user's data.
     queryClient.clear()
     toast('Signed out successfully')
-    // Close the dialog before navigating — this provider lives at the root and
+    // Close the dialog before navigating - this provider lives at the root and
     // survives the route change, so it must reset its own state or the spinner
     // stays stuck on top of the login page.
     setOpen(false)

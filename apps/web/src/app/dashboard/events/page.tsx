@@ -116,7 +116,7 @@ export default function EventsPage() {
     onError: (e) => setError(e.message),
   })
 
-  // 7-day strip centred on the current week (Sun–Sat) of viewDate — day view
+  // 7-day strip centred on the current week (Sun–Sat) of viewDate - day view
   const week = useMemo(() => {
     const start = new Date(viewDate)
     start.setDate(viewDate.getDate() - viewDate.getDay())
@@ -127,7 +127,7 @@ export default function EventsPage() {
     })
   }, [viewDate])
 
-  // 6-week (42-cell) grid starting on the Monday on/before the 1st — month view
+  // 6-week (42-cell) grid starting on the Monday on/before the 1st - month view
   const monthGrid = useMemo(() => {
     const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
     const offset = (first.getDay() + 6) % 7 // Mon-first
@@ -488,7 +488,7 @@ export default function EventsPage() {
           </CardContent>
         </Card>
 
-        {/* Right — in-page detail panel */}
+        {/* Right - in-page detail panel */}
         <DetailPanel open={!!selected} onClose={() => setSelectedId(null)} eyebrow="Event" title={selected?.title}>
           {selected && (
             <>

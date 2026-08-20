@@ -279,7 +279,7 @@ export default function MessagesPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
-      {/* Left — conversation list */}
+      {/* Left - conversation list */}
       <div className="flex w-80 shrink-0 flex-col">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -510,7 +510,7 @@ export default function MessagesPage() {
         )}
       </div>
 
-      {/* Right — messages view */}
+      {/* Right - messages view */}
       <div className="relative flex flex-1 flex-col rounded-2xl border border-border-subtle bg-card">
         {selectedConv ? (
           <>

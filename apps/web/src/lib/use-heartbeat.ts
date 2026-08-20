@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { api } from "./trpc/client";
 
 // Marks the current user active on mount, every 60s while a tab is open, and
-// when the tab regains focus — so presence ("Active" / "Active 3h ago") is real.
+// when the tab regains focus - so presence ("Active" / "Active 3h ago") is real.
 export function useHeartbeat(enabled = true) {
   const heartbeat = api.users.heartbeat.useMutation();
 

@@ -357,7 +357,7 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
               )}
             </div>
 
-            {/* Split toggle — only for expense, personal */}
+            {/* Split toggle - only for expense, personal */}
             {type === 'EXPENSE' && scope === 'PERSONAL' && (
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">

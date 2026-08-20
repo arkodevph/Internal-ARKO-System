@@ -6,7 +6,7 @@ import StickyMobileCta from "./_components/StickyMobileCta";
 import MarketingPageTransition from "./_components/MarketingPageTransition";
 import FloatingAssistant from "./_components/FloatingAssistant";
 
-const TITLE = "Arko — We build web, mobile, automation and AI";
+const TITLE = "Arko - We build web, mobile, automation and AI";
 const DESCRIPTION =
   "Arko is a small software studio. We design and ship web and mobile products, then wire in the automation and AI that make them run on their own.";
 
@@ -21,11 +21,20 @@ export const metadata: Metadata = {
     siteName: "Arko",
     title: TITLE,
     description: DESCRIPTION,
+    images: [
+      {
+        url: "/social-card?v=2",
+        width: 1200,
+        height: 630,
+        alt: "Arko Software Studio",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
+    images: ["/social-card?v=2"],
   },
 };
 
@@ -43,6 +52,13 @@ const SCHEMA_JSONLD = {
       email: "contact@arkodevph.com",
       description: DESCRIPTION,
       slogan: "We build web, mobile, automation and AI",
+      logo: `${BASE}/icon.png`,
+      foundingDate: "2025",
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "contact@arkodevph.com",
+        contactType: "sales",
+      },
       sameAs: ["https://github.com/justrhey"],
       address: {
         "@type": "PostalAddress",
@@ -76,10 +92,16 @@ export default function MarketingLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_JSONLD) }}
       />
       <Preloader />
+      <a
+        href="#main-content"
+        className="sr-only z-[200] bg-ink px-4 py-3 text-acid focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to main content
+      </a>
       <MarketingPageTransition>
         <SmoothScrollProvider>
           <SiteHeader />
-          <main>{children}</main>
+          <main id="main-content">{children}</main>
         </SmoothScrollProvider>
         <FloatingAssistant />
         <StickyMobileCta />

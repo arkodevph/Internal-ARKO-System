@@ -148,7 +148,7 @@ function buildArchGeometry() {
   shape.lineTo(outerW, 0)
   shape.lineTo(-outerW, 0)
 
-  // Inner hole (clockwise — THREE uses CCW for outer, CW for holes)
+  // Inner hole (clockwise - THREE uses CCW for outer, CW for holes)
   const hole = new THREE.Path()
   hole.moveTo(-innerW, base)
   hole.lineTo(-innerW, innerH)
@@ -314,7 +314,7 @@ export function ArcScene() {
         {/* Ambient */}
         <ambientLight intensity={0.3} color="#b8a090" />
 
-        {/* Key light — warm, from upper-right, casting shadows */}
+        {/* Key light - warm, from upper-right, casting shadows */}
         <directionalLight
           position={[4, 6, 3]}
           intensity={0.8}
@@ -323,10 +323,10 @@ export function ArcScene() {
           shadow-mapSize-height={1024}
         />
 
-        {/* Fill — cool, from behind-left */}
+        {/* Fill - cool, from behind-left */}
         <directionalLight position={[-3, 2, -4]} intensity={0.25} color="#88bbaa" />
 
-        {/* Green accent rim — from below, grazing the arch */}
+        {/* Green accent rim - from below, grazing the arch */}
         <spotLight
           position={[0, -1, 3]}
           angle={0.5}
@@ -343,7 +343,7 @@ export function ArcScene() {
         <StoneFloor />
         <StoneArch />
 
-        {/* Cherry blossom branches — one on each side */}
+        {/* Cherry blossom branches - one on each side */}
         <CherryBranch position={[-3.2, 1.0, -0.5]} rotation={0.3} />
         <CherryBranch position={[3.2, 0.8, 0.5]} rotation={-0.2} />
 

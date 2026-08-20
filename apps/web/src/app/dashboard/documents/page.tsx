@@ -380,7 +380,7 @@ export default function DocumentsPage() {
                 <option value="">Choose a project</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
-                    {project.name} —{" "}
+                    {project.name} - {" "}
                     {project.client?.name || project.client?.email}
                   </option>
                 ))}

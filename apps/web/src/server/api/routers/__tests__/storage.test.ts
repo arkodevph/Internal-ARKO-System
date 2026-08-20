@@ -464,7 +464,7 @@ describe('storage router', () => {
       // 4. Delete
       await caller.delete({ id: list1[0].id })
 
-      // 5. List again — should be empty
+      // 5. List again - should be empty
       const list2 = await caller.listFor({
         resourceType: 'TASK',
         resourceId: 'task-1',

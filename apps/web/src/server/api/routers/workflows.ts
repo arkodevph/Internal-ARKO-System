@@ -4,7 +4,7 @@ import { router, protectedProcedure, requirePermission } from '../trpc'
 import { canManageOwnedRecord, ownedOrCompany, recordScopeSchema, userCanSeeCompanyRecords } from '../../../lib/record-scope'
 
 // Minimal, typed workflow definition. A workflow is a sequence of steps; each
-// step either logs a message or does nothing. Intentionally small — richer step
+// step either logs a message or does nothing. Intentionally small - richer step
 // types (branching, external calls, scheduling) are out of scope for this story.
 const stepSchema = z.object({
   name: z.string().min(1),
@@ -94,7 +94,7 @@ export const workflowsRouter = router({
     }),
 
   // NOTE: execution is synchronous and bounded (see MAX_STEPS). A long-running or
-  // externally-calling step model would need a queue/worker — out of scope here.
+  // externally-calling step model would need a queue/worker - out of scope here.
   execute: protectedProcedure.use(requirePermission('workflows:execute')).input(z.object({ workflowId: z.string() })).mutation(async ({ ctx, input }) => {
     const workflow = await assertWorkflowOwner(ctx, input.workflowId)
     const definition = parseDefinition(workflow.definition)
