@@ -22,16 +22,20 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
       data-bg="light"
       className="relative overflow-hidden bg-acid text-ink"
     >
-      <Image
-        src="/brand/arko-system-art.webp"
-        alt=""
-        width={1254}
-        height={1254}
-        priority
-        className="pointer-events-none absolute -bottom-[8vw] -right-[8vw] hidden w-[62vw] max-w-[58rem] select-none lg:block"
-      />
+      <div className="absolute inset-y-0 right-0 hidden w-[42vw] overflow-hidden lg:block">
+        <div className="absolute inset-0 flex items-center justify-center p-16">
+          <Image
+            src="/brand/arko-logo-3d.png"
+            alt="Arko"
+            width={512}
+            height={512}
+            priority
+            className="h-auto w-full max-w-[34rem] object-contain drop-shadow-[0_1.75rem_1.25rem_rgba(0,0,0,0.45)]"
+          />
+        </div>
+      </div>
       <div className="relative z-10">
-        <div className="px-6 pb-16 pt-32 md:px-10 md:pb-24 md:pt-44">
+        <div className="px-6 pb-16 pt-32 md:px-10 md:pb-24 md:pt-44 lg:pr-[44vw]">
           <p className="eyebrow mb-6 text-ink/70">{hero.eyebrow}</p>
           <h1 className="display text-[clamp(2.75rem,11vw,9rem)]">
             {hero.headingLead}
@@ -49,14 +53,16 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
             </p>
             <HeroFunnel />
           </div>
-          <div className="mt-12 aspect-[4/3] overflow-hidden border-4 border-ink lg:hidden">
-            <Image
-              src="/brand/arko-system-art.webp"
-              alt=""
-              width={1254}
-              height={1254}
-              className="h-full w-full object-cover object-right"
-            />
+          <div className="relative mt-8 aspect-[4/3] lg:hidden">
+            <div className="absolute inset-0 flex items-center justify-center p-10">
+              <Image
+                src="/brand/arko-logo-3d.png"
+                alt="Arko"
+                width={512}
+                height={512}
+                className="h-full w-full object-contain drop-shadow-[0_1.25rem_.9rem_rgba(0,0,0,0.45)]"
+              />
+            </div>
           </div>
         </div>
       </div>
