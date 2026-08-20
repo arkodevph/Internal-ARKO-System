@@ -165,9 +165,10 @@ export default function ContactForm() {
       className="relative flex w-full min-w-0 flex-col gap-6 border-2 border-white/15 bg-white/[0.025] p-4 shadow-[6px_6px_0_rgba(184,255,46,.12)] sm:p-5 sm:shadow-[10px_10px_0_rgba(184,255,46,.12)] md:p-8"
     >
       <div className="border-b border-white/10 pb-5">
-        <p className="eyebrow text-acid">Project brief / 01</p>
+        <p className="eyebrow text-acid">Request a demo / 01</p>
         <p className="mt-2 max-w-md text-sm font-medium leading-relaxed text-white/55">
-          A few details are enough. We&apos;ll help shape the rest together.
+          Add your name, work email, and a few details. We&apos;ll arrange the
+          right demo for you.
         </p>
       </div>
 

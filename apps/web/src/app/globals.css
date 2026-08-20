@@ -224,74 +224,16 @@ html.system-theme-iris-transition::view-transition-old(root) {
   --pointer-y-soft: 0px;
   --pointer-tilt: 0deg;
 }
-.auth-shape-cube {
+.auth-logo-3d {
   position: absolute;
-  right: 12%;
-  top: 24%;
-  width: 8rem;
-  height: 8rem;
+  right: 8%;
+  top: 18%;
+  width: clamp(9rem, 18vw, 15rem);
+  aspect-ratio: 1;
+  background: url("/brand/arko-logo-3d.png") center / contain no-repeat;
+  filter: drop-shadow(1rem 1.2rem 1rem rgb(10 10 10 / 24%));
   translate: var(--pointer-x) var(--pointer-y);
-  transform-style: preserve-3d;
-  animation: auth-cube-spin 16s linear infinite;
   transition: translate 180ms ease-out;
-}
-.auth-cube-face {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  border: 3px solid var(--color-ink);
-  background: var(--color-acid);
-  font:
-    900 1.25rem/1 var(--font-display),
-    sans-serif;
-  backface-visibility: hidden;
-}
-.auth-cube-front {
-  transform: translateZ(4rem);
-}
-.auth-cube-back {
-  transform: rotateY(180deg) translateZ(4rem);
-}
-.auth-cube-right {
-  transform: rotateY(90deg) translateZ(4rem);
-}
-.auth-cube-left {
-  transform: rotateY(-90deg) translateZ(4rem);
-}
-.auth-cube-top {
-  transform: rotateX(90deg) translateZ(4rem);
-}
-.auth-cube-bottom {
-  transform: rotateX(-90deg) translateZ(4rem);
-}
-.auth-orbit {
-  position: absolute;
-  right: calc(12% - 5rem);
-  top: calc(24% - 5rem);
-  width: 18rem;
-  aspect-ratio: 1;
-  translate: var(--pointer-x-soft) var(--pointer-y-soft);
-  border: 2px solid rgb(10 10 10 / 40%);
-  border-radius: 50%;
-  transition: translate 220ms ease-out;
-}
-.auth-orbit::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: -0.45rem;
-  width: 0.9rem;
-  aspect-ratio: 1;
-  border: 2px solid var(--color-acid);
-  background: var(--color-ink);
-}
-.auth-orbit-one {
-  animation: auth-orbit 9s linear infinite;
-}
-.auth-orbit-two {
-  scale: 0.72;
-  animation: auth-orbit 7s linear infinite reverse;
 }
 .auth-float-card {
   position: absolute;
@@ -397,19 +339,6 @@ html.system-theme-iris-transition::view-transition-old(root) {
   background: var(--color-acid);
   color: var(--color-ink);
 }
-@keyframes auth-cube-spin {
-  from {
-    transform: rotateX(-16deg) rotateY(0);
-  }
-  to {
-    transform: rotateX(-16deg) rotateY(360deg);
-  }
-}
-@keyframes auth-orbit {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @keyframes auth-card-float {
   0%,
   100% {
@@ -420,8 +349,6 @@ html.system-theme-iris-transition::view-transition-old(root) {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .auth-shape-cube,
-  .auth-orbit,
   .auth-float-card {
     animation: none;
   }
@@ -434,8 +361,7 @@ html.system-theme-iris-transition::view-transition-old(root) {
   .auth-login-card,
   .auth-back-link,
   .auth-brand img,
-  .auth-shape-cube,
-  .auth-orbit {
+  .auth-logo-3d {
     transition: none;
     translate: none;
   }
@@ -796,47 +722,18 @@ html.system-theme-iris-transition::view-transition-old(root) {
 }
 @keyframes arko-core-turn {
   0% {
-    transform: rotateX(-12deg) rotateY(0deg);
+    transform: rotateX(-16deg) rotateY(-32deg);
   }
   100% {
-    transform: rotateX(-12deg) rotateY(360deg);
+    transform: rotateX(-16deg) rotateY(328deg);
   }
 }
-@keyframes arko-gyro-a {
-  to {
-    transform: rotateX(68deg) rotateZ(360deg);
+@keyframes arko-wireframe-turn {
+  0% {
+    transform: rotateX(64deg) rotateZ(0deg);
   }
-}
-@keyframes arko-gyro-b {
-  to {
-    transform: rotateY(68deg) rotateZ(-360deg);
-  }
-}
-@keyframes arko-gyro-c {
-  to {
-    transform: rotateX(58deg) rotateY(52deg) rotateZ(360deg);
-  }
-}
-@keyframes arko-gyro-scan {
-  0%,
   100% {
-    transform: translate3d(-50%, -50%, -35px) rotateX(76deg) scale(0.78);
-    opacity: 0.12;
-  }
-  50% {
-    transform: translate3d(-50%, -50%, 55px) rotateX(76deg) scale(1);
-    opacity: 0.32;
-  }
-}
-@keyframes arko-signal-pulse {
-  0%,
-  100% {
-    transform: scale(0.75);
-    opacity: 0.45;
-  }
-  50% {
-    transform: scale(1);
-    opacity: 1;
+    transform: rotateX(64deg) rotateZ(360deg);
   }
 }
 @keyframes arko-card-float {
@@ -898,6 +795,109 @@ html.system-theme-iris-transition::view-transition-old(root) {
 .landing-root .arko-entry-stage {
   perspective: 1100px;
 }
+.landing-root .arko-entry-cube-shell {
+  --cube-size: clamp(8rem, 15vw, 13rem);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  width: var(--cube-size);
+  aspect-ratio: 1;
+  transform: translate3d(-50%, -50%, 0);
+  transform-style: preserve-3d;
+}
+.landing-root .arko-entry-cube {
+  position: absolute;
+  inset: 0;
+  animation: arko-core-turn 2.8s linear infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.landing-root .arko-entry-cube-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid var(--color-acid);
+  background:
+    linear-gradient(rgb(184 255 46 / 10%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(184 255 46 / 10%) 1px, transparent 1px),
+    var(--color-ink);
+  background-size: 25% 25%;
+  color: var(--color-acid);
+  box-shadow:
+    inset 0 0 1.5rem rgb(184 255 46 / 12%),
+    0 0 0.8rem rgb(10 10 10 / 28%);
+  backface-visibility: hidden;
+}
+.landing-root .arko-entry-cube-face::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgb(184 255 46 / 16%) 50%,
+    transparent 65%
+  );
+  content: "";
+  transform: translateX(-120%);
+  animation: arko-cube-scan 850ms 120ms ease-out both;
+}
+@keyframes arko-cube-scan {
+  to {
+    transform: translateX(120%);
+  }
+}
+.landing-root .arko-entry-cube-logo {
+  width: 62%;
+  height: 62%;
+  background: url("/brand/arko-logo-navbar.webp") center / contain no-repeat;
+}
+.landing-root .arko-entry-cube-face > span:not(.arko-entry-cube-logo) {
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(1.4rem, 3vw, 2.5rem);
+  line-height: 1;
+}
+.landing-root .arko-entry-cube-face small {
+  position: absolute;
+  bottom: 0.65rem;
+  left: 0.7rem;
+  font: 700 0.42rem/1 monospace;
+  letter-spacing: 0.12em;
+}
+.landing-root .arko-entry-cube-front {
+  transform: translateZ(calc(var(--cube-size) / 2));
+}
+.landing-root .arko-entry-cube-back {
+  transform: rotateY(180deg) translateZ(calc(var(--cube-size) / 2));
+}
+.landing-root .arko-entry-cube-left {
+  transform: rotateY(-90deg) translateZ(calc(var(--cube-size) / 2));
+}
+.landing-root .arko-entry-cube-right {
+  transform: rotateY(90deg) translateZ(calc(var(--cube-size) / 2));
+}
+.landing-root .arko-entry-cube-top {
+  transform: rotateX(90deg) translateZ(calc(var(--cube-size) / 2));
+}
+.landing-root .arko-entry-cube-bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--cube-size) / 2));
+}
+.landing-root .arko-entry-cube-signal {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 3.25rem);
+  width: max-content;
+  border: 1px solid rgb(10 10 10 / 50%);
+  background: var(--color-acid);
+  padding: 0.35rem 0.55rem;
+  font: 700 0.48rem/1 monospace;
+  letter-spacing: 0.14em;
+  transform: translateX(-50%);
+}
 .landing-root .arko-entry-word {
   position: absolute;
   left: 50%;
@@ -914,10 +914,59 @@ html.system-theme-iris-transition::view-transition-old(root) {
 .landing-root .arko-entry-word span {
   transform: translateY(calc((var(--letter-index) - 1.5) * 0.4rem));
 }
+.landing-root .arko-entry-wireframe-shell {
+  --wire-size: clamp(18rem, 34vw, 30rem);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--wire-size);
+  aspect-ratio: 1;
+  transform: translate3d(-50%, -50%, 0);
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 0 0.7rem rgb(10 10 10 / 38%));
+}
+.landing-root .arko-entry-wireframe {
+  position: absolute;
+  inset: 0;
+  animation: arko-wireframe-turn 9s linear infinite;
+  transform-style: preserve-3d;
+}
+.landing-root .arko-entry-wireframe-face {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgb(10 10 10 / 58%);
+  background:
+    linear-gradient(rgb(10 10 10 / 13%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(10 10 10 / 13%) 1px, transparent 1px);
+  background-size: 20% 20%;
+  backface-visibility: visible;
+  box-shadow:
+    inset 0 0 1.5rem rgb(10 10 10 / 8%),
+    0 0 0.45rem rgb(10 10 10 / 18%);
+}
+.landing-root .arko-entry-wireframe-front {
+  transform: translateZ(calc(var(--wire-size) / 2));
+}
+.landing-root .arko-entry-wireframe-back {
+  transform: rotateY(180deg) translateZ(calc(var(--wire-size) / 2));
+}
+.landing-root .arko-entry-wireframe-left {
+  transform: rotateY(-90deg) translateZ(calc(var(--wire-size) / 2));
+}
+.landing-root .arko-entry-wireframe-right {
+  transform: rotateY(90deg) translateZ(calc(var(--wire-size) / 2));
+}
+.landing-root .arko-entry-wireframe-top {
+  transform: rotateX(90deg) translateZ(calc(var(--wire-size) / 2));
+}
+.landing-root .arko-entry-wireframe-bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--wire-size) / 2));
+}
 .landing-root .arko-entry-core-shell {
   position: absolute;
   left: 50%;
   top: 50%;
+  z-index: 4;
   width: clamp(7rem, 13vw, 11rem);
   aspect-ratio: 1;
   transform: translate3d(-50%, -50%, 0);
@@ -949,11 +998,17 @@ html.system-theme-iris-transition::view-transition-old(root) {
   font-family: var(--font-display), sans-serif;
   font-size: 2rem;
 }
+.landing-root .arko-entry-core-logo {
+  width: 64%;
+  height: 64%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 0.45rem rgb(184 255 46 / 30%));
+}
 .landing-root .arko-entry-core-face small {
   margin-top: 0.5rem;
   font-family: monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.15em;
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
 }
 .landing-root .arko-entry-core-front {
   transform: translateZ(calc(clamp(7rem, 13vw, 11rem) / 2));
@@ -972,105 +1027,6 @@ html.system-theme-iris-transition::view-transition-old(root) {
 }
 .landing-root .arko-entry-core-bottom {
   transform: rotateX(-90deg) translateZ(calc(clamp(7rem, 13vw, 11rem) / 2));
-}
-.landing-root .arko-entry-gyro {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: clamp(21rem, 43vw, 40rem);
-  aspect-ratio: 1;
-  transform: translate3d(-50%, -50%, 0);
-  transform-style: preserve-3d;
-  pointer-events: none;
-}
-.landing-root .arko-entry-gyro-ring {
-  position: absolute;
-  inset: 7%;
-  border: 2px solid rgb(10 10 10 / 46%);
-  border-radius: 50%;
-  transform-style: preserve-3d;
-  will-change: transform;
-  box-shadow:
-    inset 0 0 0 1px rgb(184 255 46 / 35%),
-    0 0 0 1px rgb(10 10 10 / 8%);
-}
-.landing-root .arko-entry-gyro-ring::before {
-  content: "";
-  position: absolute;
-  inset: 5%;
-  border: 1px dashed rgb(10 10 10 / 32%);
-  border-radius: 50%;
-}
-.landing-root .arko-entry-gyro-ring::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: -0.42rem;
-  width: 0.8rem;
-  aspect-ratio: 1;
-  border: 2px solid var(--color-acid);
-  background: var(--color-ink);
-  box-shadow: 0 0 0 3px var(--color-ink);
-}
-.landing-root .arko-entry-gyro-ring-a {
-  animation: arko-gyro-a 6s linear infinite;
-  transform: rotateX(68deg);
-}
-.landing-root .arko-entry-gyro-ring-b {
-  inset: 14%;
-  animation: arko-gyro-b 7.5s linear infinite;
-  transform: rotateY(68deg);
-}
-.landing-root .arko-entry-gyro-ring-c {
-  inset: 22%;
-  animation: arko-gyro-c 5s linear infinite reverse;
-  transform: rotateX(58deg) rotateY(52deg);
-}
-.landing-root .arko-entry-gyro-scan {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 48%;
-  aspect-ratio: 1;
-  border: 2px solid var(--color-ink);
-  border-radius: 50%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    rgb(10 10 10 / 20%) 0 5deg,
-    transparent 5deg 15deg
-  );
-  animation: arko-gyro-scan 2.8s ease-in-out infinite;
-  will-change: transform, opacity;
-}
-.landing-root .arko-entry-signal {
-  position: absolute;
-  display: grid;
-  width: 1.55rem;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 1px solid var(--color-ink);
-  background: var(--color-acid);
-  font: 700 0.45rem/1 monospace;
-  animation: arko-signal-pulse 1.8s ease-in-out infinite;
-}
-.landing-root .arko-entry-signal-1 {
-  left: 8%;
-  top: 27%;
-}
-.landing-root .arko-entry-signal-2 {
-  right: 10%;
-  top: 18%;
-  animation-delay: -0.45s;
-}
-.landing-root .arko-entry-signal-3 {
-  bottom: 17%;
-  left: 15%;
-  animation-delay: -0.9s;
-}
-.landing-root .arko-entry-signal-4 {
-  bottom: 25%;
-  right: 5%;
-  animation-delay: -1.35s;
 }
 .landing-root .arko-entry-card {
   --card-turn: 0deg;
@@ -1140,7 +1096,7 @@ html.system-theme-iris-transition::view-transition-old(root) {
     forwards;
   will-change: opacity;
 }
-.landing-root .arko-entry-exit .arko-entry-core-shell {
+.landing-root .arko-entry-exit .arko-entry-cube-shell {
   animation: arko-entry-portal-exit 580ms cubic-bezier(0.65, 0, 0.35, 1)
     forwards;
 }
@@ -1149,7 +1105,6 @@ html.system-theme-iris-transition::view-transition-old(root) {
   will-change: transform, opacity;
 }
 .landing-root .arko-entry-exit .arko-entry-card,
-.landing-root .arko-entry-exit .arko-entry-gyro,
 .landing-root .arko-entry-exit .arko-entry-coordinate {
   opacity: 0;
   transition: opacity 180ms ease-in;
@@ -1193,9 +1148,15 @@ html.system-theme-iris-transition::view-transition-old(root) {
   .landing-root .arko-entry-stage {
     perspective: 800px;
   }
+  .landing-root .arko-entry-cube-shell {
+    --cube-size: min(38vw, 9rem);
+  }
   .landing-root .arko-entry-word {
     font-size: clamp(6rem, 31vw, 10rem);
     -webkit-text-stroke-width: 1px;
+  }
+  .landing-root .arko-entry-wireframe-shell {
+    --wire-size: min(72vw, 22rem);
   }
   .landing-root .arko-entry-core-shell {
     width: clamp(5.5rem, 24vw, 7.5rem);
@@ -1222,10 +1183,7 @@ html.system-theme-iris-transition::view-transition-old(root) {
     font-size: 1.35rem;
   }
   .landing-root .arko-entry-core-face small {
-    font-size: 0.42rem;
-  }
-  .landing-root .arko-entry-gyro {
-    width: min(104vw, 28rem);
+    font-size: 0.4rem;
   }
   .landing-root .arko-entry-card {
     width: 7.25rem;
@@ -1244,11 +1202,14 @@ html.system-theme-iris-transition::view-transition-old(root) {
   }
 }
 @media (max-height: 600px) and (orientation: landscape) {
+  .landing-root .arko-entry-cube-shell {
+    --cube-size: min(32vh, 7rem);
+  }
+  .landing-root .arko-entry-wireframe-shell {
+    --wire-size: min(42vh, 18rem);
+  }
   .landing-root .arko-entry-core-shell {
     width: 5rem;
-  }
-  .landing-root .arko-entry-gyro {
-    width: 19rem;
   }
   .landing-root .arko-entry-card,
   .landing-root .arko-entry-coordinate {

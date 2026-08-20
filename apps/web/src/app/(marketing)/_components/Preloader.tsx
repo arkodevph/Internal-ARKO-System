@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
 export default function Preloader() {
   const [dismissed, setDismissed] = useState(false);
@@ -8,6 +14,16 @@ export default function Preloader() {
     "loading",
   );
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const dismiss = useCallback(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    }
+    setDismissed(true);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -33,7 +49,7 @@ export default function Preloader() {
         video.readyState >= 2
       ) {
         video.currentTime = 0;
-        const remaining = Math.max(0, 400 - (performance.now() - startedAt));
+        const remaining = Math.max(0, 180 - (performance.now() - startedAt));
         readyTimer = setTimeout(() => {
           if (!cancelled)
             setPhase((current) => (current === "loading" ? "ready" : current));
@@ -47,7 +63,7 @@ export default function Preloader() {
     // Safety: never trap the visitor behind media readiness.
     const safetyTimer = setTimeout(
       () => setPhase((current) => (current === "loading" ? "ready" : current)),
-      550,
+      300,
     );
 
     return () => {
@@ -66,7 +82,7 @@ export default function Preloader() {
     ).matches;
     const exitTimer = setTimeout(
       () => setPhase("exiting"),
-      reduceMotion ? 20 : 60,
+      reduceMotion ? 10 : 30,
     );
     return () => clearTimeout(exitTimer);
   }, [phase]);
@@ -76,9 +92,9 @@ export default function Preloader() {
 
     // animationend is not guaranteed when animations are cancelled during
     // hydration, tab suspension, or reduced-motion overrides.
-    const dismissTimer = setTimeout(() => setDismissed(true), 800);
+    const dismissTimer = setTimeout(dismiss, 520);
     return () => clearTimeout(dismissTimer);
-  }, [phase]);
+  }, [dismiss, phase]);
 
   if (dismissed) return null;
 
@@ -91,17 +107,19 @@ export default function Preloader() {
       aria-hidden="true"
       onAnimationEnd={(event) => {
         if (event.target === event.currentTarget && phase === "exiting")
-          setDismissed(true);
+          dismiss();
       }}
     >
-      {/* hidden video — preload + iOS unlock */}
-      <video
-        ref={videoRef}
-        muted
-        playsInline
-        preload="auto"
-        className="hidden"
-      />
+      {/* hidden video - preload + iOS unlock */}
+      <video ref={videoRef} muted playsInline preload="auto" className="hidden">
+        <track
+          kind="captions"
+          src="/decorative-captions.vtt"
+          srcLang="en"
+          label="English"
+          default
+        />
+      </video>
 
       <div className="arko-entry-panels absolute inset-0 grid grid-cols-6">
         {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -130,51 +148,34 @@ export default function Preloader() {
           ))}
         </div>
 
-        <div className="arko-entry-gyro" aria-hidden="true">
-          <span className="arko-entry-gyro-ring arko-entry-gyro-ring-a" />
-          <span className="arko-entry-gyro-ring arko-entry-gyro-ring-b" />
-          <span className="arko-entry-gyro-ring arko-entry-gyro-ring-c" />
-          <span className="arko-entry-gyro-scan" />
-          {[0, 1, 2, 3].map((index) => (
-            <i
-              key={index}
-              className={`arko-entry-signal arko-entry-signal-${index + 1}`}
-            >
-              0{index + 1}
-            </i>
-          ))}
-        </div>
-
-        <div className="arko-entry-core-shell">
-          <div className="arko-entry-core">
-            <div className="arko-entry-core-face arko-entry-core-front">
-              <span>ARKO</span>
-              <small>SYSTEM / 001</small>
+        <div className="arko-entry-cube-shell" aria-hidden="true">
+          <div className="arko-entry-cube">
+            <div className="arko-entry-cube-face arko-entry-cube-front">
+              <span className="arko-entry-cube-logo" />
+              <small>ARKO / 01</small>
             </div>
-            <div className="arko-entry-core-face arko-entry-core-back" />
-            <div className="arko-entry-core-face arko-entry-core-left" />
-            <div className="arko-entry-core-face arko-entry-core-right" />
-            <div className="arko-entry-core-face arko-entry-core-top" />
-            <div className="arko-entry-core-face arko-entry-core-bottom" />
+            <div className="arko-entry-cube-face arko-entry-cube-back">
+              <span>AI</span>
+              <small>INTELLIGENCE / 02</small>
+            </div>
+            <div className="arko-entry-cube-face arko-entry-cube-left">
+              <span>WEB</span>
+              <small>INTERFACES / 03</small>
+            </div>
+            <div className="arko-entry-cube-face arko-entry-cube-right">
+              <span>APP</span>
+              <small>MOBILE / 04</small>
+            </div>
+            <div className="arko-entry-cube-face arko-entry-cube-top">
+              <span>SYS</span>
+              <small>AUTOMATION / 05</small>
+            </div>
+            <div className="arko-entry-cube-face arko-entry-cube-bottom">
+              <span>BUILD</span>
+              <small>SHIP / 06</small>
+            </div>
           </div>
-        </div>
-
-        <div className="arko-entry-card arko-entry-card-left">
-          <span>01 / PRODUCT UI</span>
-          <div className="grid grid-cols-4 gap-1">
-            {[80, 45, 68, 92].map((height) => (
-              <i key={height} style={{ height: `${height}%` }} />
-            ))}
-          </div>
-        </div>
-
-        <div className="arko-entry-card arko-entry-card-right">
-          <span>02 / SYSTEM MAP</span>
-          <div className="relative h-10">
-            {[12, 46, 78].map((left) => (
-              <i key={left} style={{ left: `${left}%` }} />
-            ))}
-          </div>
+          <span className="arko-entry-cube-signal">LIVE SYSTEM</span>
         </div>
 
         <div className="arko-entry-coordinate left-5 top-24 md:left-10">
@@ -190,7 +191,7 @@ export default function Preloader() {
       <div className="arko-entry-top pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between border-b border-ink/25 px-4 py-4 sm:px-6 sm:py-5 md:px-10">
         <span className="display text-2xl text-ink md:text-3xl">ARKO</span>
         <span className="eyebrow max-w-[11rem] text-right text-[.55rem] text-ink/55 sm:max-w-none sm:text-xs">
-          Software studio / System boot
+          Software studio / Brand system
         </span>
       </div>
 
@@ -213,9 +214,7 @@ export default function Preloader() {
       </div>
 
       <div className="arko-entry-status eyebrow pointer-events-none absolute bottom-[7.3rem] left-4 z-30 text-[.55rem] text-ink sm:left-6 sm:text-xs md:bottom-[4.8rem] md:left-10">
-        {phase === "loading"
-          ? "Initializing spatial interface"
-          : "System ready"}
+        {phase === "loading" ? "Rendering ARKO" : "Ready"}
       </div>
     </div>
   );
