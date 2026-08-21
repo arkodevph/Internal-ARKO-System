@@ -354,9 +354,7 @@ export default async function Home() {
       {content.sections.stats && <Stats stats={content.stats} />}
       {content.sections.intro && <Intro intro={content.intro} />}
       {content.sections.services && <ScrollServices {...content.services} />}
-      {content.sections.work && (
-        <ScrollWork {...content.work} projects={content.projects.items} />
-      )}
+      {content.sections.work && <ScrollWork {...content.work} />}
       {content.sections.process && <ScrollProcess {...content.process} />}
       <TeamSection />
       <FaqSection />
