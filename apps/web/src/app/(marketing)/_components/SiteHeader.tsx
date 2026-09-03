@@ -64,12 +64,12 @@ export default function SiteHeader() {
       <div className="flex h-14 items-center justify-between px-4 md:h-20 md:px-10">
         <Link href="/" aria-label="ARKO Software Studio home">
           <Image
-            src="/icon.png"
+            src="/brand/arko-logo-wordmark.png"
             alt=""
-            width={512}
-            height={512}
+            width={991}
+            height={453}
             priority
-            className="h-10 w-10 object-contain md:h-14 md:w-14"
+            className="h-10 w-auto object-contain md:h-14"
           />
           <span className="sr-only">Arko home</span>
         </Link>

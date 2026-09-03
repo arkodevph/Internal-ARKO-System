@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       "Arko designs and ships web products, mobile apps, automation systems, and practical AI tools for growing teams.",
     images: [
       {
-        url: "/social-card?v=2",
+        url: "/social-card?v=4",
         width: 1200,
         height: 630,
         alt: "Arko Software Studio",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     title: "Arko Software Studio | Web, Mobile, Automation and AI",
     description:
       "Arko designs and ships web products, mobile apps, automation systems, and practical AI tools for growing teams.",
-    images: ["/social-card?v=2"],
+    images: ["/social-card?v=4"],
   },
 };
 

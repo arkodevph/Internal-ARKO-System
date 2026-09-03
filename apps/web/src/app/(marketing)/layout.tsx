@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [
       {
-        url: "/social-card?v=2",
+        url: "/social-card?v=4",
         width: 1200,
         height: 630,
         alt: "Arko Software Studio",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/social-card?v=2"],
+    images: ["/social-card?v=4"],
   },
 };
 

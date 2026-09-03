@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     description: "Secure member access to the private Arko workspace.",
     images: [
       {
-        url: "/social-card?v=2",
+        url: "/social-card?v=4",
         width: 1200,
         height: 630,
         alt: "Arko member access",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Arko Member Sign In | Secure Workspace Access",
     description: "Secure member access to the private Arko workspace.",
-    images: ["/social-card?v=2"],
+    images: ["/social-card?v=4"],
   },
 };
 
