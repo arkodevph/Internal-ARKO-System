@@ -81,7 +81,9 @@ describe('tasks.create subtasks', () => {
       },
     })
     const caller = tasksRouter.createCaller(c)
-    await expect(caller.create({ title: 'sub', parentId: 'p1' })).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+    await expect(
+      caller.create({ title: 'sub', dueDate: new Date('2026-10-01'), parentId: 'p1' }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
   })
 
   it('creates a subtask under a top-level parent', async () => {
@@ -93,7 +95,7 @@ describe('tasks.create subtasks', () => {
       },
     })
     const caller = tasksRouter.createCaller(c)
-    const res = await caller.create({ title: 'sub', parentId: 'p1' })
+    const res = await caller.create({ title: 'sub', dueDate: new Date('2026-10-01'), parentId: 'p1' })
     expect(res.parentId).toBe('p1')
   })
 })
@@ -102,7 +104,7 @@ describe('tasks.create project assignment', () => {
   it('persists an accessible project on the task', async () => {
     const c = ctx({ userRole: 'ADMIN' })
     const caller = tasksRouter.createCaller(c)
-    await caller.create({ title: 'Project task', projectId: 'p1' })
+    await caller.create({ title: 'Project task', dueDate: new Date('2026-10-01'), projectId: 'p1' })
     expect(c.prisma.task.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ projectId: 'p1' }),
@@ -115,7 +117,9 @@ describe('tasks.create project assignment', () => {
       clientProject: { findFirst: jest.fn().mockResolvedValue(null) },
     })
     const caller = tasksRouter.createCaller(c)
-    await expect(caller.create({ title: 'Project task', projectId: 'private' })).rejects.toMatchObject({
+    await expect(
+      caller.create({ title: 'Project task', dueDate: new Date('2026-10-01'), projectId: 'private' }),
+    ).rejects.toMatchObject({
       code: 'NOT_FOUND',
     })
   })
@@ -210,7 +214,9 @@ describe('tasks subtask authorization', () => {
       user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) },
     })
     const caller = tasksRouter.createCaller(c)
-    await expect(caller.create({ title: 'sub', parentId: 'p1' })).rejects.toMatchObject({
+    await expect(
+      caller.create({ title: 'sub', dueDate: new Date('2026-10-01'), parentId: 'p1' }),
+    ).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
     expect(c.prisma.task.create).not.toHaveBeenCalled()

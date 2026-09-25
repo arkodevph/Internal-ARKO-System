@@ -61,6 +61,7 @@ export const ideasRouter = router({
         description: idea.description ?? undefined,
         assigneeId: ctx.user.id!,
         scope: idea.scope,
+        dueDate: new Date(Date.now() + 6048e5),
       },
     })
     await ctx.prisma.idea.update({

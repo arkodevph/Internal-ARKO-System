@@ -27,6 +27,7 @@ export const PERMISSION_GROUPS = [
       ["tasks:read", "View tasks"],
       ["tasks:update", "Edit tasks"],
       ["tasks:delete", "Delete tasks"],
+      ["tasks:send-message", "Send messages via NEX"],
       ["events:create", "Create events"],
       ["events:read", "View events"],
       ["events:update", "Edit events"],
@@ -35,6 +36,7 @@ export const PERMISSION_GROUPS = [
       ["notes:read", "View notes"],
       ["notes:update", "Edit notes"],
       ["notes:delete", "Delete notes"],
+      ["tasks:create-reminder", "Create reminders via NEX"],
     ],
   },
   {
@@ -109,6 +111,8 @@ const MEMBER_PERMISSIONS: Permission[] = [
   "email-marketing:create",
   "email-marketing:update",
   "users:read",
+  "tasks:send-message",
+  "tasks:create-reminder",
 ];
 
 export const ROLE_PERMISSION_PRESETS: Record<Role, readonly Permission[]> = {
@@ -123,7 +127,10 @@ export const ROLE_PERMISSION_PRESETS: Record<Role, readonly Permission[]> = {
   ],
   MEMBER: MEMBER_PERMISSIONS,
   USER: MEMBER_PERMISSIONS.filter(
-    (permission) => !permission.startsWith("email-marketing:"),
+    (permission) =>
+      !permission.startsWith("email-marketing:") &&
+      permission !== "tasks:send-message" &&
+      permission !== "tasks:create-reminder",
   ),
   CLIENT: ["users:read"],
   DEMO: [],

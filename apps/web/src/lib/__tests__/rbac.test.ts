@@ -54,19 +54,18 @@ describe("permission presets", () => {
     const migration = readFileSync(
       resolve(
         process.cwd(),
-        "../../packages/db/prisma/migrations/20260817090000_add_user_permissions/migration.sql",
+        "../../packages/db/prisma/migrations/20260820000000_add_nex_send_and_reminder_permissions/migration.sql",
       ),
       "utf8",
     );
 
-    for (const role of ROLES.filter((item) => item !== "DEMO")) {
+    for (const role of ROLES) {
       const match = migration.match(
         new RegExp(`WHEN '${role}' THEN '(\\[[^']*\\])'::jsonb`),
       );
-      expect(match).not.toBeNull();
       expect(JSON.parse(match![1])).toEqual(defaultPermissionsForRole(role));
     }
     expect(migration).toContain("ELSE '[]'::jsonb");
-    expect(migration).toContain('WHERE "permissions" IS NULL');
+    expect(migration).toContain('WHERE "permissions" IS NOT NULL');
   });
 });

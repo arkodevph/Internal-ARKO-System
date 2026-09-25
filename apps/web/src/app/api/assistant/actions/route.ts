@@ -14,12 +14,12 @@ const ACTION_PERMISSIONS = {
   create_note: "notes:create",
   create_transaction: "transactions:create",
   create_user: "users:create",
-  send_message: null,
+  send_message: "tasks:send-message",
   complete_task: "tasks:update",
   reschedule_event: "events:update",
   update_note: "notes:update",
   update_transaction: "transactions:update",
-  create_reminder: null,
+  create_reminder: "tasks:create-reminder",
 } as const;
 
 const TRANSACTION_CATEGORY_TYPES = {
@@ -433,15 +433,16 @@ export async function POST(request: Request) {
       orderBy: { position: "desc" },
       select: { position: true },
     });
-    const task = await prisma.task.create({
-      data: {
-        title: action.data.title,
-        description: action.data.description || undefined,
-        priority: action.data.priority,
-        assigneeId: session.user.id,
-        position: (maxPosition?.position ?? -1) + 1,
-        scope: "PERSONAL",
-      },
+      const task = await prisma.task.create({
+        data: {
+          title: action.data.title,
+          description: action.data.description || undefined,
+          priority: action.data.priority,
+          dueDate: new Date(Date.now() + 6048e5),
+          assigneeId: session.user.id,
+          position: (maxPosition?.position ?? -1) + 1,
+          scope: "PERSONAL",
+        },
       select: { id: true, title: true },
     });
 

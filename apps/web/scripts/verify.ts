@@ -23,7 +23,7 @@ async function main() {
   await api.notes.delete({ id: note.id })
 
   // tasks
-  const task = await api.tasks.create({ title: 'Verify task', priority: 'HIGH' })
+  const task = await api.tasks.create({ title: 'Verify task', priority: 'HIGH', dueDate: new Date(Date.now() + 6048e5) })
   ok('tasks', `created ${task.id}, list=${(await api.tasks.list()).length}`)
 
   // ideas + spawnTask

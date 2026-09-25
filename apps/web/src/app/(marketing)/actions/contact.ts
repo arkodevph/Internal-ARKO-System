@@ -11,8 +11,8 @@ export type ContactState = {
 
 const TO = 'contact@arkodevph.com'
 const COOKIE_NAME = 'rl'
-const MAX_ATTEMPTS = 3
-const COOLDOWN_MS = 60_000
+const MAX_ATTEMPTS = 10
+const COOLDOWN_MS = 15_000
 
 // Deterministic signing key so cookies survive across Server Action calls.
 // Set RATE_LIMIT_SECRET in env for persistence across deploys.
@@ -118,62 +118,22 @@ export async function sendContact(
     }
   }
 
-  if (budget && !/^\d+$/.test(budget)) {
-    return { status: 'error', message: 'Budget must contain numbers only.' }
-  }
-
-  if (budget && !/^[A-Z]{3}$/.test(currency)) {
-    return {
-      status: 'error',
-      message: 'Use a 3-letter currency code, such as PHP or USD.',
-    }
-  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { status: 'error', message: 'That email does not look right.' }
   }
 
-  // Gibberish guard (no API needed)
-  if (message.length < 3) {
+  if (message.length < 2) {
     return {
       status: 'error',
-      message: 'Tell us a bit more about what you are building.',
+      message: 'Tell us a bit about what you are building.',
     }
   }
 
-  const words = message.trim().split(/\s+/)
-  const lower = message.toLowerCase()
-
-  // Must have at least 3 words
-  if (words.length < 3) {
-    return {
-      status: 'error',
-      message: 'Tell us a bit more about what you are building.',
-    }
-  }
-
-  // Keyboard smash / repeated chars
-  if (/(.)\1{4,}|(?:^|\s)[a-z]{1,2}(?:\s|$)/i.test(message)) {
+  // Keyboard smash / excessive repeated chars (e.g. "aaaaaaaa")
+  if (/(.)\1{7,}/i.test(message)) {
     return {
       status: 'error',
       message: 'Please write a real message - we are people, not robots.',
-    }
-  }
-
-  // Single word repeated 3+ times
-  const unique = new Set(words.map((w) => w.toLowerCase()))
-  if (unique.size <= 1) {
-    return {
-      status: 'error',
-      message: 'That does not look like a real project description.',
-    }
-  }
-
-  // Low character variety - mash patterns like "asdf", "qwerty"
-  const chars = new Set(lower.replace(/\s/g, ''))
-  if (chars.size < 4) {
-    return {
-      status: 'error',
-      message: 'Please describe your project in more detail.',
     }
   }
 

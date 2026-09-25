@@ -56,6 +56,7 @@ export default function TasksPage() {
   const [newAssignee, setNewAssignee] = useState('')
   const [newProject, setNewProject] = useState('')
   const [newScope, setNewScope] = useState<RecordScope>('PERSONAL')
+  const [newDueDate, setNewDueDate] = useState('')
   const [showAssigneeSearch, setShowAssigneeSearch] = useState(false)
   const [assigneeSearch, setAssigneeSearch] = useState('')
   const [search, setSearch] = useState('')
@@ -117,11 +118,12 @@ export default function TasksPage() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTitle.trim()) return
+    if (!newTitle.trim() || !newDueDate) return
     createTask.mutate({
       title: newTitle.trim(),
       description: newDesc.trim() || undefined,
       priority: newPriority as (typeof priorities)[number],
+      dueDate: new Date(newDueDate),
       assigneeId: newAssignee || undefined,
       projectId: newProject || undefined,
       scope: newScope,
@@ -224,6 +226,16 @@ export default function TasksPage() {
                   placeholder="What needs to be done?"
                   required
                   autoFocus
+                  className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-text-secondary">Deadline</label>
+                <input
+                  type="date"
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                  required
                   className="block w-full rounded-lg border border-border-subtle px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
@@ -696,6 +708,7 @@ function TaskDetail({
                 if (!subtaskTitle.trim()) return
                 createSubtask.mutate({
                   title: subtaskTitle.trim(),
+                  dueDate: new Date(task.dueDate),
                   parentId: task.id,
                 })
                 setSubtaskTitle('')

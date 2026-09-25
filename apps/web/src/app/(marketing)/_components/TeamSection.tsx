@@ -1,4 +1,12 @@
+'use client'
+
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Image from 'next/image'
+import { useRef } from 'react'
+
+gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 const TEAM = [
   {
@@ -36,14 +44,78 @@ const TEAM = [
 ]
 
 export default function TeamSection() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const watermarkRef = useRef<HTMLDivElement>(null)
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useGSAP(
+    () => {
+      const media = gsap.matchMedia()
+      media.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(
+          headerRef.current,
+          { y: 64, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.85,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: headerRef.current, start: 'top 82%', once: true },
+          },
+        )
+
+        gsap.fromTo(
+          cardRefs.current,
+          {
+            y: 110,
+            autoAlpha: 0,
+            rotate: (index) => (index % 2 === 0 ? -5 : 5),
+            scale: 0.88,
+          },
+          {
+            y: 0,
+            autoAlpha: 1,
+            rotate: 0,
+            scale: 1,
+            duration: 0.85,
+            stagger: 0.1,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: cardRefs.current[0], start: 'top 84%', once: true },
+          },
+        )
+
+        gsap.fromTo(
+          watermarkRef.current,
+          { xPercent: -6 },
+          {
+            xPercent: 6,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: 0.6,
+            },
+          },
+        )
+      })
+
+      return () => media.revert()
+    },
+    { scope: sectionRef },
+  )
+
   return (
     <section
+      ref={sectionRef}
       id="team"
       aria-labelledby="team-heading"
       data-bg="light"
       className="relative overflow-hidden border-y-4 border-ink bg-acid px-6 pb-0 pt-20 text-ink md:px-10 md:pt-24"
     >
       <div
+        ref={watermarkRef}
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.12]"
         style={{
@@ -58,7 +130,7 @@ export default function TeamSection() {
         THE TEAM
       </div>
       <div className="relative mx-auto max-w-[75rem]">
-        <header className="mx-auto max-w-3xl border-y-4 border-ink py-8 text-center md:py-10">
+        <header ref={headerRef} className="mx-auto max-w-3xl border-y-4 border-ink py-8 text-center md:py-10">
           <p className="eyebrow inline-flex border-2 border-ink bg-ink px-4 py-2 text-acid">
             The people behind Arko
           </p>
@@ -84,15 +156,21 @@ export default function TeamSection() {
         </div>
 
         <div className="grid grid-cols-1 items-start gap-12 sm:grid-cols-2 sm:gap-x-9 sm:gap-y-14 lg:grid-cols-4 lg:gap-7">
-          {TEAM.map((member) => (
-            <a
+          {TEAM.map((member, index) => (
+            <div
               key={member.name}
-              href={member.portfolio}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`View ${member.name}'s portfolio`}
-              className={`group relative mx-auto flex w-full max-w-56 cursor-pointer flex-col border-4 border-ink bg-paper p-2.5 pb-3.5 text-left shadow-[8px_8px_0_#0a0a0a] outline-none transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:rotate-0 hover:shadow-[12px_12px_0_#0a0a0a] focus-visible:-translate-y-1.5 focus-visible:rotate-0 focus-visible:shadow-[12px_12px_0_#0a0a0a] focus-visible:ring-4 focus-visible:ring-ink focus-visible:ring-offset-4 focus-visible:ring-offset-acid motion-reduce:transition-none ${member.offset} ${member.tilt}`}
+              ref={(element) => {
+                cardRefs.current[index] = element
+              }}
+              className={member.offset}
             >
+              <a
+                href={member.portfolio}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${member.name}'s portfolio`}
+                className={`group relative mx-auto flex w-full max-w-56 cursor-pointer flex-col border-4 border-ink bg-paper p-2.5 pb-3.5 text-left shadow-[8px_8px_0_#0a0a0a] outline-none transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:rotate-0 hover:shadow-[12px_12px_0_#0a0a0a] focus-visible:-translate-y-1.5 focus-visible:rotate-0 focus-visible:shadow-[12px_12px_0_#0a0a0a] focus-visible:ring-4 focus-visible:ring-ink focus-visible:ring-offset-4 focus-visible:ring-offset-acid motion-reduce:transition-none ${member.tilt}`}
+              >
               <div className="relative aspect-[3/4] w-full overflow-hidden border-2 border-ink bg-ink/10">
                 <Image
                   src={member.image}
@@ -127,7 +205,8 @@ export default function TeamSection() {
                   <path d="M7 17 17 7M7 7h10v10" />
                 </svg>
               </span>
-            </a>
+              </a>
+            </div>
           ))}
         </div>
 

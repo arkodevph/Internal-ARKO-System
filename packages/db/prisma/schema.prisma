@@ -34,6 +34,7 @@ model User {
   accountCategories        AccountCategory[]
   splitShares              SplitShare[]
   tasks                    Task[]
+  reviewRecords            ReviewRecord[]
   comments                 Comment[]
   workflows                Workflow[]
   conversationLinks        ConversationParticipant[]
@@ -382,7 +383,7 @@ model Task {
   scope       TransactionScope @default(PERSONAL)
   workspaceId String?
   projectId   String?
-  dueDate     DateTime?
+  dueDate     DateTime
   position    Int              @default(0)
   parentId    String?
   createdAt   DateTime         @default(now())
@@ -392,6 +393,7 @@ model Task {
   project  ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   parent   Task?          @relation("TaskDependencies", fields: [parentId], references: [id])
   subtasks Task[]         @relation("TaskDependencies")
+  reviews  ReviewRecord[]
 
   // Blocking dependencies (distinct from the parent/subtask hierarchy above).
   // `blocking`  = edges where this task blocks another (this task is the blocker).
@@ -420,6 +422,23 @@ model TaskDependency {
 
   @@unique([blockingId, blockedId])
   @@index([blockedId])
+}
+
+// A human review of a task's code, recorded before the task may move to DONE.
+// The review gate (apps/pm) refuses status=DONE unless at least one record exists.
+// `prLink` is stored raw in the MVP (no GitHub API verification).
+model ReviewRecord {
+  id         String   @id @default(cuid())
+  taskId     String
+  reviewerId String
+  prLink     String
+  createdAt  DateTime @default(now())
+
+  task     Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reviewer User @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([reviewerId])
 }
 
 enum TaskStatus {

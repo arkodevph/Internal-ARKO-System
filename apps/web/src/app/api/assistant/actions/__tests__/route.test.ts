@@ -360,6 +360,7 @@ describe('assistant action route', () => {
   })
 
   it('sends a confirmed internal message to an active user', async () => {
+    authMock.mockResolvedValue({ user: { id: 'member-1', role: 'MEMBER' } } as any)
     const response = await POST(request(validMessageAction))
 
     expect(response.status).toBe(200)
@@ -375,7 +376,7 @@ describe('assistant action route', () => {
       expect.objectContaining({
         data: {
           conversationId: 'conversation-1',
-          senderId: 'user-1',
+          senderId: 'member-1',
           content: validMessageAction.messageContent,
         },
       }),
@@ -386,7 +387,18 @@ describe('assistant action route', () => {
     })
   })
 
+  it('does not let a bare USER send a NEX message', async () => {
+    authMock.mockResolvedValue({ user: { id: 'user-1', role: 'USER' } } as any)
+
+    const response = await POST(request(validMessageAction))
+
+    expect(response.status).toBe(403)
+    expect(findRecipient).not.toHaveBeenCalled()
+    expect(createMessage).not.toHaveBeenCalled()
+  })
+
   it('rejects unavailable message recipients', async () => {
+    authMock.mockResolvedValue({ user: { id: 'member-1', role: 'MEMBER' } } as any)
     findRecipient.mockResolvedValue(null)
 
     const response = await POST(request(validMessageAction))
@@ -396,13 +408,14 @@ describe('assistant action route', () => {
   })
 
   it('creates a recurring reminder with notification lead time', async () => {
+    authMock.mockResolvedValue({ user: { id: 'member-1', role: 'MEMBER' } } as any)
     const response = await POST(request(validReminderAction))
 
     expect(response.status).toBe(200)
     expect(createReminder).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          userId: 'user-1',
+          userId: 'member-1',
           recurrence: 'WEEKLY',
           notifyMinutesBefore: 15,
         }),
@@ -413,6 +426,15 @@ describe('assistant action route', () => {
         data: expect.objectContaining({ status: 'COMPLETED' }),
       }),
     )
+  })
+
+  it('does not let a bare USER create a reminder through NEX', async () => {
+    authMock.mockResolvedValue({ user: { id: 'user-1', role: 'USER' } } as any)
+
+    const response = await POST(request(validReminderAction))
+
+    expect(response.status).toBe(403)
+    expect(createReminder).not.toHaveBeenCalled()
   })
 
   it('completes an accessible task only after confirmation', async () => {

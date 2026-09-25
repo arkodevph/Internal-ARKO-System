@@ -95,7 +95,7 @@ export const tasksRouter = router({
         title: z.string().min(1),
         description: z.string().optional(),
         priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
-        dueDate: z.date().optional(),
+        dueDate: z.date({ required_error: 'Deadline is required' }),
         assigneeId: z.string().optional(),
         parentId: z.string().optional(),
         projectId: z.string().optional(),

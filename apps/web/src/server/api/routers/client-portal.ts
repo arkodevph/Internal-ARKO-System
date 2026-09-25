@@ -401,6 +401,7 @@ export const clientPortalRouter = router({
             description: request.description,
             assigneeId: ctx.user.id!,
             priority: 'MEDIUM',
+            dueDate: new Date(Date.now() + 6048e5),
           },
         }),
       ])

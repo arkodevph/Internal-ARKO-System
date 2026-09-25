@@ -14,6 +14,8 @@ import FaqSection from "./_components/FaqSection";
 import TeamSection from "./_components/TeamSection";
 import { getLandingContent } from "../../lib/landing/get-content";
 import type { LandingContent } from "../../lib/landing/content";
+import { getLandingTheme } from "../../lib/landing/theme";
+import InkLanding from "./_components/ink/InkLanding";
 
 function Hero({ hero }: { hero: LandingContent["hero"] }) {
   return (
@@ -77,27 +79,55 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
 }
 
 function Stats({ stats }: { stats: LandingContent["stats"] }) {
+  const visibleStats = stats.filter((stat) => stat.displayText !== "");
+  const notes = [
+    "Strategy, design, engineering, and automation.",
+    "Web and mobile shaped as one product system.",
+    "Direct access to the people building your product.",
+  ];
+
   return (
-    <section className="grid grid-cols-2 border-b-4 border-ink bg-ink md:grid-cols-4">
-      {stats.map((s, i) => (
-        <div
-          key={s.label}
-          className={`border-acid/20 p-8 md:p-10 ${i !== 0 ? "border-l-4" : ""} ${i < 2 ? "border-b-4 md:border-b-0" : ""}`}
-        >
-          {s.displayText !== undefined ? (
-            <span className="display text-5xl text-acid md:text-6xl">
-              {s.displayText}
-            </span>
-          ) : (
-            <CountUp
-              to={s.to}
-              suffix={s.suffix}
-              className="display text-5xl text-acid md:text-6xl"
-            />
-          )}
-          <div className="eyebrow mt-3 text-white/55">{s.label}</div>
+    <section className="border-b-4 border-ink bg-ink text-white">
+      <div className="grid border-b border-acid/20 md:grid-cols-[1.15fr_1fr]">
+        <div className="border-acid/20 px-6 py-14 md:border-r md:px-10 md:py-20">
+          <p className="eyebrow mb-6 text-acid/60">Small studio by design</p>
+          <h2 className="display text-[clamp(3.25rem,8vw,7.5rem)] leading-[0.82]">
+            One team.
+            <br />
+            <span className="text-acid">Zero handoffs.</span>
+          </h2>
         </div>
-      ))}
+        <div className="flex items-end px-6 py-10 md:px-10 md:py-20">
+          <p className="max-w-xl text-lg font-medium leading-relaxed text-white/65 md:text-2xl">
+            From the first sketch to launch day, you work with the same people
+            making the decisions and writing the code.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3">
+        {visibleStats.map((stat, index) => (
+          <ScrollReveal key={stat.label} delay={index * 0.08} className="h-full">
+            <article
+              className={`group relative h-full min-h-64 overflow-hidden border-acid/20 px-6 py-8 md:min-h-80 md:px-10 md:py-10 ${index > 0 ? "border-t md:border-l md:border-t-0" : ""}`}
+            >
+              <span className="eyebrow text-white/35">0{index + 1}</span>
+              <CountUp
+                to={stat.to}
+                suffix={stat.suffix}
+                className="display mt-8 block text-[clamp(5rem,10vw,9rem)] leading-none text-acid"
+              />
+              <h3 className="display mt-5 max-w-xs text-2xl uppercase text-white md:text-3xl">
+                {stat.label}
+              </h3>
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/45 md:text-base">
+                {notes[index]}
+              </p>
+              <div className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-acid transition-transform duration-500 group-hover:scale-x-100" />
+            </article>
+          </ScrollReveal>
+        ))}
+      </div>
     </section>
   );
 }
@@ -346,7 +376,10 @@ function Footer({ footer }: { footer: LandingContent["footer"] }) {
 }
 
 export default async function Home() {
-  const content = await getLandingContent();
+  const [content, theme] = await Promise.all([getLandingContent(), getLandingTheme()]);
+  if (theme === "ink") {
+    return <><LandingViewTracker /><InkLanding content={content} /></>;
+  }
   return (
     <>
       <LandingViewTracker />

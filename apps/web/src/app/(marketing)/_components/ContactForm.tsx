@@ -19,6 +19,7 @@ const PROJECT_TYPES = [
   "Mobile app",
   "Automation",
   "AI feature",
+  "Other",
 ] as const;
 
 function readPersisted(): ContactState | null {
@@ -185,7 +186,6 @@ export default function ContactForm() {
                 name="projectType"
                 value={type}
                 aria-label={type}
-                required
               />
               <span className="mono flex min-h-12 items-center justify-between border border-white/15 px-3 text-[0.62rem] font-bold uppercase tracking-wider text-white/50 transition-all group-hover:border-acid/50 group-hover:text-white peer-checked:border-acid peer-checked:bg-acid peer-checked:text-ink">
                 {type}
@@ -245,9 +245,8 @@ export default function ContactForm() {
               aria-label="Budget currency"
               defaultValue="PHP"
               list="budget-currencies"
-              maxLength={3}
-              pattern="[A-Za-z]{3}"
-              title="Enter a 3-letter currency code, such as PHP, USD, or EUR"
+              maxLength={6}
+              title="Enter currency code or symbol (e.g. PHP, USD, EUR, ₱, $)"
               className="w-16 shrink-0 border-r border-white/10 bg-ink px-2 text-base font-semibold text-acid outline-none sm:w-[4.75rem] sm:text-xs"
             />
             <datalist id="budget-currencies">
@@ -258,15 +257,13 @@ export default function ContactForm() {
               <option value="AUD" />
               <option value="SGD" />
               <option value="JPY" />
+              <option value="CAD" />
             </datalist>
             <input
               name="budget"
               aria-label="Working budget amount"
-              type="number"
-              min="0"
-              step="1"
-              inputMode="numeric"
-              placeholder="Enter an amount"
+              type="text"
+              placeholder="e.g. 50k or 50,000"
               className="min-w-0 flex-1 bg-transparent px-3 text-base font-medium text-white outline-none placeholder:text-white/20 sm:px-4 sm:text-sm"
             />
           </span>

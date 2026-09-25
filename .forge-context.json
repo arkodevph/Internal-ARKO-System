@@ -1,30 +1,30 @@
 {
   "root": "/home/nami/Desktop/projects/arko",
-  "scanned_at": "2026-08-09T11:45:00Z",
+  "scanned_at": "2026-08-17T00:00:00Z",
   "findings": [
     {
-      "fact": "The targeted marketing workspace uses Next.js 15.5.19, React 19.2.7, Tailwind CSS 4, GSAP 3.15, and Motion 12.42",
-      "source": "apps/web/package.json"
+      "fact": "ARKO is a pnpm/Turbo monorepo; the user-management feature is in the apps/web Next.js 15.5, React 19, Tailwind CSS 4, tRPC 11, NextAuth 5 beta, and Jest workspace, backed by the packages/db Prisma 6 workspace",
+      "source": "package.json, apps/web/package.json, packages/db/package.json"
     },
     {
-      "fact": "Relevant installed Next.js guides must be read before code changes and deprecations must be heeded",
+      "fact": "User authorization is currently based on a Prisma Role enum and a hard-coded role-to-permission map; ADMIN grants every permission through a wildcard",
+      "source": "packages/db/prisma/schema.prisma, apps/web/src/lib/rbac.ts"
+    },
+    {
+      "fact": "The admin-only user API creates users with a fixed role, updates roles, increments authVersion on access changes, and manages ACTIVE, RESTRICTED, and SUSPENDED account status",
+      "source": "apps/web/src/server/api/routers/users.ts"
+    },
+    {
+      "fact": "Only ACTIVE users may sign in or retain a session; role and authVersion are refreshed from the database",
+      "source": "apps/web/src/lib/auth.ts"
+    },
+    {
+      "fact": "The user-management UI currently presents fixed permission-level buttons and uses existing semantic theme tokens and responsive modal/page patterns",
+      "source": "apps/web/src/app/dashboard/users/page.tsx"
+    },
+    {
+      "fact": "Relevant installed Next.js documentation must be read before code changes",
       "source": "AGENTS.md"
-    },
-    {
-      "fact": "The preloader currently waits for services.mp4, exposes loading and ready states, and dismisses through a 700ms clip-path wipe",
-      "source": "apps/web/src/app/(marketing)/_components/Preloader.tsx"
-    },
-    {
-      "fact": "The transparent pipeline PNG is absolutely positioned along the bottom of the contact section and visibly overlaps the contact form submit area in the supplied screenshot",
-      "source": "apps/web/src/app/(marketing)/page.tsx and user screenshot"
-    },
-    {
-      "fact": "The footer already uses ARKO's acid/ink palette, hard grid borders, oversized typography, Squares texture, and a transparent system-core bitmap",
-      "source": "apps/web/src/app/(marketing)/page.tsx"
-    },
-    {
-      "fact": "Marketing reduced-motion rules collapse animations and transitions to near-zero duration",
-      "source": "apps/web/src/app/globals.css"
     }
   ],
   "workspaces": [

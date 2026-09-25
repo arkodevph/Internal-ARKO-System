@@ -12,7 +12,6 @@ export function ServiceWorkerCleanup() {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
 
     navigator.serviceWorker.getRegistrations().then((regs) => {
-      if (regs.length === 0) return
       Promise.all(regs.map((r) => r.unregister()))
         .then(() =>
           typeof caches !== 'undefined'
@@ -21,7 +20,7 @@ export function ServiceWorkerCleanup() {
         )
         .then(() => {
           // A worker was controlling this page; reload once to get fresh assets.
-          if (navigator.serviceWorker.controller) window.location.reload()
+          if (regs.length > 0 && navigator.serviceWorker.controller) window.location.reload()
         })
         .catch(() => {})
     })

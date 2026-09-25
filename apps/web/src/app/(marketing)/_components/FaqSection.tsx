@@ -1,4 +1,12 @@
+'use client'
+
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Link from 'next/link'
+import { useRef } from 'react'
+
+gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 const FAQS: { q: string; a: string }[] = [
   {
@@ -28,6 +36,44 @@ const FAQS: { q: string; a: string }[] = [
 ]
 
 export default function FaqSection() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const headingRef = useRef<HTMLDivElement>(null)
+  const rowRefs = useRef<(HTMLDetailsElement | null)[]>([])
+
+  useGSAP(
+    () => {
+      const media = gsap.matchMedia()
+      media.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(
+          headingRef.current,
+          { x: -56, autoAlpha: 0 },
+          {
+            x: 0,
+            autoAlpha: 1,
+            duration: 0.8,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: headingRef.current, start: 'top 82%', once: true },
+          },
+        )
+        gsap.fromTo(
+          rowRefs.current,
+          { x: 52, autoAlpha: 0 },
+          {
+            x: 0,
+            autoAlpha: 1,
+            duration: 0.7,
+            stagger: 0.08,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: rowRefs.current[0], start: 'top 86%', once: true },
+          },
+        )
+      })
+
+      return () => media.revert()
+    },
+    { scope: sectionRef },
+  )
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -40,6 +86,7 @@ export default function FaqSection() {
 
   return (
     <section
+      ref={sectionRef}
       id="faq"
       aria-labelledby="faq-heading"
       className="border-t-4 border-acid bg-ink px-6 py-24 text-white md:px-10 md:py-32"
@@ -49,7 +96,7 @@ export default function FaqSection() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="mx-auto grid max-w-[90rem] gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-        <div className="lg:sticky lg:top-28 lg:self-start">
+        <div ref={headingRef} className="lg:sticky lg:top-28 lg:self-start">
           <p className="eyebrow text-acid">FAQ</p>
           <h2
             id="faq-heading"
@@ -72,9 +119,12 @@ export default function FaqSection() {
         </div>
 
         <div className="border-t-2 border-white/15">
-          {FAQS.map((item) => (
+          {FAQS.map((item, index) => (
             <details
               key={item.q}
+              ref={(element) => {
+                rowRefs.current[index] = element
+              }}
               className="group border-b-2 border-white/15"
             >
               <summary className="flex cursor-pointer items-center justify-between gap-6 py-6 text-left [&::-webkit-details-marker]:hidden">

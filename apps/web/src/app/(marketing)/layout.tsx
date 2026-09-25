@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import SiteHeader from "./_components/SiteHeader";
-import SmoothScrollProvider from "./_components/SmoothScrollProvider";
-import Preloader from "./_components/Preloader";
-import StickyMobileCta from "./_components/StickyMobileCta";
-import MarketingPageTransition from "./_components/MarketingPageTransition";
-import FloatingAssistant from "./_components/FloatingAssistant";
+import MarketingShell from "./_components/MarketingShell";
+import { getLandingTheme } from "@/lib/landing/theme";
 
 const TITLE = "Arko - We build web, mobile, automation and AI";
 const DESCRIPTION =
@@ -82,30 +78,16 @@ const SCHEMA_JSONLD = {
   ],
 };
 
-export default function MarketingLayout({
+export default async function MarketingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="landing-root">
+    <MarketingShell theme={await getLandingTheme()}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_JSONLD) }}
       />
-      <Preloader />
-      <a
-        href="#main-content"
-        className="sr-only z-[200] bg-ink px-4 py-3 text-acid focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
-      >
-        Skip to main content
-      </a>
-      <MarketingPageTransition>
-        <SmoothScrollProvider>
-          <SiteHeader />
-          <main id="main-content">{children}</main>
-        </SmoothScrollProvider>
-        <FloatingAssistant />
-        <StickyMobileCta />
-      </MarketingPageTransition>
-    </div>
+      {children}
+    </MarketingShell>
   );
 }
