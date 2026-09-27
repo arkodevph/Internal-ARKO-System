@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import HeroCharacter from "./_components/HeroCharacter";
 import CountUp from "./_components/CountUp";
 import RotatingText from "./_components/RotatingText";
 import ScrollServices from "./_components/ScrollServices";
@@ -14,28 +14,14 @@ import FaqSection from "./_components/FaqSection";
 import TeamSection from "./_components/TeamSection";
 import { getLandingContent } from "../../lib/landing/get-content";
 import type { LandingContent } from "../../lib/landing/content";
-import { getLandingTheme } from "../../lib/landing/theme";
-import InkLanding from "./_components/ink/InkLanding";
 
 function Hero({ hero }: { hero: LandingContent["hero"] }) {
   return (
     <section
       id="top"
       data-bg="light"
-      className="relative overflow-hidden bg-acid text-ink"
+      className="relative bg-acid text-ink"
     >
-      <div className="absolute inset-y-0 right-0 hidden w-[42vw] overflow-hidden lg:block">
-        <div className="absolute inset-0 flex items-center justify-center p-16">
-          <Image
-            src="/brand/arko-logo-3d.png"
-            alt="Arko"
-            width={512}
-            height={512}
-            priority
-            className="h-auto w-full max-w-[34rem] object-contain drop-shadow-[0_1.75rem_1.25rem_rgba(0,0,0,0.45)]"
-          />
-        </div>
-      </div>
       <div className="relative z-10">
         <div className="px-6 pb-16 pt-32 md:px-10 md:pb-24 md:pt-44 lg:pr-[44vw]">
           <p className="eyebrow mb-6 text-ink/70">{hero.eyebrow}</p>
@@ -55,24 +41,15 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
             </p>
             <HeroFunnel />
           </div>
-          <div className="relative mt-8 aspect-[4/3] lg:hidden">
-            <div className="absolute inset-0 flex items-center justify-center p-10">
-              <Image
-                src="/brand/arko-logo-3d.png"
-                alt="Arko"
-                width={512}
-                height={512}
-                className="h-full w-full object-contain drop-shadow-[0_1.25rem_.9rem_rgba(0,0,0,0.45)]"
-              />
-            </div>
-          </div>
         </div>
       </div>
-      <div
-        aria-hidden
-        className="display pointer-events-none absolute -bottom-10 right-0 select-none text-[22vw] leading-none text-ink/10"
-      >
-        ARKO
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="display absolute -bottom-10 right-0 select-none text-[22vw] leading-none text-ink/10">
+          ARKO
+        </div>
+      </div>
+      <div className="pointer-events-none absolute bottom-0 right-[6%] w-[min(46vw,560px)]">
+        <HeroCharacter className="translate-y-[18%]" />
       </div>
     </section>
   );
@@ -376,10 +353,7 @@ function Footer({ footer }: { footer: LandingContent["footer"] }) {
 }
 
 export default async function Home() {
-  const [content, theme] = await Promise.all([getLandingContent(), getLandingTheme()]);
-  if (theme === "ink") {
-    return <><LandingViewTracker /><InkLanding content={content} /></>;
-  }
+  const content = await getLandingContent();
   return (
     <>
       <LandingViewTracker />

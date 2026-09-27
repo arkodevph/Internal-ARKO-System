@@ -18,6 +18,7 @@ import {
   ArrowUpDown,
   Folder,
   CalendarDays,
+  GitPullRequest,
 } from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import { CommentThread } from './comment-thread'
@@ -115,6 +116,10 @@ export default function TasksPage() {
   const removeDependency = api.tasks.removeDependency.useMutation({
     onSuccess: () => utils.tasks.list.invalidate(),
   })
+  const recordReview = api.tasks.recordReview.useMutation({
+    onError: (e) => setNotice(e.message),
+    onSuccess: () => utils.tasks.list.invalidate(),
+  })
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -148,8 +153,8 @@ export default function TasksPage() {
     <div className="tasks-reference mx-auto max-w-[1600px] space-y-5">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Projects</h1>
-          <p className="text-sm text-text-tertiary mt-1">Plan work, track progress, and move tasks through delivery.</p>
+          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Tasks & PM</h1>
+          <p className="text-sm text-text-tertiary mt-1">One delivery board. Personal tasks need a recorded review before Done.</p>
         </div>
         <Button className="rounded-full px-5" onClick={() => setShowNew(!showNew)}>
           <Plus className="h-4 w-4" />
@@ -497,6 +502,12 @@ export default function TasksPage() {
                                       Blocked
                                     </span>
                                   )}
+                                  {task.scope === 'PERSONAL' && task.status === 'REVIEW' && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                                      <GitPullRequest className="h-2.5 w-2.5" />
+                                      {task.reviews.length ? `Reviewed ×${task.reviews.length}` : 'Review needed'}
+                                    </span>
+                                  )}
                                   {/* Comment-count badge intentionally deferred: Comment has no FK
                                   to Task (generic resourceType/resourceId), so a per-card count
                                   needs a batched count proc - out of scope for this story. */}
@@ -567,6 +578,7 @@ export default function TasksPage() {
             createSubtask={createSubtask}
             addDependency={addDependency}
             removeDependency={removeDependency}
+            recordReview={recordReview}
           />
         )}
       </div>
@@ -586,6 +598,7 @@ function TaskDetail({
   createSubtask,
   addDependency,
   removeDependency,
+  recordReview,
 }: any) {
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description ?? '')
@@ -596,6 +609,7 @@ function TaskDetail({
   const [depSearch, setDepSearch] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [attachRefresh, setAttachRefresh] = useState(0)
+  const [reviewLink, setReviewLink] = useState('')
 
   const subs = task.subtasks ?? []
   const deps = (task.blockedBy ?? []).map((d: any) => d.blocking).filter(Boolean)
@@ -671,6 +685,33 @@ function TaskDetail({
         <Button onClick={saveEdits} disabled={updateTask.isPending || !canManage}>
           {updateTask.isPending ? 'Saving...' : 'Save changes'}
         </Button>
+
+        {task.scope === 'PERSONAL' && (
+          <div className="border-t border-border-subtle pt-4">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
+              <GitPullRequest className="h-4 w-4 text-primary-400" /> PM review
+            </h3>
+            <p className="mt-1 text-xs text-text-tertiary">A recorded review and PR link are required before moving this task to Done.</p>
+            {task.reviews.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {task.reviews.map((review: any) => (
+                  <li key={review.id} className="rounded-lg border border-border-subtle p-2 text-xs text-text-secondary">
+                    <span>{review.reviewer?.name ?? review.reviewer?.email ?? 'Reviewer'} · {new Date(review.createdAt).toLocaleString()}</span>
+                    {/^https?:\/\//.test(review.prLink) && <a href={review.prLink} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-primary-400 hover:underline">{review.prLink}</a>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {task.status === 'REVIEW' && canManage && (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input type="url" value={reviewLink} onChange={(e) => setReviewLink(e.target.value)} placeholder="https://github.com/owner/repo/pull/1" aria-label="Reviewed pull request URL" className="min-h-10 min-w-0 flex-1 rounded-lg border border-border-subtle px-3 text-xs text-text-primary focus:border-primary-500 focus:outline-none" />
+                <Button disabled={!reviewLink.trim() || recordReview.isPending || updateStatus.isPending} onClick={() => recordReview.mutate({ taskId: task.id, prLink: reviewLink.trim() }, { onSuccess: () => { setReviewLink(''); updateStatus.mutate({ id: task.id, status: 'DONE' }) } })}>
+                  {recordReview.isPending ? 'Recording...' : 'Approve & complete'}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Subtasks */}
         <div className="border-t border-border-subtle pt-4">

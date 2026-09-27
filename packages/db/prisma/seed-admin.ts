@@ -1,35 +1,41 @@
-import { prisma } from '../src/index'
 import { hash } from 'bcryptjs'
+import { prisma } from '../src/index'
 
-async function main() {
-  const email = 'admin@arko.app'
-  const password = 'admin123'
-
-  const existing = await prisma.user.findUnique({ where: { email } })
-
-  if (existing) {
-    await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } })
-    console.log(`✓ Upgraded ${email} to ADMIN`)
-  } else {
-    const hashed = await hash(password, 12)
-    await prisma.user.create({
-      data: { name: 'Admin', email, password: hashed, role: 'ADMIN' },
-    })
-    console.log(`✓ Created admin account: ${email} / ${password}`)
+function isLocalDatabase(value: string | undefined) {
+  if (!value) return false
+  try {
+    const url = new URL(value)
+    return ['127.0.0.1', 'localhost', '::1'].includes(url.hostname)
+  } catch {
+    return false
   }
-
-  const users = await prisma.user.findMany({
-    select: { email: true, name: true, role: true },
-  })
-  console.log('\nAll users:')
-  for (const u of users) {
-    console.log(`  ${u.email.padEnd(25)} ${u.role.padEnd(8)} ${u.name ?? ''}`)
-  }
-
-  await prisma.$disconnect()
 }
 
-main().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+async function main() {
+  if (!isLocalDatabase(process.env.DATABASE_URL) || !isLocalDatabase(process.env.DIRECT_URL)) {
+    throw new Error('Local admin seeding is only allowed with localhost DATABASE_URL and DIRECT_URL.')
+  }
+
+  const email = process.env.LOCAL_SEED_EMAIL?.trim().toLowerCase()
+  const password = process.env.LOCAL_SEED_PASSWORD
+  if (!email || !password || password.length < 20) {
+    throw new Error('Set LOCAL_SEED_EMAIL and a 20+ character LOCAL_SEED_PASSWORD in the ignored development env file.')
+  }
+
+  const hashed = await hash(password, 12)
+  await prisma.user.upsert({
+    where: { email },
+    create: { name: 'Local Admin', email, password: hashed, role: 'ADMIN', status: 'ACTIVE' },
+    update: { password: hashed, role: 'ADMIN', status: 'ACTIVE' },
+  })
+  console.log(`Local admin seeded: ${email}. Password is in apps/web/.env.development.local.`)
+}
+
+main()
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : 'Local admin seeding failed.')
+    process.exitCode = 1
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

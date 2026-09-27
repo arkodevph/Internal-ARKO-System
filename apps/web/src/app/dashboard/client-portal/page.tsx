@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { api } from "../../../lib/trpc/client";
 import { hasPermission } from "../../../lib/rbac";
+import { RequestRepositoryProgress } from "./RequestRepositoryProgress";
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -198,9 +199,19 @@ export default function ClientPortalPage() {
               Welcome, {profile?.name ?? "Client"}
             </h1>
             <p className="mt-1 text-sm text-text-tertiary">
-              Follow delivery, review milestones, approve work, and talk
-              directly with your assigned ARKO team.
+              Track requests and delivery in one place, review milestones, and
+              talk directly with your ARKO team.
             </p>
+            {isClient && openRequests.length > 0 && (
+              <a
+                href="#request-progress"
+                className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-primary-400 hover:text-primary-300"
+              >
+                View {openRequests.length} active{" "}
+                {openRequests.length === 1 ? "request" : "requests"}
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            )}
           </div>
         </div>
       </section>
@@ -259,6 +270,44 @@ export default function ClientPortalPage() {
           </CardContent>
         </Card>
       </div>
+
+      {isClient && openRequests.length > 0 && (
+        <section
+          className="rounded-2xl border border-primary-500/20 bg-primary-500/[0.04] p-5 sm:p-6"
+          aria-labelledby="request-snapshot-heading"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary-400">
+                Your delivery snapshot
+              </p>
+              <h2
+                id="request-snapshot-heading"
+                className="mt-2 truncate text-lg font-semibold text-text-primary"
+              >
+                {openRequests[0].title}
+              </h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                {openRequests[0].progressTotal
+                  ? `${openRequests[0].progressCompleted ?? 0} of ${openRequests[0].progressTotal} checklist items done`
+                  : "Your ARKO team will share checklist progress here when connected."}
+              </p>
+              {openRequests[0].commitUpdates[0] && (
+                <p className="mt-2 line-clamp-2 text-xs text-text-tertiary">
+                  Latest: {openRequests[0].commitUpdates[0].subject}
+                </p>
+              )}
+            </div>
+            <a
+              href="#request-progress"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 self-start rounded-lg border border-primary-500/25 px-4 text-sm font-semibold text-primary-400 transition-colors hover:bg-primary-500/10 sm:self-auto"
+            >
+              See request updates
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </section>
+      )}
 
       {isAdmin && (
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -1084,65 +1133,81 @@ export default function ClientPortalPage() {
       )}
 
       {(requests?.length ?? 0) > 0 && (
-        <section>
-          <h2 className="text-base font-semibold text-text-primary">
-            Request history
-          </h2>
-          <div className="mt-3 overflow-hidden rounded-xl border border-border-subtle bg-card">
+        <section id="request-progress" className="scroll-mt-24">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-text-primary">
+                Requests & delivery
+              </h2>
+              <p className="mt-1 text-xs text-text-tertiary">
+                Checklist progress and updates from connected repositories.
+              </p>
+            </div>
+            <span className="text-xs tabular-nums text-text-tertiary">
+              {openRequests.length} active · {requests?.length ?? 0} total
+            </span>
+          </div>
+          <div className="mt-3 space-y-3">
             {requests?.map((request) => (
-              <div
+              <article
                 key={request.id}
-                className="flex items-center gap-3 border-b border-border-subtle px-4 py-3 last:border-b-0"
+                className="overflow-hidden rounded-xl border border-border-subtle bg-card"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-text-primary">
-                    {request.title}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-text-tertiary">
-                    {isClient
-                      ? (request.project?.name ?? "General request")
-                      : `${request.client.name ?? request.client.email} · ${request.project?.name ?? "General request"}`}
-                  </p>
-                </div>
-                {isAdmin ? (
-                  <div className="flex items-center gap-2">
-                    {request.taskId ? (
-                      <span className="rounded-full bg-primary-500/10 px-2 py-1 text-[10px] font-semibold text-primary-400">
-                        Internal task created
-                      </span>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          convertRequest.mutate({ id: request.id })
-                        }
-                      >
-                        Convert to task
-                      </Button>
-                    )}
-                    <select
-                      value={request.status}
-                      onChange={(event) =>
-                        updateRequest.mutate({
-                          id: request.id,
-                          status: event.target.value as
-                            "OPEN" | "IN_PROGRESS" | "RESOLVED",
-                        })
-                      }
-                      className="rounded-md border border-border-subtle px-2 py-1.5 text-xs"
-                    >
-                      <option value="OPEN">Open</option>
-                      <option value="IN_PROGRESS">In progress</option>
-                      <option value="RESOLVED">Resolved</option>
-                    </select>
+                <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text-primary">
+                      {request.title}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-text-tertiary">
+                      {isClient
+                        ? (request.project?.name ?? "General request")
+                        : `${request.client.name ?? request.client.email} · ${request.project?.name ?? "General request"}`}
+                    </p>
                   </div>
-                ) : (
-                  <span className="rounded-full bg-primary-500/10 px-2 py-1 text-[10px] font-semibold text-primary-400">
-                    {request.status.replace("_", " ")}
-                  </span>
-                )}
-              </div>
+                  {isAdmin ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {request.taskId ? (
+                        <span className="rounded-full bg-primary-500/10 px-2 py-1 text-[10px] font-semibold text-primary-400">
+                          Internal task created
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            convertRequest.mutate({ id: request.id })
+                          }
+                        >
+                          Convert to task
+                        </Button>
+                      )}
+                      <select
+                        value={request.status}
+                        onChange={(event) =>
+                          updateRequest.mutate({
+                            id: request.id,
+                            status: event.target.value as
+                              "OPEN" | "IN_PROGRESS" | "RESOLVED",
+                          })
+                        }
+                        className="rounded-md border border-border-subtle px-2 py-1.5 text-xs"
+                      >
+                        <option value="OPEN">Open</option>
+                        <option value="IN_PROGRESS">In progress</option>
+                        <option value="RESOLVED">Resolved</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <span className="rounded-full bg-primary-500/10 px-2 py-1 text-[10px] font-semibold text-primary-400">
+                      {request.status.replace("_", " ")}
+                    </span>
+                  )}
+                </div>
+                <RequestRepositoryProgress
+                  request={request}
+                  isAdmin={isAdmin}
+                />
+              </article>
             ))}
           </div>
         </section>

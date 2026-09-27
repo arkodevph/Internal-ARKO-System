@@ -48,18 +48,21 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(path, internalUrl))
     }
     if (path === '/dashboard/finance' || path.startsWith('/dashboard/finance/')) {
-      return NextResponse.redirect(new URL('/', financeUrl))
+      return NextResponse.redirect(new URL(path, internalUrl))
     }
     if (path.startsWith('/dashboard') || path.startsWith('/auth') || path === '/login') {
       return NextResponse.redirect(new URL(path === '/login' ? '/auth/login' : path, internalUrl))
     }
     if ((path === '/api' || path.startsWith('/api/')) &&
-        path !== '/api/landing/view' && path !== '/api/assistant/public-chat') {
+        path !== '/api/landing/view' && path !== '/api/landing/content' && path !== '/api/assistant/public-chat') {
       if (path.startsWith('/api/email-marketing/unsubscribe/')) {
         return NextResponse.redirect(new URL(path, internalUrl))
       }
       return new NextResponse(null, { status: 404 })
     }
+  }
+  if (process.env.ARKO_SURFACE === 'unified' && path === '/') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
   if (process.env.ARKO_SURFACE === 'internal') {
     if (path === '/') return NextResponse.redirect(new URL('/dashboard', request.url))

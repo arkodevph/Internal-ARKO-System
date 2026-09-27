@@ -37,9 +37,11 @@ services:
   - type: web
     name: arko-site
     plan: free
-    autoDeployTrigger: off
+    autoDeployTrigger: checksPass
     runtime: node
     region: singapore
+    domains:
+      - arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
     startCommand: pnpm --filter @arko/web exec next start -p $PORT
     buildFilter:
@@ -51,13 +53,11 @@ services:
       - key: ARKO_SURFACE
         value: site
       - key: NEXT_PUBLIC_APP_URL
-        value: https://arko-site.onrender.com
+        value: https://arkodevph.com
       - key: ARKO_API_URL
-        value: https://arko-api.onrender.com
-      - key: ARKO_INTERNAL_URL
         value: https://arko-internal.onrender.com
-      - key: ARKO_FINANCE_URL
-        value: https://arko-finance.onrender.com
+      - key: ARKO_INTERNAL_URL
+        value: https://app.arkodevph.com
       - key: AUTH_SECRET
         generateValue: true
       - key: RATE_LIMIT_SECRET
@@ -71,6 +71,8 @@ services:
     autoDeployTrigger: checksPass
     runtime: node
     region: singapore
+    domains:
+      - app.arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
     startCommand: pnpm --filter @arko/web exec next start -p $PORT
     healthCheckPath: /health
@@ -85,9 +87,9 @@ services:
       - key: ARKO_SURFACE
         value: unified
       - key: AUTH_URL
-        value: https://arko-internal.onrender.com
+        value: https://app.arkodevph.com
       - key: NEXT_PUBLIC_APP_URL
-        value: https://arko-internal.onrender.com
+        value: https://app.arkodevph.com
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
@@ -97,6 +99,8 @@ services:
       - key: RATE_LIMIT_SECRET
         generateValue: true
       - key: CRON_SECRET
+        sync: false
+      - key: GITHUB_TOKEN
         sync: false
       - key: RESEND_API_KEY
         sync: false

@@ -1,9 +1,9 @@
-import { describe, expect, it, jest } from '@jest/globals'
-import { clientPortalRouter } from '../client-portal'
+import { describe, expect, it, jest } from "@jest/globals";
+import { clientPortalRouter } from "../client-portal";
 
-function context(role: 'ADMIN' | 'USER' | 'CLIENT', userId = 'user-1') {
+function context(role: "ADMIN" | "USER" | "CLIENT", userId = "user-1") {
   return {
-    user: { id: userId, name: 'Test User' },
+    user: { id: userId, name: "Test User" },
     session: { user: { id: userId } },
     userRole: role,
     prisma: {
@@ -14,31 +14,45 @@ function context(role: 'ADMIN' | 'USER' | 'CLIENT', userId = 'user-1') {
         findFirst: jest.fn(async () => null),
       },
     },
-  } as any
+  } as any;
 }
 
-describe('client portal access control', () => {
-  it('scopes client projects to the signed-in client', async () => {
-    const ctx = context('CLIENT', 'client-1')
+describe("client portal access control", () => {
+  it("scopes client projects to the signed-in client", async () => {
+    const ctx = context("CLIENT", "client-1");
 
-    await clientPortalRouter.createCaller(ctx).dashboard()
+    await clientPortalRouter.createCaller(ctx).dashboard();
 
     expect(ctx.prisma.clientProject.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { clientId: 'client-1' } }),
-    )
-  })
+      expect.objectContaining({ where: { clientId: "client-1" } }),
+    );
+  });
 
-  it('rejects regular users from the portal', async () => {
-    await expect(clientPortalRouter.createCaller(context('USER')).dashboard())
-      .rejects.toMatchObject({ code: 'FORBIDDEN' })
-  })
-
-  it('prevents a client from reviewing another client deliverable', async () => {
+  it("rejects regular users from the portal", async () => {
     await expect(
-      clientPortalRouter.createCaller(context('CLIENT')).reviewDeliverable({
-        id: 'other-client-deliverable',
-        decision: 'APPROVED',
+      clientPortalRouter.createCaller(context("USER")).dashboard(),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("prevents a client from reviewing another client deliverable", async () => {
+    await expect(
+      clientPortalRouter.createCaller(context("CLIENT")).reviewDeliverable({
+        id: "other-client-deliverable",
+        decision: "APPROVED",
       }),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
-  })
-})
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("prevents clients from connecting or syncing a repository", async () => {
+    const caller = clientPortalRouter.createCaller(context("CLIENT"));
+    await expect(
+      caller.connectRequestRepository({
+        id: "request-1",
+        repositoryUrl: "https://github.com/arko/project",
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      caller.syncRequestRepository({ id: "request-1" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});

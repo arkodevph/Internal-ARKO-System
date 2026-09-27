@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { router, protectedProcedure, requirePermission } from '../trpc'
 import { assignedOrCompany, recordScopeSchema } from '../../../lib/record-scope'
+import { assertCanMarkDone, REVIEW_GATE_MESSAGE } from '../../../../../pm/src/server/services/review-gate'
 
 const assigneeInclude = {
   assignee: { select: { id: true, name: true, email: true, image: true } },
@@ -16,7 +17,7 @@ const assigneeInclude = {
 async function assertTaskAccess(ctx: any, taskId: string) {
   const task = await ctx.prisma.task.findUnique({
     where: { id: taskId },
-    select: { assigneeId: true, parentId: true },
+    select: { assigneeId: true, parentId: true, scope: true, status: true },
   })
   if (!task) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' })
@@ -74,7 +75,7 @@ export const tasksRouter = router({
   list: protectedProcedure.use(requirePermission('tasks:read')).input(z.object({ status: z.string().optional() }).optional()).query(async ({ ctx }) => {
     const userId = ctx.user.id!
     return ctx.prisma.task.findMany({
-      where: assignedOrCompany(userId, ctx.userRole),
+      where: ctx.userRole === 'ADMIN' ? {} : assignedOrCompany(userId, ctx.userRole),
       orderBy: { position: 'asc' },
       include: {
         ...assigneeInclude,
@@ -83,6 +84,10 @@ export const tasksRouter = router({
           select: {
             blocking: { select: { id: true, title: true, status: true } },
           },
+        },
+        reviews: {
+          select: { id: true, prLink: true, createdAt: true, reviewer: { select: { name: true, email: true } } },
+          orderBy: { createdAt: 'desc' },
         },
       },
     })
@@ -181,11 +186,12 @@ export const tasksRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await assertTaskAccess(ctx, input.id)
+      const task = await assertTaskAccess(ctx, input.id)
 
       // Guard: cannot move a task to DONE while it has an incomplete blocker
-      if (input.status === 'DONE') {
+      if (input.status === 'DONE' || (input.scope === 'PERSONAL' && task.status === 'DONE')) {
         await assertNotBlocked(ctx, input.id)
+        await assertReviewed(ctx, task, input.id, input.scope ?? task.scope)
       }
 
       return ctx.prisma.task.update({
@@ -272,17 +278,31 @@ export const tasksRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await assertTaskAccess(ctx, input.id)
+      const task = await assertTaskAccess(ctx, input.id)
 
       // Guard: cannot move a task to DONE while it has an incomplete blocker
       if (input.status === 'DONE') {
         await assertNotBlocked(ctx, input.id)
+        await assertReviewed(ctx, task, input.id)
       }
 
       return ctx.prisma.task.update({
         where: { id: input.id },
         data: { status: input.status },
         include: assigneeInclude,
+      })
+    }),
+
+  recordReview: protectedProcedure
+    .use(requirePermission('tasks:update'))
+    .input(z.object({ taskId: z.string(), prLink: z.string().url() }))
+    .mutation(async ({ ctx, input }) => {
+      const task = await assertTaskAccess(ctx, input.taskId)
+      if (task.scope !== 'PERSONAL') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Reviews are only recorded for personal PM tasks' })
+      }
+      return ctx.prisma.reviewRecord.create({
+        data: { taskId: input.taskId, reviewerId: ctx.user.id!, prLink: input.prLink },
       })
     }),
 
@@ -342,5 +362,15 @@ async function assertNotBlocked(ctx: any, taskId: string) {
       code: 'BAD_REQUEST',
       message: 'This task is blocked by an incomplete task and cannot be completed yet',
     })
+  }
+}
+
+async function assertReviewed(ctx: any, task: { scope: string; status: string }, taskId: string, nextScope = task.scope) {
+  if ((task.scope !== 'PERSONAL' && nextScope !== 'PERSONAL') || (task.status === 'DONE' && task.scope === 'PERSONAL')) return
+  const count = await ctx.prisma.reviewRecord.count({ where: { taskId } })
+  try {
+    assertCanMarkDone(count)
+  } catch {
+    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: REVIEW_GATE_MESSAGE })
   }
 }

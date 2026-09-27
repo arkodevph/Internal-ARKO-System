@@ -86,13 +86,7 @@ const NAV_GROUPS: NavGroup[] = [
       {
         to: "/dashboard/tasks",
         icon: CheckSquare,
-        label: "Tasks",
-        permission: "tasks:read",
-      },
-      {
-        to: "/dashboard/pm",
-        icon: ClipboardList,
-        label: "PM Board",
+        label: "Tasks & PM",
         permission: "tasks:read",
       },
       {

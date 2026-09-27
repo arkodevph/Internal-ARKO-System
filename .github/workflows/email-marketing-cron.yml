@@ -27,4 +27,4 @@ jobs:
             --retry-all-errors \
             --max-time 120 \
             --header "Authorization: Bearer ${CRON_SECRET}" \
-            https://arko-api.onrender.com/api/email-marketing/cron
+            https://arko-internal.onrender.com/api/email-marketing/cron

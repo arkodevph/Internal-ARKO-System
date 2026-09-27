@@ -777,15 +777,38 @@ model ClientRequest {
   clientId    String
   projectId   String?
   taskId      String?  @unique
+  githubOwner String?
+  githubRepo String?
+  githubBranch String?
+  githubLastSha String?
+  githubSyncedAt DateTime?
+  progressCompleted Int?
+  progressTotal Int?
+  progressItems Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   client  User           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   project ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   task    Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  commitUpdates ClientRequestCommitUpdate[]
 
   @@index([clientId, status])
   @@index([projectId])
+}
+
+model ClientRequestCommitUpdate {
+  id String @id @default(cuid())
+  requestId String
+  sha String
+  subject String
+  committedAt DateTime
+  createdAt DateTime @default(now())
+
+  request ClientRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, sha])
+  @@index([requestId, committedAt])
 }
 
 model ProjectMilestone {

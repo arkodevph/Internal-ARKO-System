@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import MarketingShell from "./_components/MarketingShell";
-import { getLandingTheme } from "@/lib/landing/theme";
 
 const TITLE = "Arko - We build web, mobile, automation and AI";
 const DESCRIPTION =
@@ -82,7 +81,7 @@ export default async function MarketingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <MarketingShell theme={await getLandingTheme()}>
+    <MarketingShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_JSONLD) }}

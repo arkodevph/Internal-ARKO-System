@@ -6,7 +6,7 @@ import { tasksRouter } from '../tasks'
 const ctx = (over: any = {}) => {
   const prisma = {
     task: {
-      findUnique: jest.fn().mockResolvedValue({ id: 't1', assigneeId: 'u1', parentId: null }),
+      findUnique: jest.fn().mockResolvedValue({ id: 't1', assigneeId: 'u1', parentId: null, scope: 'PERSONAL', status: 'REVIEW' }),
       findFirst: jest.fn().mockResolvedValue({ position: 0 }),
       findMany: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'tNew', ...data })),
@@ -29,6 +29,11 @@ const ctx = (over: any = {}) => {
       create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'd1', ...data })),
       deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
       ...(over.taskDependency ?? {}),
+    },
+    reviewRecord: {
+      count: jest.fn().mockResolvedValue(0),
+      create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'r1', ...data })),
+      ...(over.reviewRecord ?? {}),
     },
   }
   return {
@@ -197,10 +202,37 @@ describe('tasks blocked→DONE guard', () => {
       taskDependency: {
         findMany: jest.fn().mockResolvedValue([{ blocking: { status: 'DONE' } }]),
       },
+      reviewRecord: { count: jest.fn().mockResolvedValue(1) },
     })
     const caller = tasksRouter.createCaller(c)
     await caller.updateStatus({ id: 't1', status: 'DONE' })
     expect(c.prisma.task.update).toHaveBeenCalled()
+  })
+})
+
+describe('tasks and PM review gate', () => {
+  it.each(['update', 'updateStatus'] as const)('%s rejects unreviewed personal task completion', async (procedure) => {
+    const c = ctx()
+    await expect(tasksRouter.createCaller(c)[procedure]({ id: 't1', status: 'DONE' })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' })
+    expect(c.prisma.task.update).not.toHaveBeenCalled()
+  })
+
+  it('keeps company task completion unchanged', async () => {
+    const c = ctx({ task: { findUnique: jest.fn().mockResolvedValue({ id: 't1', assigneeId: 'u1', parentId: null, scope: 'COMPANY', status: 'REVIEW' }) } })
+    await tasksRouter.createCaller(c).updateStatus({ id: 't1', status: 'DONE' })
+    expect(c.prisma.reviewRecord.count).not.toHaveBeenCalled()
+    expect(c.prisma.task.update).toHaveBeenCalled()
+  })
+
+  it('cannot bypass the review gate by changing a completed company task to personal', async () => {
+    const c = ctx({ task: { findUnique: jest.fn().mockResolvedValue({ id: 't1', assigneeId: 'u1', parentId: null, scope: 'COMPANY', status: 'DONE' }) } })
+    await expect(tasksRouter.createCaller(c).update({ id: 't1', scope: 'PERSONAL' })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' })
+  })
+
+  it('records a review for an accessible personal task', async () => {
+    const c = ctx()
+    await tasksRouter.createCaller(c).recordReview({ taskId: 't1', prLink: 'https://github.com/arko/project/pull/1' })
+    expect(c.prisma.reviewRecord.create).toHaveBeenCalledWith({ data: { taskId: 't1', reviewerId: 'u1', prLink: 'https://github.com/arko/project/pull/1' } })
   })
 })
 
@@ -231,5 +263,12 @@ describe('tasks.list shape', () => {
     const arg = (c.prisma.task.findMany as any).mock.calls[0][0]
     expect(arg.include).toHaveProperty('subtasks')
     expect(arg.include).toHaveProperty('blockedBy')
+    expect(arg.include).toHaveProperty('reviews')
+  })
+
+  it('shows admins all personal and company tasks in the merged board', async () => {
+    const c = ctx({ userRole: 'ADMIN' })
+    await tasksRouter.createCaller(c).list()
+    expect(c.prisma.task.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }))
   })
 })
