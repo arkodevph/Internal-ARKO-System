@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
-        <SessionProvider>
+        <SessionProvider basePath="/api/auth">
           <TRPCProvider>{children}</TRPCProvider>
         </SessionProvider>
       </body>

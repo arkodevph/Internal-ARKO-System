@@ -89,6 +89,12 @@ export const usersRouter = router({
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id!;
       const search = input?.query?.trim() ?? "";
+      const projectOwnerIds = ctx.userRole === 'CLIENT'
+        ? (await ctx.prisma.clientProject.findMany({
+            where: { clientId: userId },
+            select: { ownerId: true },
+          })).map((project) => project.ownerId)
+        : null;
 
       const where = search
         ? {
@@ -105,7 +111,7 @@ export const usersRouter = router({
         : { id: { not: userId } };
 
       return ctx.prisma.user.findMany({
-        where,
+        where: projectOwnerIds ? { AND: [where, { id: { in: projectOwnerIds } }] } : where,
         select: {
           id: true,
           name: true,

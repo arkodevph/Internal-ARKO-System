@@ -1,156 +1,21 @@
----
-title: ARKO - Deployment & Infrastructure Decision
-tags:
-  - arko
-  - infrastructure
-  - deployment
-created: 2026-07-08
-updated: 2026-07-08
----
+# Render deployment with Supabase PostgreSQL
 
-# ARKO — Deployment & Infrastructure Strategy
+`render.yaml` defines six Node web services and custom domains. It **does not** create a Render database. The existing Supabase PostgreSQL project remains the single source of truth.
 
-## Current Architecture (July 2026)
+## Before creating the Blueprint
 
-```
-Vercel (arko-internal-system.vercel.app)
-├── / (root)          → Vite React SPA (frontend/dist/)
-├── /api/*            → Django WSGI serverless function (api/index.py)
-│
-Backing Services:
-├── Neon Postgres     → Database (ap-southeast-2)
-└── Supabase Storage  → File storage (S3-compatible API)
-```
+1. Back up the Supabase database and verify the existing Prisma migration history in the `arko` schema. A read-only `prisma migrate status` check on 2026-09-27 found **three pending migrations**: `20260820000000_add_nex_send_and_reminder_permissions`, `20260926000000_pm_required_deadline_review_gate`, and `20260927120000_add_app_sessions`. The first changes user permission arrays; the second backfills task deadlines and creates review records. A read-only query found **six tasks with null deadlines**; the PM migration will set each deadline to its creation time, potentially making them overdue. Do not auto-apply them blindly. Compare those SQL files with the production schema/data, then run `pnpm --filter @arko/db db:deploy` manually after backup and approval. The Blueprint intentionally has no automatic migration command.
+2. Create a Render Blueprint from this repository and review the six service plans/costs. The API can return a healthy `/health` before the migrations, but identity login needs the `AppSession` table; do not open the new apps to users until the migration gate is complete.
+3. Set `DATABASE_URL` and `DIRECT_URL` on `arko-api` and `arko-internal` to the **same Supabase project**, with `schema=arko`. Use the appropriate Supabase pooler URL for Render's IPv4 network. The existing `apps/web/.env.example` shows transaction-pooler runtime and session-pooler migration examples. Never place these URLs on site, finance, portal, or PM.
+4. Let Render generate `AUTH_SECRET` for API/site/internal, or set strong values manually. Set `RATE_LIMIT_SECRET` on the public site, `RESEND_API_KEY` for the contact form, and any S3/email/AI integration variables those existing features need. Finance, portal, and PM use `ARKO_API_URL=https://api.arkodevph.com`; no database credential belongs there.
+5. Deploy and verify `https://api.arkodevph.com/health` before enabling the other origins. Configure each custom domain in Render and update DNS as directed by Render. The custom domains are not activated by this file alone.
 
-### How it works
+## Smoke test after deployment
 
-1. Vercel rewrites `/{path}` → `index.html` (SPA handles all client routes)
-2. Vercel rewrites `/api/{path}` → `api/index.py` serverless function
-3. `api/index.py` loads Django WSGI app with production settings
-4. Django routes the request through URL dispatcher
+- Check public marketing page, contact form, and a landing view event.
+- Log into the internal dashboard as staff; verify a restricted or client account cannot enter.
+- Log into finance as a permitted staff member, portal as a client, and PM as staff. Verify each app returns only its permitted data.
+- Log out of one app and confirm the other app session remains usable. Test token expiry/refresh and account suspension.
+- Confirm Supabase has one new `AppSession` table in `arko` and no new database project was created.
 
-### API entry point (on cold start)
-
-`api/index.py` does the following on every cold start:
-- Inserts `backend/` into `sys.path`
-- Sets `DJANGO_SETTINGS_MODULE` to `config.production` on Vercel
-- Calls `django.setup()` (loads all 15+ apps, builds ORM)
-- Runs pending database migrations (with auto-fake for existing tables)
-- Returns a WSGI app via `get_wsgi_application()`
-
-## Pre-deploy Verification
-
-Always run these before pushing to production:
-
-```bash
-# 1. Dependency parity check
-diff <(sort api/requirements.txt) <(sort backend/requirements.txt) \
-  || echo "⚠️  MISMATCH — api/ and backend/ dependencies differ"
-
-# 2. Migration graph conflict check
-cd backend && python manage.py migrate --check && cd ..
-
-# 3. Static validation (missing imports, bad settings, etc.)
-cd backend && python manage.py check --deploy --fail-level WARNING && cd ..
-```
-
-These steps catch the three failure modes that caused recent production outages (missing module, migration conflict, undefined name reference).
-
-## Pain Points — Vercel as Django Host
-
-| Issue | Severity | Detail |
-|-------|----------|--------|
-| Cold start latency | Medium | Django takes 30-50ms boot time atop Python runtime init |
-| Silent runtime failures | High | Build succeeds but if the Django app crashes at startup, the function silently returns 500. No alert. |
-| Opaque debugging | Medium | Verbose error logs require `--expand`, stack traces are stripped |
-| No rolling deploys | Low | Cutover between old and new function instances can serve 500s to in-flight requests |
-| 30s timeout hard cap | Medium | Any endpoint exceeding 30s (report generation, bulk ops) fails. No background workers. |
-| No WebSocket support | High | The `feat/real-time-messaging` branch cannot deploy. Real-time features blocked. |
-| No background tasks / cron | Medium | Periodic jobs (email digests, cleanup, reports) require a separate service |
-| Migration-from-local mismatch | Low | VS Code dev uses a Docker Compose stack (Postgres, MinIO, MailHog); production is serverless — debugging env-specific bugs is harder |
-
-## Decision Record: Should We Move the Backend?
-
-### Options
-
-#### A. Keep current — everything on Vercel ✅ Frontend SPA, ⚠️ Django backend
-
-**When this makes sense:**
-- Fewer than ~200 active users
-- No real-time features planned for the near term
-- Willing to accept silent 500s and occasional cold-start latency
-
-**Cost:** Vercel Pro ($20/mo) or Hobby (free)
-**Ops burden:** Low (one platform)
-
-#### B. Hybrid — frontend on Vercel, backend on Render ✅✅
-
-```
-Vercel (frontend only)          Render (backend)
-┌──────────────────────┐        ┌──────────────────────┐
-│  Vite React SPA      │  /api/ │  Django (Gunicorn)   │
-│  Vercel Edge CDN     │ ─────→ │  Daphne (WebSocket)  │
-│  Preview Deploys     │  /*    │  Workers / Cron      │
-│                      │ ─────→ │  PostgreSQL (Neon)   │
-└──────────────────────┘        │  Supabase Storage    │
-                                └──────────────────────┘
-```
-
-**When this makes sense:**
-- Need real-time messaging (WebSockets)
-- Want rolling deploys with zero downtime
-- Want streaming logs and health checks
-- Need background workers or cron jobs later
-- Scaling toward 200-2000+ active users
-
-**Cost:** Render Web Service $7-25/mo (starts at $7/mo)
-**Ops burden:** Medium (two platforms, slight DNS/URL management)
-
-#### C. Full stack on Render
-
-**Unnecessary.** Vercel's edge CDN for the static SPA is strictly better than Render's serving. The frontend has zero server-side rendering — keeping it on Vercel costs nothing and performs better.
-
-### Recommendation → Option B (Hybrid)
-
-Move only the Django backend to Render. The migration is small:
-
-1. Add `render.yaml` (infrastructure as code) to the repo
-2. Replace `api/index.py` and `vercel.json` Python config with a `Procfile`
-3. Update Vercel rewrites to proxy `/api/*` → Render URL
-4. Promote to production — no database changes needed (Neon Postgres stays)
-
-**Estimated effort:** A weekend. Most of the work is testing the new deployment, not writing code.
-
-### Migration Checklist
-
-- [ ] Add `Dockerfile` or `render.yaml` for the Django service
-- [ ] Create `Procfile` with `web: daphne -b 0.0.0.0 -p $PORT config.asgi:application`
-- [ ] Add `REQUIREMENTS_FILE` or ensure `requirements.txt` is in `backend/`
-- [ ] Set environment variables on Render (DATABASE_URL, SECRET_KEY, etc.)
-- [ ] Update `vercel.json` — remove Python routes, add proxy rewrites to Render URL
-- [ ] Test preview deployment
-- [ ] Migrate existing data (none needed — same Neon database)
-- [ ] Update DNS / custom domain if needed
-- [ ] Update docs (README, ARCHITECTURE, this file)
-- [ ] Remove `api/index.py` and `api/requirements.txt` (no longer needed)
-
-## Current Vercel Env Vars (July 2026)
-
-| Variable | Purpose | Environment |
-|----------|---------|-------------|
-| `DATABASE_URL` | Neon Postgres connection string | Production |
-| `SECRET_KEY` | Django secret key | Production |
-| `CORS_ALLOWED_ORIGINS` | Allowed CORS origins | Production |
-| `ALLOWED_HOSTS` | Allowed hostnames | Production |
-
-## Key Contacts & Resources
-
-- **Live site:** https://arko-internal-system.vercel.app
-- **Vercel scope:** `justinebacurin1927s-projects`
-- **Render account:** (not yet provisioned)
-- **Neon project:** Internal-ARKO-System (ap-southeast-2)
-- **Supabase project:** Internal-ARKO-System
-
----
-
-*Last evaluated: 2026-07-08 — after a production outage caused by `daphne` missing from `api/requirements.txt`.*
+Until the remaining internal legacy routes are migrated, `arko-internal` still connects directly to Supabase. Do not claim the whole system is API-only or remove its database secret yet. See [Architecture](ARCHITECTURE.md).

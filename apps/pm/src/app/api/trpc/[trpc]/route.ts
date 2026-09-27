@@ -1,15 +1,6 @@
-import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "../../../../server/api/root";
-import { createTRPCContext } from "../../../../lib/trpc/context";
+import { proxyTRPC } from '@arko/edge-auth'
+import type { NextRequest } from 'next/server'
 
-export const runtime = "nodejs";
-
-const handler = (req: Request) =>
-  fetchRequestHandler({
-    endpoint: "/api/trpc",
-    req,
-    router: appRouter,
-    createContext: createTRPCContext,
-  });
+const handler = (request: NextRequest) => proxyTRPC(request, 'pm')
 
 export { handler as GET, handler as POST };

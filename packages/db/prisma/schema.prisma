@@ -29,6 +29,7 @@ model User {
 
   accounts                 Account[]
   sessions                 Session[]
+  appSessions              AppSession[]
   workspaceMembers         WorkspaceMember[]
   transactions             Transaction[]
   accountCategories        AccountCategory[]
@@ -172,6 +173,24 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AppSession {
+  id               String   @id @default(cuid())
+  userId           String
+  application      String
+  accessTokenHash  String   @unique
+  refreshTokenHash String   @unique
+  authVersion      Int
+  accessExpiresAt  DateTime
+  refreshExpiresAt DateTime
+  createdAt        DateTime @default(now())
+  lastUsedAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, application])
+  @@index([refreshExpiresAt])
 }
 
 enum Role {

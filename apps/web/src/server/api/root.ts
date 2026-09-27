@@ -18,6 +18,7 @@ import { clientPortalRouter } from './routers/client-portal'
 import { documentsRouter } from './routers/documents'
 import { landingRouter } from './routers/landing'
 import { emailMarketingRouter } from './routers/email-marketing'
+import { tasksRouter as pmTasksRouter } from '../../../../pm/src/server/api/routers/tasks'
 
 export const appRouter = router({
   finance: financeRouter,
@@ -39,6 +40,7 @@ export const appRouter = router({
   documents: documentsRouter,
   landing: landingRouter,
   emailMarketing: emailMarketingRouter,
+  pmTasks: pmTasksRouter,
 })
 
 export type AppRouter = typeof appRouter

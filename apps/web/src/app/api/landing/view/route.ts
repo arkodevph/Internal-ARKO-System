@@ -5,6 +5,7 @@ import {
   landingDayKey,
   recordLandingVisit,
 } from '../../../../server/services/landing-analytics'
+import { publicApiUrl } from '../../../../lib/public-api'
 
 const VISIT_COOKIE = 'arko_landing_visit_day'
 
@@ -16,7 +17,12 @@ export async function POST(request: NextRequest) {
     return new NextResponse(null, { status: 204 })
   }
 
-  await recordLandingVisit(prisma, viewedAt)
+  if (process.env.ARKO_SURFACE === 'site') {
+    const remote = await fetch(publicApiUrl('/api/landing/view'), { method: 'POST', cache: 'no-store' })
+    if (!remote.ok) return new NextResponse(null, { status: 503 })
+  } else {
+    await recordLandingVisit(prisma, viewedAt)
+  }
 
   const response = new NextResponse(null, { status: 204 })
   response.cookies.set(VISIT_COOKIE, dayKey, {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { LandingContent } from '../../../../lib/landing/content'
 import { loadLandingContent } from '../../../../lib/landing/get-content'
+import { publicApiUrl } from '../../../../lib/public-api'
 
 const requestSchema = z.object({
   messages: z.array(z.object({
@@ -75,6 +76,18 @@ function publicReply(input: string, content: LandingContent) {
 }
 
 export async function POST(request: Request) {
+  if (process.env.ARKO_SURFACE === 'site') {
+    const remote = await fetch(publicApiUrl('/api/assistant/public-chat'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: await request.text(),
+      cache: 'no-store',
+    })
+    return new Response(await remote.text(), {
+      status: remote.status,
+      headers: { 'Content-Type': remote.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store' },
+    })
+  }
   const input = requestSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
     return NextResponse.json({ error: 'Invalid chat request' }, { status: 400 })

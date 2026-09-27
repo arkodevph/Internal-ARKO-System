@@ -1,4 +1,6 @@
-import type { Role } from "@arko/db";
+import 'next-auth'
+
+type Role = 'ADMIN' | 'ACCOUNTANT' | 'MEMBER' | 'USER' | 'CLIENT' | 'DEMO'
 
 declare module "next-auth" {
   interface Session {

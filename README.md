@@ -1,152 +1,39 @@
-# ARKO — Internal Operations System
+# ARKO
 
-**Version:** v2.0.0 — Sprints 1–3.5 complete
-**Status:** Live on Vercel · [Sprint 3.5](https://github.com/justinebacurin1927/Internal-ARKO-System/projects) complete
+ARKO is a pnpm/Next.js monorepo for the public site, internal workspace, finance, client portal, project-management board, and shared API. PostgreSQL stays in the existing Supabase project; Render runs the application services, not a second database.
 
-**ARKO** is a full-stack internal operations platform that combines finance tracking, task management, messaging, notes, journal, ideas, resources, and notifications into one cohesive system for small teams.
+| Service | Domain | Source | Runtime data access |
+| --- | --- | --- | --- |
+| Public site | `arkodevph.com` | `apps/web`, `ARKO_SURFACE=site` | Public API only at runtime |
+| Internal | `app.arkodevph.com` | `apps/web`, `ARKO_SURFACE=internal` | Legacy Prisma and Auth.js paths remain |
+| Finance | `finance.arkodevph.com` | `apps/finance` | Central API only |
+| Client portal | `portal.arkodevph.com` | `apps/portal` | Central API only |
+| PM board | `pm.arkodevph.com` | `apps/pm` | Central API only |
+| API and identity | `api.arkodevph.com` | `apps/api` | Supabase PostgreSQL via Prisma |
 
-## Tech Stack
+The new apps have separate host-only, HTTP-only sessions. Users enter their existing ARKO email and password on each app; the central identity API issues an app-scoped session, and each app's server-side proxy calls the central API. This is not yet single sign-on. Signing in to one app does not automatically sign in to another.
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | Vite + React 19 + TypeScript + Tailwind CSS v4 |
-| **Backend** | Django 6 + Django REST Framework + JWT (SimpleJWT) |
-| **Database** | Neon Postgres (production) / Docker PostgreSQL (local) |
-| **File Storage** | Supabase Storage (production) / MinIO (local) |
-| **Hosting** | Vercel (frontend SPA + Django serverless functions) |
-| **Email** | SMTP (MailHog for local dev) |
+The split is **in progress**: finance, portal, and PM have independent runtimes but still import some UI/type source from `apps/web` at build time. The site and internal service are two deployments of the existing web app; the public site's active routes now proxy persistence through the API, but the internal service still needs Supabase credentials. See [Architecture](docs/ARCHITECTURE.md) and [Render deployment](docs/DEPLOY-INFRA.md).
 
-## Project Structure
+## Local development
 
-```
-arko/
-├── frontend/                  # Vite React SPA
-│   ├── src/
-│   │   ├── components/        # Reusable: Button, Card, FileUploader,
-│   │   │                      #   CommentSection, NotificationBell, etc.
-│   │   ├── lib/               # API client, auth context, toast
-│   │   └── pages/             # 14 pages: Dashboard, Finance, Tasks,
-│   │                          #   Messages, Journal, Ideas, Resources, etc.
-│   └── api/                   # Vercel serverless: Django WSGI entry point
-├── backend/                    # Django API (11 apps)
-│   ├── config/                 # Django settings (local + production)
-│   ├── auth_app/               # User auth, JWT, admin user management
-│   ├── tasks_app/              # Task CRUD, subtasks, dependencies
-│   ├── finance_app/            # Transactions, budgets, accounts, metrics
-│   ├── messages_app/           # Team conversations
-│   ├── notes_app/              # Note-taking
-│   ├── reminders_app/          # Reminders
-│   ├── events_app/             # Calendar events and sprints
-│   ├── users_app/              # User profiles
-│   ├── storage_app/            # File uploads (S3 / Supabase)
-│   ├── comments_app/           # Comments for any resource
-│   ├── notifications_app/      # In-app notifications + signals
-│   ├── journal_app/            # Private per-user journal
-│   ├── ideas_app/              # R&D ideas board with task spawning
-│   └── resources_app/          # Resource library (links/docs)
-├── api/                        # Vercel serverless function root
-├── docker-compose.yml          # Local infra (Postgres, MinIO, MailHog)
-└── vercel.json                 # Vercel deployment config
-```
-
-## Features
-
-| Module | Features |
-|---|---|
-| **Dashboard** | Time-aware greeting, metric pills, real-time financial chart, quote of the day |
-| **Finance** | Transaction tracking, income/expense categories, budgets, recurring transactions, monthly calendar view, business metrics |
-| **Tasks** | Kanban board with drag-and-drop (To Do / In Progress / Review / Done), priorities, assignees, subtasks, dependencies, comments, search |
-| **Messages** | Team conversations with participants, message editing/deletion |
-| **Notes** | Lightweight note-taking |
-| **Reminders** | Reminder management with status tracking |
-| **Calendar** | Events and sprints |
-| **Journal** | Private per-user journal with mood tracking |
-| **Ideas** | R&D ideas board with status, tags, one-click task spawning |
-| **Resources** | Resource library for links, docs, and references with tags and search |
-| **File Uploads** | Attach files to tasks and resources via S3 (Supabase) |
-| **Notifications** | In-app notifications for task assignments and comments |
-| **Settings** | Profile editing, password change |
-| **User Management** | Admin CRUD with roles and status controls |
-
-## Getting Started (Local Dev)
+Use Node 20+ and pnpm 9.12.0. Set Supabase credentials in `apps/web/.env.local` and `packages/db/.env` using `apps/web/.env.example` as a guide. Both URLs must point to the same Supabase database and the existing `arko` schema; never point migrations at `public` accidentally.
 
 ```bash
-# Prerequisites: Docker, Node.js 20+, Python 3.12+
-
-# 1. Start local infrastructure
-docker compose up -d
-
-# 2. Set up Python backend
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-
-# 3. Set up frontend (separate terminal)
-cd frontend
-npm install
-npm run dev
+pnpm install --frozen-lockfile
+pnpm --filter @arko/db db:generate
+pnpm --filter @arko/api dev
 ```
 
-The frontend runs on **http://localhost:5173** and proxies `/api/*` to Django at **http://localhost:8000**.
-
-## Deployment
-
-| Service | Platform | URL |
-|---|---|---|
-| Frontend + API | Vercel | https://arko-internal-system.vercel.app |
-| Database | Neon Postgres | ap-southeast-2 region |
-| File Storage | Supabase Storage | Project: Internal-ARKO-System |
-
-## Pre-deploy Checklist
-
-Before deploying, run these checks to catch common failures:
+In separate terminals, run whichever app you need:
 
 ```bash
-# 1. Ensure api/requirements.txt and backend/requirements.txt are in sync
-diff <(sort api/requirements.txt) <(sort backend/requirements.txt) || echo "⚠️  MISMATCH — dependencies differ between api/ and backend/"
-
-# 2. Check for migration graph conflicts
-cd backend && python manage.py migrate --check && cd ..
-
-# 3. Static validation — catches missing imports, bad settings
-cd backend && python manage.py check --deploy --fail-level WARNING && cd ..
+pnpm --filter @arko/web dev                    # localhost:3000
+pnpm --filter @arko/finance-app dev            # localhost:3001
+pnpm --filter @arko/portal dev                 # localhost:3002
+pnpm --filter @arko/pm dev                    # localhost:3004
 ```
 
-If all three pass, deploy is safe.
+`ARKO_API_URL` defaults to `http://localhost:3003` in development for finance, portal, and PM. Run the API first. For local identity login the API process needs `DATABASE_URL`, `DIRECT_URL`, and `AUTH_SECRET` in its environment (the web app's `.env.local` is not loaded by the API app automatically).
 
-### Deploy (current)
-
-```bash
-vercel deploy --prod --scope justinebacurin1927s-projects
-```
-
-Environment variables are managed via Vercel CLI (`vercel env add`).
-
-### Planned — Hybrid Architecture
-
-The backend (Django API) is planned to move to **Render** for persistent server hosting, leaving the frontend SPA on Vercel's edge CDN. This enables:
-- Zero cold starts on the API
-- WebSocket support (real-time messaging)
-- Background workers and cron jobs
-- Rolling deploys with zero downtime
-
-See [[DEPLOY-INFRA.md]] for the full infrastructure analysis and migration checklist.
-
-## Auth
-
-Django JWT authentication (Bearer tokens via SimpleJWT). Token refresh on expiry with idle session timeout (30 min auto-logout).
-
-## Docs
-
-- [[ARKO - Architecture]](docs/ARCHITECTURE.md)
-- [[ARKO - Brief]](docs/BRIEF.md)
-- [[ARKO - Roadmap]](docs/ROADMAP.md)
-- [[ARKO - Phase 1 Report]](docs/PHASE1-REPORT.md)
-- [[ARKO - Deploy & Infra]](docs/DEPLOY-INFRA.md)
-
----
-
-**v2.0.0** — Sprints 1–3.5 complete
+Run `pnpm --filter @arko/web test -- --runInBand`, `pnpm --filter @arko/api typecheck`, and each app's `build` script before deploying. The `AppSession` migration has **not** been applied by this repository change; [deployment instructions](docs/DEPLOY-INFRA.md) explain why migration is a manual gate.

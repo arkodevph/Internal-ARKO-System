@@ -51,6 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Block restricted / suspended users
         if (user.status !== "ACTIVE") return null;
+        if (process.env.ARKO_SURFACE === 'internal' && user.role === 'CLIENT') return null;
 
         const isValid = await compare(
           credentials.password as string,
@@ -129,17 +130,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.permissions = token.permissions;
       }
       return session;
-    },
-  },
-  events: {
-    async signOut(message) {
-      if (!("token" in message)) return;
-      const userId = message.token?.id;
-      if (typeof userId !== "string") return;
-      await prisma.user.updateMany({
-        where: { id: userId },
-        data: { authVersion: { increment: 1 } },
-      });
     },
   },
 });

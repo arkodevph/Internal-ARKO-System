@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, requireRole } from "../../../../../web/src/server/api/trpc";
+import type { TRPCContext } from "../../../../../web/src/lib/trpc/context";
 import {
   REVIEW_GATE_MESSAGE,
   assertCanMarkDone,
@@ -19,17 +20,35 @@ const taskInclude = {
   },
 } as const;
 
+const pmProcedure = protectedProcedure.use(requireRole(["ADMIN", "MEMBER", "USER", "ACCOUNTANT"]));
+
+async function assertTaskAccess(
+  ctx: Pick<TRPCContext, 'prisma' | 'userRole'> & { user: NonNullable<TRPCContext['user']> },
+  taskId: string,
+) {
+  const task = await ctx.prisma.task.findFirst({
+    where: {
+      id: taskId,
+      scope: 'PERSONAL',
+      ...(ctx.userRole === 'ADMIN' ? {} : { assigneeId: ctx.user.id }),
+    },
+    select: { id: true, status: true },
+  })
+  if (!task) throw new TRPCError({ code: 'NOT_FOUND' })
+  return task
+}
+
 export const tasksRouter = router({
-  list: protectedProcedure.query(({ ctx }) =>
+  list: pmProcedure.query(({ ctx }) =>
     ctx.prisma.task.findMany({
-      where: { scope: "PERSONAL" },
+      where: { scope: "PERSONAL", ...(ctx.userRole === 'ADMIN' ? {} : { assigneeId: ctx.user.id }) },
       include: taskInclude,
       orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     }),
   ),
 
   // PRD: a task cannot exist without a deadline — zod makes dueDate required.
-  create: protectedProcedure
+  create: pmProcedure
     .input(
       z.object({
         title: z.string().min(1, "Title is required"),
@@ -38,8 +57,11 @@ export const tasksRouter = router({
         assigneeId: z.string().optional(),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      ctx.prisma.task.create({
+    .mutation(({ ctx, input }) => {
+      if (ctx.userRole !== 'ADMIN' && input.assigneeId && input.assigneeId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' })
+      }
+      return ctx.prisma.task.create({
         data: {
           title: input.title,
           description: input.description,
@@ -49,10 +71,10 @@ export const tasksRouter = router({
           status: "TODO",
         },
         include: taskInclude,
-      }),
-    ),
+      })
+    }),
 
-  move: protectedProcedure
+  move: pmProcedure
     .input(
       z.object({
         id: z.string(),
@@ -61,11 +83,7 @@ export const tasksRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const task = await ctx.prisma.task.findUnique({
-        where: { id: input.id },
-        select: { id: true, status: true },
-      });
-      if (!task) throw new TRPCError({ code: "NOT_FOUND" });
+      const task = await assertTaskAccess(ctx, input.id);
 
       // Review gate: DONE requires at least one recorded review.
       if (input.status === "DONE" && task.status !== "DONE") {
@@ -93,20 +111,21 @@ export const tasksRouter = router({
     }),
 
   // Records the human review: reviewer = the person recording it, link = PR.
-  recordReview: protectedProcedure
+  recordReview: pmProcedure
     .input(
       z.object({
         taskId: z.string(),
         prLink: z.string().url("Must be a valid PR link"),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      ctx.prisma.reviewRecord.create({
+    .mutation(async ({ ctx, input }) => {
+      await assertTaskAccess(ctx, input.taskId)
+      return ctx.prisma.reviewRecord.create({
         data: {
           taskId: input.taskId,
           reviewerId: ctx.user.id,
           prLink: input.prLink,
         },
-      }),
-    ),
+      })
+    }),
 });

@@ -1,0 +1,136 @@
+services:
+  - type: web
+    name: arko-api
+    runtime: node
+    region: singapore
+    domains:
+      - api.arkodevph.com
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/api build
+    startCommand: pnpm --filter @arko/api start
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - apps/api/**
+        - apps/web/src/server/**
+        - apps/web/src/lib/**
+        - apps/web/src/app/api/identity/**
+        - apps/web/src/app/api/landing/**
+        - apps/web/src/app/api/assistant/public-chat/**
+        - apps/pm/src/server/**
+        - packages/**
+        - pnpm-lock.yaml
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+
+  - type: web
+    name: arko-site
+    runtime: node
+    region: singapore
+    domains:
+      - arkodevph.com
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
+    startCommand: pnpm --filter @arko/web exec next start -p $PORT
+    buildFilter:
+      paths:
+        - apps/web/**
+        - packages/**
+        - pnpm-lock.yaml
+    envVars:
+      - key: ARKO_SURFACE
+        value: site
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://arkodevph.com
+      - key: ARKO_API_URL
+        value: https://api.arkodevph.com
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: RATE_LIMIT_SECRET
+        generateValue: true
+      - key: RESEND_API_KEY
+        sync: false
+
+  - type: web
+    name: arko-internal
+    runtime: node
+    region: singapore
+    domains:
+      - app.arkodevph.com
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
+    startCommand: pnpm --filter @arko/web exec next start -p $PORT
+    buildFilter:
+      paths:
+        - apps/web/**
+        - packages/**
+        - pnpm-lock.yaml
+    envVars:
+      - key: ARKO_SURFACE
+        value: internal
+      - key: AUTH_URL
+        value: https://app.arkodevph.com
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://app.arkodevph.com
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+
+  - type: web
+    name: arko-finance
+    runtime: node
+    region: singapore
+    domains:
+      - finance.arkodevph.com
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/finance-app build
+    startCommand: pnpm --filter @arko/finance-app start
+    buildFilter:
+      paths:
+        - apps/finance/**
+        - apps/web/**
+        - packages/**
+        - pnpm-lock.yaml
+    envVars:
+      - key: ARKO_API_URL
+        value: https://api.arkodevph.com
+
+  - type: web
+    name: arko-portal
+    runtime: node
+    region: singapore
+    domains:
+      - portal.arkodevph.com
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/portal build
+    startCommand: pnpm --filter @arko/portal start
+    buildFilter:
+      paths:
+        - apps/portal/**
+        - apps/web/**
+        - packages/**
+        - pnpm-lock.yaml
+    envVars:
+      - key: ARKO_API_URL
+        value: https://api.arkodevph.com
+
+  - type: web
+    name: arko-pm
+    runtime: node
+    region: singapore
+    domains:
+      - pm.arkodevph.com
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/pm build
+    startCommand: pnpm --filter @arko/pm exec next start -p $PORT
+    buildFilter:
+      paths:
+        - apps/pm/**
+        - apps/web/**
+        - packages/**
+        - pnpm-lock.yaml
+    envVars:
+      - key: ARKO_API_URL
+        value: https://api.arkodevph.com

@@ -1,11 +1,21 @@
 import { unstable_cache } from 'next/cache'
 import { prisma } from '@arko/db'
 import { mergeLandingContent, type LandingContent } from './content'
+import { publicApiUrl } from '../public-api'
 
 /** Cache tag busted by the admin `landing.update` mutation for on-demand revalidation. */
 export const LANDING_CACHE_TAG = 'landing-content'
 
 export async function loadLandingContent(): Promise<LandingContent> {
+  if (process.env.ARKO_SURFACE === 'site') {
+    try {
+      const response = await fetch(publicApiUrl('/api/landing/content'), { cache: 'no-store' })
+      if (!response.ok) throw new Error('Landing content API unavailable')
+      return mergeLandingContent(await response.json())
+    } catch {
+      return mergeLandingContent(undefined)
+    }
+  }
   if (!process.env.DATABASE_URL) return mergeLandingContent(undefined)
 
   try {

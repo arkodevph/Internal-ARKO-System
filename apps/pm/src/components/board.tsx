@@ -7,7 +7,7 @@ import { api } from "@/lib/trpc/client";
 import { REVIEW_GATE_MESSAGE } from "@/server/services/review-gate";
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
-type Task = RouterOutput["tasks"]["list"][number];
+type Task = RouterOutput["pmTasks"]["list"][number];
 
 const COLUMNS = [
   { key: "TODO", label: "To Do" },
@@ -28,19 +28,17 @@ function isOverdue(task: Task): boolean {
   );
 }
 
-export function Board({ initialTasks }: { initialTasks: Task[] }) {
+export function Board() {
   const utils = api.useUtils();
-  const tasks = api.tasks.list.useQuery(undefined, {
-    initialData: initialTasks,
+  const tasks = api.pmTasks.list.useQuery();
+  const createTask = api.pmTasks.create.useMutation({
+    onSuccess: () => utils.pmTasks.list.invalidate(),
   });
-  const createTask = api.tasks.create.useMutation({
-    onSuccess: () => utils.tasks.list.invalidate(),
+  const moveTask = api.pmTasks.move.useMutation({
+    onSuccess: () => utils.pmTasks.list.invalidate(),
   });
-  const moveTask = api.tasks.move.useMutation({
-    onSuccess: () => utils.tasks.list.invalidate(),
-  });
-  const recordReview = api.tasks.recordReview.useMutation({
-    onSuccess: () => utils.tasks.list.invalidate(),
+  const recordReview = api.pmTasks.recordReview.useMutation({
+    onSuccess: () => utils.pmTasks.list.invalidate(),
   });
 
   const [title, setTitle] = useState("");

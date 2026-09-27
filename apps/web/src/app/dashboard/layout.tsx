@@ -9,6 +9,9 @@ export default async function DashboardLayout({
 }) {
   const session = await auth()
   if (!session) redirect('/auth/login')
+  if (process.env.ARKO_SURFACE === 'internal' && session.user?.role === 'CLIENT') {
+    redirect('https://portal.arkodevph.com')
+  }
 
   return <DashboardShell>{children}</DashboardShell>
 }

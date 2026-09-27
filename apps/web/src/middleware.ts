@@ -40,6 +40,32 @@ const HEADERS: Record<string, string> = {
 };
 
 export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  if (process.env.ARKO_SURFACE === 'site') {
+    if (path.startsWith('/documents/share/')) {
+      return NextResponse.redirect(new URL(path, 'https://app.arkodevph.com'))
+    }
+    if (path === '/dashboard/finance' || path.startsWith('/dashboard/finance/')) {
+      return NextResponse.redirect(new URL('/', 'https://finance.arkodevph.com'))
+    }
+    if (path.startsWith('/dashboard') || path.startsWith('/auth') || path === '/login') {
+      return NextResponse.redirect(new URL(path === '/login' ? '/auth/login' : path, 'https://app.arkodevph.com'))
+    }
+    if ((path === '/api' || path.startsWith('/api/')) &&
+        path !== '/api/landing/view' && path !== '/api/assistant/public-chat') {
+      if (path.startsWith('/api/email-marketing/unsubscribe/')) {
+        return NextResponse.redirect(new URL(path, 'https://app.arkodevph.com'))
+      }
+      return new NextResponse(null, { status: 404 })
+    }
+  }
+  if (process.env.ARKO_SURFACE === 'internal') {
+    if (path === '/') return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (path === '/dashboard/finance' || path.startsWith('/dashboard/finance/')) {
+      return NextResponse.redirect(new URL('/', 'https://finance.arkodevph.com'))
+    }
+    if (path.startsWith('/api/identity')) return new NextResponse(null, { status: 404 })
+  }
   const response =
     request.nextUrl.hostname === "www.arkodevph.com"
       ? NextResponse.redirect(
