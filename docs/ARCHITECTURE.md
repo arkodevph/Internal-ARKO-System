@@ -1,25 +1,9 @@
-# ARKO architecture (transition state)
+# ARKO architecture
 
-The deployed target is six Render web services from one pnpm monorepo, backed by the **same existing Supabase PostgreSQL database**. Separate services do not imply separate databases or code repositories.
+Render runs one `apps/web` Next.js process at `arko-internal.onrender.com`. It serves the public site at `/`, Auth.js login at `/auth/login`, the staff/client dashboard at `/dashboard`, finance at `/dashboard/finance`, the client portal at `/dashboard/client-portal`, the PM board at `/dashboard/pm`, and the shared API at `/api/*`. `/app`, `/finance`, `/portal`, and `/pm` redirect to those dashboard routes.
 
-| Browser origin | Authentication | Backend |
-| --- | --- | --- |
-| `arko-finance.onrender.com` | Finance-scoped opaque session | Same-origin BFF → `arko-api.onrender.com` → Prisma |
-| `arko-portal.onrender.com` | Client-scoped opaque session | Same-origin BFF → `arko-api.onrender.com` → Prisma |
-| `arko-pm.onrender.com` | PM-scoped opaque session | Same-origin BFF → `arko-api.onrender.com` → Prisma |
-| `arko-internal.onrender.com` | Existing Auth.js session | Existing web tRPC/custom routes → Prisma directly |
-| `arko-site.onrender.com` | Public | Landing content, views, and chat → API; contact form → Resend |
+All areas use the existing ARKO users and one same-origin Auth.js session. The dashboard requires login. Client users are sent to the portal; finance requires `transactions:read`; PM rejects client and demo roles, and its tRPC router enforces staff roles and task ownership. The existing Supabase PostgreSQL database remains the only database, and `apps/web` uses Prisma directly. The API and UI are logical modules, not separate runtime services.
 
-The central API exposes `/api/identity/login`, `/session`, `/refresh`, `/logout` and bearer-only `/api/trpc`. Login verifies the existing bcrypt password and active account status. Portal sessions require `CLIENT`; finance sessions require `transactions:read`; PM and internal sessions require staff roles. Access tokens expire after 15 minutes, refresh tokens after seven days. Only SHA-256 hashes are stored in `AppSession`. Refresh uses a conditional database update to prevent replay. Password/account revocation increments `User.authVersion`, which invalidates app sessions. Each app's cookies are host-only, HTTP-only, `Secure` in production, and `SameSite=Lax`. Each BFF rejects cross-origin writes. The API enforces a per-app procedure allowlist and the existing per-procedure authorization/ownership checks.
+The `apps/api`, `apps/finance`, `apps/portal`, and `apps/pm` app shells from the previous six-service design remain in source. During cutover, their Render services remain declared with auto-deploy off for rollback; CI builds only the unified web app. The PM board component and PM tRPC router are still imported by the unified web app. The `AppSession` API routes remain for compatibility but are not used by the unified login.
 
-This is **app-specific login, not SSO**. No cross-subdomain cookie is set. The legacy internal Auth.js login is still separate from the central identity sessions; logging out of it no longer globally invalidates the new app sessions. Password changes/account restriction still invalidate all via `authVersion` or status checks.
-
-## Remaining migration seams
-
-- `apps/web` is still one codebase serving both site and internal via `ARKO_SURFACE`. The site middleware exposes only public marketing API routes; its active database operations go through the API, and it does not receive a DB credential on Render. The build still contains legacy internal routes, so this is not hard artifact-level isolation.
-- Internal dashboard pages and custom API routes still use Prisma directly. Moving them behind the API requires migrating those route contracts and Auth.js usage, not merely removing `DATABASE_URL`.
-- Finance, portal, and PM import existing web UI and the tRPC router **types** from `apps/web`; they do not need database secrets at runtime. Extracting stable UI/contracts into shared packages would remove this build-time coupling.
-- The API currently uses in-memory login throttles. They are not shared across replicas. Add a shared rate-limit store/WAF before scaling out or exposing high login traffic. BFF refresh single-flight handles concurrent requests within one process; cross-instance refresh races still need a distributed solution.
-- Password reset, external identity providers, MFA, and account-management self-service are not implemented by this change.
-
-The historic Vite/Django/Neon documents under `docs/superpowers` are planning records, not current deployment instructions.
+Free Render has a shared 750 instance-hour monthly allowance, a 15-minute idle spin-down, and a 512 MB / 0.1 CPU service size. One service reduces instance-hour consumption, but the combined build/runtime still needs measurement under real traffic. The historic Vite/Django/Neon documents under `docs/superpowers` are planning records, not current deployment instructions.

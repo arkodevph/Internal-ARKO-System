@@ -90,6 +90,12 @@ const NAV_GROUPS: NavGroup[] = [
         permission: "tasks:read",
       },
       {
+        to: "/dashboard/pm",
+        icon: ClipboardList,
+        label: "PM Board",
+        permission: "tasks:read",
+      },
+      {
         to: "/dashboard/events",
         icon: CalendarDays,
         label: "Calendar",

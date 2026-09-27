@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @source "../**/*.{ts,tsx}";
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../apps/pm/src/components/board.tsx";
 
 @theme {
   --font-sora: "Avenir Next", "Segoe UI", Arial, sans-serif;

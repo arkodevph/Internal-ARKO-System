@@ -2,9 +2,9 @@
 
 import { useState, type DragEvent } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
-import type { AppRouter } from "@/server/api/root";
-import { api } from "@/lib/trpc/client";
-import { REVIEW_GATE_MESSAGE } from "@/server/services/review-gate";
+import type { AppRouter } from "../server/api/root";
+import { api } from "../lib/trpc/client";
+import { REVIEW_GATE_MESSAGE } from "../server/services/review-gate";
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type Task = RouterOutput["pmTasks"]["list"][number];

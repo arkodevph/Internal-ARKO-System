@@ -42,10 +42,5 @@ jobs:
       - name: PM review gate
         run: pnpm --filter @arko/pm verify:gate
 
-      - name: Build all services
-        run: |
-          pnpm --filter @arko/api build
-          pnpm --filter @arko/web build
-          pnpm --filter @arko/finance-app build
-          pnpm --filter @arko/portal build
-          pnpm --filter @arko/pm build
+      - name: Build unified service
+        run: pnpm --filter @arko/web build

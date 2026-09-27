@@ -1,8 +1,9 @@
 services:
+  # Legacy services stay declared during cutover so the first sync cannot delete them.
   - type: web
     name: arko-api
     plan: free
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: off
     runtime: node
     region: singapore
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/api build
@@ -36,7 +37,7 @@ services:
   - type: web
     name: arko-site
     plan: free
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: off
     runtime: node
     region: singapore
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
@@ -72,33 +73,38 @@ services:
     region: singapore
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
     startCommand: pnpm --filter @arko/web exec next start -p $PORT
+    healthCheckPath: /health
     buildFilter:
       paths:
         - apps/web/**
+        - apps/pm/src/components/**
+        - apps/pm/src/server/**
         - packages/**
         - pnpm-lock.yaml
     envVars:
       - key: ARKO_SURFACE
-        value: internal
+        value: unified
       - key: AUTH_URL
         value: https://arko-internal.onrender.com
       - key: NEXT_PUBLIC_APP_URL
         value: https://arko-internal.onrender.com
-      - key: ARKO_FINANCE_URL
-        value: https://arko-finance.onrender.com
-      - key: ARKO_PORTAL_URL
-        value: https://arko-portal.onrender.com
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
         sync: false
       - key: AUTH_SECRET
         generateValue: true
+      - key: RATE_LIMIT_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
 
   - type: web
     name: arko-finance
     plan: free
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: off
     runtime: node
     region: singapore
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/finance-app build
@@ -116,7 +122,7 @@ services:
   - type: web
     name: arko-portal
     plan: free
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: off
     runtime: node
     region: singapore
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/portal build
@@ -134,7 +140,7 @@ services:
   - type: web
     name: arko-pm
     plan: free
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: off
     runtime: node
     region: singapore
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/pm build

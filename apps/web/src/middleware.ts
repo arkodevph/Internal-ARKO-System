@@ -68,6 +68,8 @@ export function middleware(request: NextRequest) {
     }
     if (path.startsWith('/api/identity')) return new NextResponse(null, { status: 404 })
   }
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-arko-pathname', path)
   const response =
     request.nextUrl.hostname === "www.arkodevph.com"
       ? NextResponse.redirect(
@@ -77,7 +79,7 @@ export function middleware(request: NextRequest) {
           ),
           308,
         )
-      : NextResponse.next();
+      : NextResponse.next({ request: { headers: requestHeaders } });
 
   for (const [key, value] of Object.entries(HEADERS)) {
     response.headers.set(key, value);
