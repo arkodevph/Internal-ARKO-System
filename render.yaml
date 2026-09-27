@@ -5,8 +5,6 @@ services:
     autoDeployTrigger: checksPass
     runtime: node
     region: singapore
-    domains:
-      - api.arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/api build
     startCommand: pnpm --filter @arko/api start
     healthCheckPath: /health
@@ -35,8 +33,6 @@ services:
     autoDeployTrigger: checksPass
     runtime: node
     region: singapore
-    domains:
-      - arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
     startCommand: pnpm --filter @arko/web exec next start -p $PORT
     buildFilter:
@@ -48,9 +44,13 @@ services:
       - key: ARKO_SURFACE
         value: site
       - key: NEXT_PUBLIC_APP_URL
-        value: https://arkodevph.com
+        value: https://arko-site.onrender.com
       - key: ARKO_API_URL
-        value: https://api.arkodevph.com
+        value: https://arko-api.onrender.com
+      - key: ARKO_INTERNAL_URL
+        value: https://arko-internal.onrender.com
+      - key: ARKO_FINANCE_URL
+        value: https://arko-finance.onrender.com
       - key: AUTH_SECRET
         generateValue: true
       - key: RATE_LIMIT_SECRET
@@ -64,8 +64,6 @@ services:
     autoDeployTrigger: checksPass
     runtime: node
     region: singapore
-    domains:
-      - app.arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/web build
     startCommand: pnpm --filter @arko/web exec next start -p $PORT
     buildFilter:
@@ -77,9 +75,13 @@ services:
       - key: ARKO_SURFACE
         value: internal
       - key: AUTH_URL
-        value: https://app.arkodevph.com
+        value: https://arko-internal.onrender.com
       - key: NEXT_PUBLIC_APP_URL
-        value: https://app.arkodevph.com
+        value: https://arko-internal.onrender.com
+      - key: ARKO_FINANCE_URL
+        value: https://arko-finance.onrender.com
+      - key: ARKO_PORTAL_URL
+        value: https://arko-portal.onrender.com
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
@@ -93,8 +95,6 @@ services:
     autoDeployTrigger: checksPass
     runtime: node
     region: singapore
-    domains:
-      - finance.arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/finance-app build
     startCommand: pnpm --filter @arko/finance-app start
     buildFilter:
@@ -105,7 +105,7 @@ services:
         - pnpm-lock.yaml
     envVars:
       - key: ARKO_API_URL
-        value: https://api.arkodevph.com
+        value: https://arko-api.onrender.com
 
   - type: web
     name: arko-portal
@@ -113,8 +113,6 @@ services:
     autoDeployTrigger: checksPass
     runtime: node
     region: singapore
-    domains:
-      - portal.arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/portal build
     startCommand: pnpm --filter @arko/portal start
     buildFilter:
@@ -125,7 +123,7 @@ services:
         - pnpm-lock.yaml
     envVars:
       - key: ARKO_API_URL
-        value: https://api.arkodevph.com
+        value: https://arko-api.onrender.com
 
   - type: web
     name: arko-pm
@@ -133,8 +131,6 @@ services:
     autoDeployTrigger: checksPass
     runtime: node
     region: singapore
-    domains:
-      - pm.arkodevph.com
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arko/pm build
     startCommand: pnpm --filter @arko/pm exec next start -p $PORT
     buildFilter:
@@ -145,4 +141,4 @@ services:
         - pnpm-lock.yaml
     envVars:
       - key: ARKO_API_URL
-        value: https://api.arkodevph.com
+        value: https://arko-api.onrender.com

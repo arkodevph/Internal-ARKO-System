@@ -41,20 +41,22 @@ const HEADERS: Record<string, string> = {
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
+  const internalUrl = process.env.ARKO_INTERNAL_URL || 'https://app.arkodevph.com'
+  const financeUrl = process.env.ARKO_FINANCE_URL || 'https://finance.arkodevph.com'
   if (process.env.ARKO_SURFACE === 'site') {
     if (path.startsWith('/documents/share/')) {
-      return NextResponse.redirect(new URL(path, 'https://app.arkodevph.com'))
+      return NextResponse.redirect(new URL(path, internalUrl))
     }
     if (path === '/dashboard/finance' || path.startsWith('/dashboard/finance/')) {
-      return NextResponse.redirect(new URL('/', 'https://finance.arkodevph.com'))
+      return NextResponse.redirect(new URL('/', financeUrl))
     }
     if (path.startsWith('/dashboard') || path.startsWith('/auth') || path === '/login') {
-      return NextResponse.redirect(new URL(path === '/login' ? '/auth/login' : path, 'https://app.arkodevph.com'))
+      return NextResponse.redirect(new URL(path === '/login' ? '/auth/login' : path, internalUrl))
     }
     if ((path === '/api' || path.startsWith('/api/')) &&
         path !== '/api/landing/view' && path !== '/api/assistant/public-chat') {
       if (path.startsWith('/api/email-marketing/unsubscribe/')) {
-        return NextResponse.redirect(new URL(path, 'https://app.arkodevph.com'))
+        return NextResponse.redirect(new URL(path, internalUrl))
       }
       return new NextResponse(null, { status: 404 })
     }
@@ -62,7 +64,7 @@ export function middleware(request: NextRequest) {
   if (process.env.ARKO_SURFACE === 'internal') {
     if (path === '/') return NextResponse.redirect(new URL('/dashboard', request.url))
     if (path === '/dashboard/finance' || path.startsWith('/dashboard/finance/')) {
-      return NextResponse.redirect(new URL('/', 'https://finance.arkodevph.com'))
+      return NextResponse.redirect(new URL('/', financeUrl))
     }
     if (path.startsWith('/api/identity')) return new NextResponse(null, { status: 404 })
   }

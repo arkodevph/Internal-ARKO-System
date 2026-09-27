@@ -2,14 +2,16 @@
 
 ARKO is a pnpm/Next.js monorepo for the public site, internal workspace, finance, client portal, project-management board, and shared API. PostgreSQL stays in the existing Supabase project; Render runs the application services, not a second database.
 
-| Service | Domain | Source | Runtime data access |
+| Service | Temporary Render URL | Source | Runtime data access |
 | --- | --- | --- | --- |
-| Public site | `arkodevph.com` | `apps/web`, `ARKO_SURFACE=site` | Public API only at runtime |
-| Internal | `app.arkodevph.com` | `apps/web`, `ARKO_SURFACE=internal` | Legacy Prisma and Auth.js paths remain |
-| Finance | `finance.arkodevph.com` | `apps/finance` | Central API only |
-| Client portal | `portal.arkodevph.com` | `apps/portal` | Central API only |
-| PM board | `pm.arkodevph.com` | `apps/pm` | Central API only |
-| API and identity | `api.arkodevph.com` | `apps/api` | Supabase PostgreSQL via Prisma |
+| Public site | `arko-site.onrender.com` | `apps/web`, `ARKO_SURFACE=site` | Public API only at runtime |
+| Internal | `arko-internal.onrender.com` | `apps/web`, `ARKO_SURFACE=internal` | Legacy Prisma and Auth.js paths remain |
+| Finance | `arko-finance.onrender.com` | `apps/finance` | Central API only |
+| Client portal | `arko-portal.onrender.com` | `apps/portal` | Central API only |
+| PM board | `arko-pm.onrender.com` | `apps/pm` | Central API only |
+| API and identity | `arko-api.onrender.com` | `apps/api` | Supabase PostgreSQL via Prisma |
+
+The Render Blueprint temporarily requests no custom domains. Confirm each assigned `onrender.com` hostname in the Render dashboard before opening the apps; Render can suffix a hostname if the preferred name is taken.
 
 The new apps have separate host-only, HTTP-only sessions. Users enter their existing ARKO email and password on each app; the central identity API issues an app-scoped session, and each app's server-side proxy calls the central API. This is not yet single sign-on. Signing in to one app does not automatically sign in to another.
 

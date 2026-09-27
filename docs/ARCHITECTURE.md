@@ -4,11 +4,11 @@ The deployed target is six Render web services from one pnpm monorepo, backed by
 
 | Browser origin | Authentication | Backend |
 | --- | --- | --- |
-| `finance.arkodevph.com` | Finance-scoped opaque session | Same-origin BFF → `api.arkodevph.com` → Prisma |
-| `portal.arkodevph.com` | Client-scoped opaque session | Same-origin BFF → `api.arkodevph.com` → Prisma |
-| `pm.arkodevph.com` | PM-scoped opaque session | Same-origin BFF → `api.arkodevph.com` → Prisma |
-| `app.arkodevph.com` | Existing Auth.js session | Existing web tRPC/custom routes → Prisma directly |
-| `arkodevph.com` | Public | Landing content, views, and chat → API; contact form → Resend |
+| `arko-finance.onrender.com` | Finance-scoped opaque session | Same-origin BFF → `arko-api.onrender.com` → Prisma |
+| `arko-portal.onrender.com` | Client-scoped opaque session | Same-origin BFF → `arko-api.onrender.com` → Prisma |
+| `arko-pm.onrender.com` | PM-scoped opaque session | Same-origin BFF → `arko-api.onrender.com` → Prisma |
+| `arko-internal.onrender.com` | Existing Auth.js session | Existing web tRPC/custom routes → Prisma directly |
+| `arko-site.onrender.com` | Public | Landing content, views, and chat → API; contact form → Resend |
 
 The central API exposes `/api/identity/login`, `/session`, `/refresh`, `/logout` and bearer-only `/api/trpc`. Login verifies the existing bcrypt password and active account status. Portal sessions require `CLIENT`; finance sessions require `transactions:read`; PM and internal sessions require staff roles. Access tokens expire after 15 minutes, refresh tokens after seven days. Only SHA-256 hashes are stored in `AppSession`. Refresh uses a conditional database update to prevent replay. Password/account revocation increments `User.authVersion`, which invalidates app sessions. Each app's cookies are host-only, HTTP-only, `Secure` in production, and `SameSite=Lax`. Each BFF rejects cross-origin writes. The API enforces a per-app procedure allowlist and the existing per-procedure authorization/ownership checks.
 
