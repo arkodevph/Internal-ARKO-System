@@ -12,6 +12,10 @@
 
 The Blueprint declares `arkodevph.com` on `arko-site` and `app.arkodevph.com` on `arko-internal`; Render still requires DNS and TLS verification. At the domain provider, replace the current root record (currently serving a Vercel 404) with Render's root-domain target for `arko-site`, and add a CNAME `app` pointing to `arko-internal.onrender.com`. Render also automatically adds `www` when a root domain is configured. Check the Blueprint sync preview for the custom-domain allowance before accepting it; do not add a payment method or paid plan. At the time of this change, `app.arkodevph.com` does not resolve, so browser login redirects will fail until DNS and certificate verification complete. The `onrender.com` URLs remain available for smoke tests. Both Free services can sleep after inactivity.
 
+## System keepalive
+
+`.github/workflows/system-keepalive.yml` pings only `arko-internal.onrender.com/health` every 10 minutes on weekdays from 9:07 AM through 5:57 PM Asia/Manila. It also supports a manual GitHub Actions run. The landing service is not kept awake. This schedule aims to keep the system responsive during working hours without another Render service or a 24/7 Free instance. Roughly 9 hours per weekday is about 200 system instance-hours in a typical month, before normal user traffic and other services. Check both Render's shared Free instance-hour usage and GitHub Actions minutes; scheduled runs can be delayed or missed, so cold starts remain possible. Disable this workflow if the workspace approaches either free allowance.
+
 ## Client request GitHub progress
 
 An admin can attach a GitHub repository to each client request. The root `PROGRESS.md` must use Markdown checkboxes (`- [x] Done`, `- [ ] Remaining`); checklist item count determines the displayed percentage. The 10 most recent commit subjects publish on first connect, and later commits publish automatically when the hourly `.github/workflows/client-request-sync.yml` job runs. Commit bodies are never displayed. Ensure commit subjects and checklist text are safe for clients to see.
