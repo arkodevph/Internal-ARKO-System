@@ -1,6 +1,7 @@
 services:
   - type: web
     name: arko-api
+    plan: free
     runtime: node
     region: singapore
     domains:
@@ -29,6 +30,7 @@ services:
 
   - type: web
     name: arko-site
+    plan: free
     runtime: node
     region: singapore
     domains:
@@ -56,6 +58,7 @@ services:
 
   - type: web
     name: arko-internal
+    plan: free
     runtime: node
     region: singapore
     domains:
@@ -83,6 +86,7 @@ services:
 
   - type: web
     name: arko-finance
+    plan: free
     runtime: node
     region: singapore
     domains:
@@ -101,6 +105,7 @@ services:
 
   - type: web
     name: arko-portal
+    plan: free
     runtime: node
     region: singapore
     domains:
@@ -119,6 +124,7 @@ services:
 
   - type: web
     name: arko-pm
+    plan: free
     runtime: node
     region: singapore
     domains:
