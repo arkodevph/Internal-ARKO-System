@@ -2,6 +2,8 @@
 
 `render.yaml` defines six Node web services and custom domains. It **does not** create a Render database. The existing Supabase PostgreSQL project remains the single source of truth.
 
+GitHub Actions runs schema validation, lint, tests, and production builds on pushes and pull requests. Render's `autoDeployTrigger: checksPass` starts a service deployment only after the checks on its linked branch pass. No Render deploy-hook secrets are needed. Blueprint configuration itself may still auto-sync when `render.yaml` changes; the initial Blueprint creation and migration review remain manual steps.
+
 ## Before creating the Blueprint
 
 1. Back up the Supabase database and verify the existing Prisma migration history in the `arko` schema. A read-only `prisma migrate status` check on 2026-09-27 found **three pending migrations**: `20260820000000_add_nex_send_and_reminder_permissions`, `20260926000000_pm_required_deadline_review_gate`, and `20260927120000_add_app_sessions`. The first changes user permission arrays; the second backfills task deadlines and creates review records. A read-only query found **six tasks with null deadlines**; the PM migration will set each deadline to its creation time, potentially making them overdue. Do not auto-apply them blindly. Compare those SQL files with the production schema/data, then run `pnpm --filter @arko/db db:deploy` manually after backup and approval. The Blueprint intentionally has no automatic migration command.

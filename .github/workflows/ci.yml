@@ -8,9 +8,9 @@ on:
 
 jobs:
   web:
-    name: Lint & Build
+    name: Test & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -27,8 +27,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
+      - name: Validate Prisma schema
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/postgres?schema=arko
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/postgres?schema=arko
+        run: pnpm --filter @arko/db exec prisma validate
 
-      - name: Build
-        run: pnpm build
+      - name: Lint web
+        run: pnpm --filter @arko/web lint
+
+      - name: Web tests
+        run: pnpm --filter @arko/web test -- --runInBand
+
+      - name: PM review gate
+        run: pnpm --filter @arko/pm verify:gate
+
+      - name: Build all services
+        run: |
+          pnpm --filter @arko/api build
+          pnpm --filter @arko/web build
+          pnpm --filter @arko/finance-app build
+          pnpm --filter @arko/portal build
+          pnpm --filter @arko/pm build

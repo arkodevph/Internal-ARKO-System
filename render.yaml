@@ -2,6 +2,7 @@ services:
   - type: web
     name: arko-api
     plan: free
+    autoDeployTrigger: checksPass
     runtime: node
     region: singapore
     domains:
@@ -31,6 +32,7 @@ services:
   - type: web
     name: arko-site
     plan: free
+    autoDeployTrigger: checksPass
     runtime: node
     region: singapore
     domains:
@@ -59,6 +61,7 @@ services:
   - type: web
     name: arko-internal
     plan: free
+    autoDeployTrigger: checksPass
     runtime: node
     region: singapore
     domains:
@@ -87,6 +90,7 @@ services:
   - type: web
     name: arko-finance
     plan: free
+    autoDeployTrigger: checksPass
     runtime: node
     region: singapore
     domains:
@@ -106,6 +110,7 @@ services:
   - type: web
     name: arko-portal
     plan: free
+    autoDeployTrigger: checksPass
     runtime: node
     region: singapore
     domains:
@@ -125,6 +130,7 @@ services:
   - type: web
     name: arko-pm
     plan: free
+    autoDeployTrigger: checksPass
     runtime: node
     region: singapore
     domains:
