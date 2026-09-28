@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import ProjectGallery from "./ProjectGallery";
+import ProjectHelmet from "./ProjectHelmet";
 import Breadcrumbs from "../_components/Breadcrumbs";
 import ContactForm from "../_components/ContactForm";
 import { getLandingContent } from "../../../lib/landing/get-content";
@@ -74,14 +74,7 @@ export default async function ProjectsPage() {
             aria-hidden
           >
             <div className="absolute inset-[11%] border-2 border-dashed border-ink/20" />
-            <Image
-              src="/projects/models/project-browser-halftone.png"
-              alt=""
-              fill
-              priority
-              sizes="(min-width:1024px) 42vw, 80vw"
-              className="relative z-10 object-contain p-[5%]"
-            />
+            <ProjectHelmet />
             <span className="mono absolute bottom-[12%] right-[4%] z-20 border-2 border-ink bg-ink px-3 py-2 text-[0.55rem] font-bold text-acid">
               LIVE / 09
             </span>
