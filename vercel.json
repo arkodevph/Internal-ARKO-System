@@ -8,6 +8,5 @@
     "ARKO_API_URL": "https://app.arkodevph.com"
   },
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "ARKO_SURFACE=site ARKO_API_URL=https://app.arkodevph.com pnpm --filter @arko/web build",
-  "outputDirectory": ".next"
+  "buildCommand": "ARKO_SURFACE=site ARKO_API_URL=https://app.arkodevph.com pnpm --filter @arko/web build"
 }

@@ -13,6 +13,6 @@ describe("root Vercel deployment", () => {
       ARKO_API_URL: "https://app.arkodevph.com",
     });
     expect(config.buildCommand).not.toMatch(/prisma|DATABASE_URL|DIRECT_URL/);
-    expect(config.outputDirectory).toBe(".next");
+    expect(config).not.toHaveProperty("outputDirectory");
   });
 });

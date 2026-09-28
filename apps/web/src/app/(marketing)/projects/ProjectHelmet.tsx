@@ -3,17 +3,35 @@
 import { Center, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Box3, Vector3, type Group } from "three";
+import { Box3, Mesh, MeshStandardMaterial, Vector3, type Group } from "three";
 
 const MODEL_PATH = "/projects/models/griffith-helmet.glb";
 
 function Helmet({ rotating }: { rotating: boolean }) {
   const group = useRef<Group>(null);
   const { scene } = useGLTF(MODEL_PATH);
+  const material = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: "#9da3aa",
+        metalness: 0.88,
+        roughness: 0.24,
+      }),
+    [],
+  );
+  const model = useMemo(() => {
+    const clone = scene.clone(true);
+    clone.traverse((child) => {
+      if (child instanceof Mesh) child.material = material;
+    });
+    return clone;
+  }, [material, scene]);
   const scale = useMemo(() => {
-    const size = new Box3().setFromObject(scene).getSize(new Vector3());
+    const size = new Box3().setFromObject(model).getSize(new Vector3());
     return 3.2 / Math.max(size.x, size.y, size.z);
-  }, [scene]);
+  }, [model]);
+
+  useEffect(() => () => material.dispose(), [material]);
 
   useFrame((_, delta) => {
     if (rotating && group.current) group.current.rotation.y += delta * 0.45;
@@ -22,7 +40,7 @@ function Helmet({ rotating }: { rotating: boolean }) {
   return (
     <Center>
       <group ref={group} rotation={[0.08, -0.35, -0.04]} scale={scale}>
-        <primitive object={scene} />
+        <primitive object={model} />
       </group>
     </Center>
   );
