@@ -6,17 +6,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LandingContent } from "../../../lib/landing/content";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
-
-const FEATURED_PROJECTS = [
-  "Kapet Balay",
-  "Yuenansichu Restaurant",
-  "Fresh Phones PH",
-  "Locus Assembly",
-];
 
 const PROJECT_LAYOUT = [
   "md:col-start-1 md:col-span-7 md:row-start-1 md:row-span-7",
@@ -35,9 +28,16 @@ export default function ScrollWork({
 }: ScrollWorkProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const projects = FEATURED_PROJECTS.map((title) =>
-    allProjects.find((project) => project.title === title),
-  ).filter((project): project is NonNullable<typeof project> => Boolean(project));
+  const [projects, setProjects] = useState(() => allProjects.slice(0, 4));
+
+  useEffect(() => {
+    const shuffled = [...allProjects];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+    }
+    setProjects(shuffled.slice(0, 4));
+  }, [allProjects]);
 
   useGSAP(
     () => {

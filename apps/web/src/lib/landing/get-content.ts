@@ -7,7 +7,7 @@ import { publicApiUrl } from '../public-api'
 export const LANDING_CACHE_TAG = 'landing-content'
 
 export async function loadLandingContent(): Promise<LandingContent> {
-  if (process.env.ARKO_SURFACE === 'site') {
+  if (process.env.ARKO_SURFACE === 'site' || process.env.VERCEL === '1') {
     try {
       const response = await fetch(publicApiUrl('/api/landing/content'), { cache: 'no-store' })
       if (!response.ok) throw new Error('Landing content API unavailable')
@@ -28,14 +28,21 @@ export async function loadLandingContent(): Promise<LandingContent> {
 
 /**
  * Read the singleton landing content for Server Components (the public marketing
- * page). Wrapped in `unstable_cache` so the page stays statically cached and is
- * revalidated on demand when an admin saves. Falls back to defaults when no row
- * exists yet, so the page renders identically before the first admin save.
+ * page). The system caches its database read and revalidates on admin save;
+ * the Vercel landing reads the system API on each request so edits are not stale.
+ * Both fall back to defaults if their content source is unavailable.
  */
-export const getLandingContent = unstable_cache(
+const cachedLandingContent = unstable_cache(
   loadLandingContent,
   ['landing-content-v3'],
   // Tag-based revalidation is immediate on admin save; the time window is a
   // self-heal fallback so a changed content shape can't stay cached indefinitely.
   { tags: [LANDING_CACHE_TAG], revalidate: 3600 },
 )
+
+export function getLandingContent(): Promise<LandingContent> {
+  if (process.env.ARKO_SURFACE === 'site' || process.env.VERCEL === '1') {
+    return loadLandingContent()
+  }
+  return cachedLandingContent()
+}

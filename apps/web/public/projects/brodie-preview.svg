@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#070907"/>
+  <path d="M0 112h1200M0 688h1200M112 0v800M1088 0v800" stroke="#b8ff2e" stroke-opacity=".28"/>
+  <rect x="112" y="112" width="976" height="576" fill="none" stroke="#b8ff2e" stroke-width="3"/>
+  <text x="152" y="190" fill="#b8ff2e" font-family="monospace" font-size="24" letter-spacing="7">BRAND WEBSITE / 2026</text>
+  <text x="145" y="425" fill="#f4f4ef" font-family="Arial Black,Arial" font-size="152" font-weight="900">BRODIE</text>
+  <rect x="150" y="486" width="490" height="18" fill="#b8ff2e"/>
+  <text x="152" y="580" fill="#8e978e" font-family="monospace" font-size="27" letter-spacing="4">REDESIGNED FOR CLARITY.</text>
+  <circle cx="1017" cy="623" r="31" fill="#b8ff2e"/>
+</svg>

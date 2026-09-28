@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse(null, { status: 204 })
   }
 
-  if (process.env.ARKO_SURFACE === 'site') {
+  if (process.env.ARKO_SURFACE === 'site' || process.env.VERCEL === '1') {
     const remote = await fetch(publicApiUrl('/api/landing/view'), { method: 'POST', cache: 'no-store' })
     if (!remote.ok) return new NextResponse(null, { status: 503 })
   } else {

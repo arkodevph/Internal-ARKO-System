@@ -76,7 +76,7 @@ function publicReply(input: string, content: LandingContent) {
 }
 
 export async function POST(request: Request) {
-  if (process.env.ARKO_SURFACE === 'site') {
+  if (process.env.ARKO_SURFACE === 'site' || process.env.VERCEL === '1') {
     const remote = await fetch(publicApiUrl('/api/assistant/public-chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -2,7 +2,7 @@ import Link from "next/link";
 import HeroCharacter from "./_components/HeroCharacter";
 import CountUp from "./_components/CountUp";
 import RotatingText from "./_components/RotatingText";
-import ScrollServices from "./_components/ScrollServices";
+import ServicesSection from "./_components/ServicesSection";
 import ScrollProcess from "./_components/ScrollProcess";
 import ScrollWork from "./_components/ScrollWork";
 import ContactForm from "./_components/ContactForm";
@@ -20,7 +20,7 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
     <section
       id="top"
       data-bg="light"
-      className="relative bg-acid text-ink"
+      className="group/hero relative z-10 bg-acid text-ink"
     >
       <div className="relative z-10">
         <div className="px-6 pb-16 pt-32 md:px-10 md:pb-24 md:pt-44 lg:pr-[44vw]">
@@ -48,8 +48,8 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
           ARKO
         </div>
       </div>
-      <div className="pointer-events-none absolute bottom-0 right-[6%] w-[min(46vw,560px)]">
-        <HeroCharacter className="translate-y-[18%]" />
+      <div className="pointer-events-none absolute -bottom-14 -right-[2%] w-[112vw] md:-bottom-40 md:right-[8%] md:w-[min(78vw,1240px)]">
+        <HeroCharacter />
       </div>
     </section>
   );
@@ -360,7 +360,7 @@ export default async function Home() {
       <Hero hero={content.hero} />
       {content.sections.stats && <Stats stats={content.stats} />}
       {content.sections.intro && <Intro intro={content.intro} />}
-      {content.sections.services && <ScrollServices {...content.services} />}
+      {content.sections.services && <ServicesSection {...content.services} />}
       {content.sections.work && (
         <ScrollWork {...content.work} projects={content.projects.items} />
       )}

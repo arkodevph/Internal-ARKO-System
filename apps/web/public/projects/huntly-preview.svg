@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#b8ff2e"/>
+  <path d="M0 100h1200M0 200h1200M0 300h1200M0 400h1200M0 500h1200M0 600h1200M0 700h1200M100 0v800M200 0v800M300 0v800M400 0v800M500 0v800M600 0v800M700 0v800M800 0v800M900 0v800M1000 0v800M1100 0v800" stroke="#11180b" stroke-opacity=".1"/>
+  <rect x="92" y="90" width="1016" height="620" fill="#080a08"/>
+  <text x="140" y="165" fill="#b8ff2e" font-family="monospace" font-size="23" letter-spacing="6">CAREER PLATFORM / PH</text>
+  <text x="132" y="390" fill="#f4f4ef" font-family="Arial Black,Arial" font-size="150" font-weight="900">HUNTLY</text>
+  <text x="140" y="472" fill="#b8ff2e" font-family="Arial, sans-serif" font-size="43">A smarter path to your next role.</text>
+  <rect x="140" y="558" width="290" height="70" fill="#b8ff2e"/>
+  <text x="177" y="604" fill="#080a08" font-family="monospace" font-size="20" font-weight="700" letter-spacing="3">START HUNTING →</text>
+</svg>

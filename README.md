@@ -1,17 +1,17 @@
 # ARKO
 
-ARKO is a pnpm/Next.js monorepo. One Render web service runs the public site, internal dashboard, finance, client portal, PM board, and API. PostgreSQL stays in the existing Supabase project.
+ARKO is a pnpm/Next.js monorepo. Vercel hosts the public landing page; one Render web service named `arko` runs the authenticated system, finance, client portal, PM board, and API. PostgreSQL stays in the existing Supabase project.
 
-| Area | Path on `arko-internal.onrender.com` |
+| Area | URL |
 | --- | --- |
-| Public site | `/` |
-| Internal dashboard | `/dashboard` (or `/app`) |
-| Finance | `/dashboard/finance` (or `/finance`) |
-| Client portal | `/dashboard/client-portal` (or `/portal`) |
-| PM board | `/dashboard/pm` (or `/pm`) |
-| API | `/api/*` |
+| Public site | `https://arkodevph.com/` |
+| System dashboard | `https://app.arkodevph.com/dashboard` |
+| Finance | `https://app.arkodevph.com/dashboard/finance` |
+| Client portal | `https://app.arkodevph.com/dashboard/client-portal` |
+| PM board | `https://app.arkodevph.com/dashboard/pm` |
+| API | `https://app.arkodevph.com/api/*` |
 
-One Auth.js login at `/auth/login` uses existing ARKO accounts and a same-origin session. Each dashboard area still enforces its role/permission checks. During cutover, the five previous services remain declared for rollback with auto-deploy off; CI builds only the unified app. See [Architecture](docs/ARCHITECTURE.md) and [Render deployment](docs/DEPLOY-INFRA.md).
+One Auth.js login at `https://app.arkodevph.com/auth/login` uses existing ARKO accounts and a same-origin session. Each dashboard area still enforces its role/permission checks. The Render Blueprint declares only `arko`; old Render services must be retired separately after cutover. See [Architecture](docs/ARCHITECTURE.md) and [deployment](docs/DEPLOY-INFRA.md).
 
 ## Local development
 

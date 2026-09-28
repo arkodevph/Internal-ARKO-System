@@ -41,35 +41,30 @@ const HEADERS: Record<string, string> = {
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
-  const internalUrl = process.env.ARKO_INTERNAL_URL || 'https://app.arkodevph.com'
-  const financeUrl = process.env.ARKO_FINANCE_URL || 'https://finance.arkodevph.com'
-  if (process.env.ARKO_SURFACE === 'site') {
+  const host = request.nextUrl.hostname
+  const appUrl = 'https://app.arkodevph.com'
+  const publicSite = process.env.VERCEL === '1' || process.env.ARKO_SURFACE === 'site' || host === 'arkodevph.com'
+  if (publicSite) {
     if (path.startsWith('/documents/share/')) {
-      return NextResponse.redirect(new URL(path, internalUrl))
+      return NextResponse.redirect(new URL(path + request.nextUrl.search, appUrl))
     }
-    if (path === '/dashboard/finance' || path.startsWith('/dashboard/finance/')) {
-      return NextResponse.redirect(new URL(path, internalUrl))
+    if (path === '/dashboard' || path.startsWith('/dashboard/') ||
+        path === '/auth' || path.startsWith('/auth/') || path === '/login' ||
+        path === '/app' || path === '/finance' || path === '/portal' || path === '/pm') {
+      const destination = path === '/login' ? '/auth/login' : path
+      return NextResponse.redirect(new URL(destination + request.nextUrl.search, appUrl))
     }
-    if (path.startsWith('/dashboard') || path.startsWith('/auth') || path === '/login') {
-      return NextResponse.redirect(new URL(path === '/login' ? '/auth/login' : path, internalUrl))
-    }
+    if (path === '/health') return new NextResponse(null, { status: 404 })
     if ((path === '/api' || path.startsWith('/api/')) &&
         path !== '/api/landing/view' && path !== '/api/landing/content' && path !== '/api/assistant/public-chat') {
       if (path.startsWith('/api/email-marketing/unsubscribe/')) {
-        return NextResponse.redirect(new URL(path, internalUrl))
+        return NextResponse.redirect(new URL(path + request.nextUrl.search, appUrl))
       }
       return new NextResponse(null, { status: 404 })
     }
   }
-  if (process.env.ARKO_SURFACE === 'unified' && path === '/') {
+  if (!publicSite && (host === 'app.arkodevph.com' || host === 'arko.onrender.com') && path === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-  if (process.env.ARKO_SURFACE === 'internal') {
-    if (path === '/') return NextResponse.redirect(new URL('/dashboard', request.url))
-    if (path === '/dashboard/finance' || path.startsWith('/dashboard/finance/')) {
-      return NextResponse.redirect(new URL('/', financeUrl))
-    }
-    if (path.startsWith('/api/identity')) return new NextResponse(null, { status: 404 })
   }
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-arko-pathname', path)
