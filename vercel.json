@@ -3,7 +3,11 @@
   "framework": "nextjs",
   "fluid": true,
   "regions": ["syd1"],
-  "installCommand": "pnpm install",
-  "buildCommand": "DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" pnpm --filter @arko/db exec prisma migrate deploy && pnpm turbo run build --filter=@arko/web",
+  "env": {
+    "ARKO_SURFACE": "site",
+    "ARKO_API_URL": "https://app.arkodevph.com"
+  },
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "ARKO_SURFACE=site ARKO_API_URL=https://app.arkodevph.com pnpm --filter @arko/web build",
   "outputDirectory": "apps/web/.next"
 }
