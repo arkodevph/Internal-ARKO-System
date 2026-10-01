@@ -9,6 +9,7 @@ import { api } from '../../../lib/trpc/client'
 import { SprintDialog } from './sprint-dialog'
 import { RecordScopeField, RecordScopeBadge } from '../../../components/record-scope'
 import type { RecordScope } from '../../../lib/record-scope'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -70,6 +71,7 @@ function sameDay(a: Date, b: Date) {
 
 export default function EventsPage() {
   const { data: session } = useSession()
+  const { scope: workspaceScope } = useWorkspaceScope()
   const { data: profile } = api.users.getProfile.useQuery(undefined, {
     refetchOnMount: 'always',
   })
@@ -84,7 +86,7 @@ export default function EventsPage() {
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('10:00')
   const [error, setError] = useState('')
-  const [scope, setScope] = useState<RecordScope>('PERSONAL')
+  const [scope, setScope] = useState<RecordScope>(workspaceScope)
   const [sprintDialogOpen, setSprintDialogOpen] = useState(false)
   const [editSprintId, setEditSprintId] = useState<string | undefined>()
   const [viewDate, setViewDate] = useState(() => new Date())
@@ -142,17 +144,17 @@ export default function EventsPage() {
 
   const eventsByDay = useMemo(() => {
     const map: Record<string, typeof events> = {}
-    events?.forEach((ev) => {
+    events?.filter((ev) => ev.scope === workspaceScope).forEach((ev) => {
       const k = new Date(ev.date).toDateString()
       ;(map[k] ??= []).push(ev)
     })
     Object.values(map).forEach((list) => list?.sort((a, b) => a.startTime.localeCompare(b.startTime)))
     return map
-  }, [events])
+  }, [events, workspaceScope])
 
   const dayEvents = useMemo(() => (eventsByDay[viewDate.toDateString()] ?? []) as NonNullable<typeof events>, [eventsByDay, viewDate])
 
-  const selected = events?.find((e) => e.id === selectedId) ?? null
+  const selected = events?.find((e) => e.id === selectedId && e.scope === workspaceScope) ?? null
   const today = new Date()
 
   const shiftDay = (n: number) => setViewDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n))
@@ -162,6 +164,7 @@ export default function EventsPage() {
   const monthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0)
 
   const openAddForDay = (d: Date) => {
+    setScope(workspaceScope)
     setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
     setShowForm(true)
   }
@@ -578,7 +581,7 @@ export default function EventsPage() {
         </Button>
       </div>
 
-      {!sprints || sprints.length === 0 ? (
+      {!sprints?.some((s) => s.scope === workspaceScope) ? (
         <Card className="border-dashed border-border-subtle">
           <CardContent className="flex flex-col items-center py-12 text-center">
             <Flag className="mb-3 h-8 w-8 text-text-tertiary" />
@@ -590,7 +593,7 @@ export default function EventsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {sprints.map((s) => (
+          {sprints.filter((s) => s.scope === workspaceScope).map((s) => (
             <Card key={s.id}>
               <CardContent className="flex items-center gap-3 p-4">
                 <span className="h-8 w-1 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />

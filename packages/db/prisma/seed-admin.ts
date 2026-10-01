@@ -12,28 +12,35 @@ function isLocalDatabase(value: string | undefined) {
 }
 
 async function main() {
-  if (!isLocalDatabase(process.env.DATABASE_URL) || !isLocalDatabase(process.env.DIRECT_URL)) {
-    throw new Error('Local admin seeding is only allowed with localhost DATABASE_URL and DIRECT_URL.')
+  const isLocal = isLocalDatabase(process.env.DATABASE_URL) && isLocalDatabase(process.env.DIRECT_URL)
+  if (!isLocal && process.env.ALLOW_REMOTE_ADMIN_SEED !== 'true') {
+    throw new Error('Remote admin seeding requires ALLOW_REMOTE_ADMIN_SEED=true.')
   }
 
-  const email = process.env.LOCAL_SEED_EMAIL?.trim().toLowerCase()
-  const password = process.env.LOCAL_SEED_PASSWORD
+  const email = (process.env.ADMIN_SEED_EMAIL ?? process.env.LOCAL_SEED_EMAIL)?.trim().toLowerCase()
+  const password = process.env.ADMIN_SEED_PASSWORD ?? process.env.LOCAL_SEED_PASSWORD
   if (!email || !password || password.length < 20) {
-    throw new Error('Set LOCAL_SEED_EMAIL and a 20+ character LOCAL_SEED_PASSWORD in the ignored development env file.')
+    throw new Error('Set ADMIN_SEED_EMAIL and a 20+ character ADMIN_SEED_PASSWORD.')
   }
 
   const hashed = await hash(password, 12)
   await prisma.user.upsert({
     where: { email },
-    create: { name: 'Local Admin', email, password: hashed, role: 'ADMIN', status: 'ACTIVE' },
+    create: {
+      name: process.env.ADMIN_SEED_NAME?.trim() || 'ARKO Admin',
+      email,
+      password: hashed,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+    },
     update: { password: hashed, role: 'ADMIN', status: 'ACTIVE' },
   })
-  console.log(`Local admin seeded: ${email}. Password is in apps/web/.env.development.local.`)
+  console.log(`Admin account seeded: ${email}.`)
 }
 
 main()
   .catch((error) => {
-    console.error(error instanceof Error ? error.message : 'Local admin seeding failed.')
+    console.error(error instanceof Error ? error.message : 'Admin seeding failed.')
     process.exitCode = 1
   })
   .finally(async () => {

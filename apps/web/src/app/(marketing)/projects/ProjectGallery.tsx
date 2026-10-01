@@ -7,6 +7,12 @@ import type { LandingContent } from "../../../lib/landing/content";
 
 type Project = LandingContent["projects"]["items"][number];
 const loadedProjectUrls = new Set<string>();
+const EMBEDDING_BLOCKED_DOMAINS = new Set([
+  "co-map.vercel.app",
+  "dmarcconstruction.com",
+  "gohuntly.com",
+  "hivecx.asia",
+]);
 
 function displayDomain(domain: string) {
   if (!domain.endsWith(".vercel.app")) return domain;
@@ -14,7 +20,7 @@ function displayDomain(domain: string) {
 }
 
 function ProjectBrowser({ project, onClose }: { project: Project; onClose: () => void }) {
-  const embeddingBlocked = project.domain === "co-map.vercel.app";
+  const embeddingBlocked = EMBEDDING_BLOCKED_DOMAINS.has(project.domain);
   const vanityUrl = `https://${displayDomain(project.domain)}`;
   const [loading, setLoading] = useState(!embeddingBlocked && !loadedProjectUrls.has(project.href));
   const [frameReady, setFrameReady] = useState(embeddingBlocked);
@@ -134,16 +140,15 @@ export default function ProjectGallery({ projects }: { projects: Project[] }) {
       <div className="grid gap-0 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {visibleProjects.map((project) => (
           <button key={project.href} type="button" onClick={() => setActiveProject(project)} className="project-portal group relative cursor-pointer overflow-hidden border-x-0 border-b border-t-0 border-white/10 bg-ink-soft text-left transition-colors focus-visible:outline focus-visible:outline-4 focus-visible:outline-inset focus-visible:outline-acid sm:border-2 sm:border-white/15 sm:hover:border-acid" aria-label={`Load ${project.title} in the project browser`}>
-            <div className="relative aspect-[16/11] overflow-hidden bg-black sm:aspect-[4/3]">
+            <div className="relative aspect-[16/10] overflow-hidden bg-black">
               <Image src={project.image} alt={`${project.title} website preview`} fill sizes="(min-width:1280px) 31vw,(min-width:640px) 48vw,100vw" className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transition-none" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent" />
               <span className="display absolute left-4 top-4 border-2 border-ink bg-acid px-2.5 py-1.5 text-xs text-ink">{project.number}</span>
-              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                <p className="eyebrow text-acid">{project.category}</p>
-                <h2 className="display mt-2 text-3xl leading-none text-white sm:text-4xl">{project.title}</h2>
-                <p className="mt-2 text-sm font-semibold text-white/60">{project.type}</p>
-              </div>
               <span className="absolute right-4 top-4 grid h-12 w-12 translate-y-2 place-items-center border-2 border-acid bg-ink text-acid opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:bg-acid group-hover:text-ink group-hover:opacity-100"><ArrowUpRight className="h-5 w-5" /></span>
+            </div>
+            <div data-project-metadata className="min-h-32 border-t border-white/10 px-5 py-4">
+              <p className="eyebrow text-acid">{project.category}</p>
+              <h2 className="display mt-2 text-2xl leading-none text-white sm:text-3xl">{project.title}</h2>
+              <p className="mt-2 text-sm font-semibold text-white/50">{project.type}</p>
             </div>
             <div className="mono flex items-center justify-between gap-3 border-t border-white/10 px-5 py-3 text-[0.58rem] uppercase tracking-wider text-white/35"><span className="truncate">{displayDomain(project.domain)}</span><span className="shrink-0 text-acid">Launch ↗</span></div>
           </button>

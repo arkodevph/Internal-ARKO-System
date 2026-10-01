@@ -7,14 +7,16 @@ import { api } from '../../../lib/trpc/client'
 import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
 import type { RecordScope } from '../../../lib/record-scope'
 import { useSession } from 'next-auth/react'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 export default function RemindersPage() {
   const { data: session } = useSession()
+  const { scope: workspaceScope } = useWorkspaceScope()
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const [scope, setScope] = useState<RecordScope>('PERSONAL')
+  const [scope, setScope] = useState<RecordScope>(workspaceScope)
 
   const { data: reminders, isLoading, error } = api.reminders.list.useQuery()
   const utils = api.useUtils()
@@ -62,10 +64,11 @@ export default function RemindersPage() {
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
   const tomorrowEnd = new Date(todayEnd.getTime() + 86400000)
 
-  const overdue = (reminders ?? []).filter((r) => !r.isDone && new Date(r.dueAt) < now)
-  const today = (reminders ?? []).filter((r) => !r.isDone && new Date(r.dueAt) >= now && new Date(r.dueAt) <= todayEnd)
-  const upcoming = (reminders ?? []).filter((r) => !r.isDone && new Date(r.dueAt) > todayEnd)
-  const done = (reminders ?? []).filter((r) => r.isDone)
+  const visibleReminders = (reminders ?? []).filter((r) => r.scope === workspaceScope)
+  const overdue = visibleReminders.filter((r) => !r.isDone && new Date(r.dueAt) < now)
+  const today = visibleReminders.filter((r) => !r.isDone && new Date(r.dueAt) >= now && new Date(r.dueAt) <= todayEnd)
+  const upcoming = visibleReminders.filter((r) => !r.isDone && new Date(r.dueAt) > todayEnd)
+  const done = visibleReminders.filter((r) => r.isDone)
 
   function formatDate(date: Date) {
     const d = new Date(date)
@@ -136,7 +139,10 @@ export default function RemindersPage() {
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">Reminders</h1>
           <p className="text-sm text-text-tertiary mt-1">Never miss a thing</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
+        <Button onClick={() => {
+          if (!showForm) setScope(workspaceScope)
+          setShowForm(!showForm)
+        }}>
           <Plus className="h-4 w-4" />
           {showForm ? 'Cancel' : 'New reminder'}
         </Button>
@@ -207,7 +213,7 @@ export default function RemindersPage() {
             <div key={i} className="h-20 rounded-xl bg-card animate-pulse" />
           ))}
         </div>
-      ) : reminders?.length === 0 ? (
+      ) : visibleReminders.length === 0 ? (
         <Card className="border-dashed border-border-subtle">
           <CardContent className="flex flex-col items-center py-16 text-center">
             <Bell className="h-10 w-10 text-text-muted mb-3" />

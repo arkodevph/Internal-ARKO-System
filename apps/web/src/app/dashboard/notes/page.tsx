@@ -7,9 +7,11 @@ import { api } from '../../../lib/trpc/client'
 import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
 import type { RecordScope } from '../../../lib/record-scope'
 import { useSession } from 'next-auth/react'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 export default function NotesPage() {
   const { data: session } = useSession()
+  const { scope: workspaceScope } = useWorkspaceScope()
   const { data: notes, isLoading, error } = api.notes.list.useQuery()
   const utils = api.useUtils()
 
@@ -19,18 +21,20 @@ export default function NotesPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [noteSearch, setNoteSearch] = useState('')
   const [noteView, setNoteView] = useState<'ALL' | 'RECENT'>('ALL')
-  const [scope, setScope] = useState<RecordScope>('PERSONAL')
+  const [scope, setScope] = useState<RecordScope>(workspaceScope)
 
   const { data: selectedNote } = api.notes.get.useQuery({ id: selectedId! }, { enabled: !!selectedId })
 
   // Populate the editor when a note loads
   useEffect(() => {
-    if (selectedNote) {
+    if (selectedNote?.scope === workspaceScope) {
       setTitle(selectedNote.title)
       setContent(selectedNote.content)
       setScope(selectedNote.scope)
+    } else if (selectedNote) {
+      setSelectedId(null)
     }
-  }, [selectedNote])
+  }, [selectedNote, workspaceScope])
 
   const createNote = api.notes.create.useMutation({
     onSuccess: (note) => {
@@ -93,6 +97,7 @@ export default function NotesPage() {
   }
 
   const filtered = (notes ?? [])
+    .filter((note) => note.scope === workspaceScope)
     .filter((note) => !noteSearch || note.title?.toLowerCase().includes(noteSearch.toLowerCase()))
     .sort((a, b) => (noteView === 'RECENT' ? new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime() : a.title.localeCompare(b.title)))
 
@@ -104,10 +109,7 @@ export default function NotesPage() {
           <p className="text-sm text-text-tertiary mt-1">Capture ideas, decisions, and project knowledge.</p>
         </div>
         <div className="flex items-end gap-3">
-          <div className="hidden w-56 sm:block">
-            <RecordScopeField value={scope} onChange={setScope} label="New note visibility" />
-          </div>
-          <Button className="rounded-full px-5" onClick={() => createNote.mutate({ title: 'Untitled', content: '', scope })}>
+          <Button className="rounded-full px-5" onClick={() => createNote.mutate({ title: 'Untitled', content: '', scope: workspaceScope })}>
             <Plus className="h-4 w-4" />
             New Note
           </Button>
@@ -132,17 +134,17 @@ export default function NotesPage() {
             {label}
           </button>
         ))}
-        <span className="ml-auto text-xs text-text-tertiary">{notes?.length ?? 0} notes</span>
+        <span className="ml-auto text-xs text-text-tertiary">{filtered.length} notes</span>
       </div>
 
-      {notes?.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="h-14 w-14 mx-auto mb-4 rounded-full bg-card flex items-center justify-center">
               <FileText className="h-6 w-6 text-text-tertiary" />
             </div>
             <p className="text-sm text-text-tertiary mb-4">No notes yet</p>
-            <Button onClick={() => createNote.mutate({ title: 'Untitled', content: '', scope })}>
+            <Button onClick={() => createNote.mutate({ title: 'Untitled', content: '', scope: workspaceScope })}>
               <Plus className="h-4 w-4" />
               Create your first note
             </Button>

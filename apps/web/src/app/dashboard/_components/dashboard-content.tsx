@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@arko/ui'
@@ -25,6 +25,7 @@ import { PerformanceChart } from './performance-chart'
 import { LandingTrafficChart } from './landing-traffic-chart'
 import { Sparkline } from './sparkline'
 import { hasPermission } from '../../../lib/rbac'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 function pctChange(current: number, previous: number) {
   return previous > 0 ? ((current - previous) / previous) * 100 : null
@@ -53,9 +54,10 @@ export default function DashboardContent() {
     'transactions:manage-company',
     session?.user?.permissions,
   )
-  const [financeScope, setFinanceScope] = useState<'PERSONAL' | 'COMPANY'>(
-    'PERSONAL',
-  )
+  const { scope: workspaceScope, setScope: setFinanceScope } = useWorkspaceScope()
+  const financeScope = workspaceScope === 'COMPANY' && !canUseCompany
+    ? 'PERSONAL'
+    : workspaceScope
   const { data: balance } = api.finance.getBalance.useQuery({
     scope: financeScope,
   })
@@ -71,11 +73,10 @@ export default function DashboardContent() {
     api.github.recentCommits.useQuery({ limit: 5 })
   const { data: landingStats } = api.landing.stats.useQuery()
 
-  const completedTasks =
-    tasks?.filter((task) => task.status === 'DONE').length ?? 0
-  const activeTasks =
-    tasks?.filter((task) => task.status !== 'DONE').length ?? 0
-  const totalTasks = tasks?.length ?? 0
+  const visibleTasks = tasks?.filter((task) => task.scope === financeScope) ?? []
+  const completedTasks = visibleTasks.filter((task) => task.status === 'DONE').length
+  const activeTasks = visibleTasks.filter((task) => task.status !== 'DONE').length
+  const totalTasks = visibleTasks.length
   const completionRate = totalTasks
     ? Math.round((completedTasks / totalTasks) * 100)
     : 0

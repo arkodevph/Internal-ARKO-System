@@ -48,7 +48,7 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
           ARKO
         </div>
       </div>
-      <div className="pointer-events-none absolute -bottom-14 -right-[2%] w-[112vw] md:-bottom-40 md:right-[8%] md:w-[min(78vw,1240px)]">
+      <div className="pointer-events-none absolute -bottom-14 -right-[2%] w-[112vw] [perspective:1000px] md:-bottom-40 md:right-[8%] md:w-[min(78vw,1240px)]">
         <HeroCharacter />
       </div>
     </section>

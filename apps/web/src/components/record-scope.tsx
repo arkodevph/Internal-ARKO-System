@@ -7,7 +7,7 @@ export function RecordScopeField({
   value,
   onChange,
   disabled = false,
-  label = 'Visibility',
+  label = 'Who can see this?',
 }: {
   value: RecordScope
   onChange: (scope: RecordScope) => void
@@ -18,8 +18,8 @@ export function RecordScopeField({
     <fieldset disabled={disabled} className="space-y-2">
       <legend className="text-xs font-medium text-text-secondary">{label}</legend>
       <div className="grid grid-cols-2 gap-2">
-        <ScopeOption active={value === 'PERSONAL'} icon={Lock} label="Personal" description="Only you" onClick={() => onChange('PERSONAL')} />
-        <ScopeOption active={value === 'COMPANY'} icon={Building2} label="Company" description="Your team" onClick={() => onChange('COMPANY')} />
+        <ScopeOption active={value === 'PERSONAL'} icon={Lock} label="Personal" description="Private to you" onClick={() => onChange('PERSONAL')} />
+        <ScopeOption active={value === 'COMPANY'} icon={Building2} label="Company" description="Shared with your team" onClick={() => onChange('COMPANY')} />
       </div>
     </fieldset>
   )
@@ -43,7 +43,7 @@ function ScopeOption({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-md border p-2 text-left transition-colors ${
+      className={`flex min-h-12 items-center gap-2 rounded-md border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
         active ? 'border-primary bg-primary/10 text-primary' : 'border-border-subtle text-text-tertiary hover:text-text-secondary'
       }`}
     >

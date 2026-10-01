@@ -7,15 +7,17 @@ import { api } from '../../../lib/trpc/client'
 import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
 import type { RecordScope } from '../../../lib/record-scope'
 import { useSession } from 'next-auth/react'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 export default function JournalPage() {
   const { data: session } = useSession()
+  const { scope: workspaceScope } = useWorkspaceScope()
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | undefined>()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [mood, setMood] = useState('')
-  const [scope, setScope] = useState<RecordScope>('PERSONAL')
+  const [scope, setScope] = useState<RecordScope>(workspaceScope)
 
   const { data: entries, isLoading } = api.journal.list.useQuery()
   const utils = api.useUtils()
@@ -57,6 +59,7 @@ export default function JournalPage() {
           size="sm"
           onClick={() => {
             setEditId(undefined)
+            setScope(workspaceScope)
             setShowForm(!showForm)
           }}
         >
@@ -151,7 +154,7 @@ export default function JournalPage() {
             <div key={i} className="h-16 animate-pulse rounded-xl bg-card" />
           ))}
         </div>
-      ) : entries?.length === 0 ? (
+      ) : !entries?.some((entry) => entry.scope === workspaceScope) ? (
         <Card className="border-dashed border-border-subtle">
           <CardContent className="flex flex-col items-center py-12 text-center">
             <BookOpen className="mb-3 h-8 w-8 text-text-tertiary" />
@@ -160,7 +163,7 @@ export default function JournalPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {entries?.map((e) => (
+          {entries?.filter((entry) => entry.scope === workspaceScope).map((e) => (
             <Card key={e.id}>
               <CardContent className="flex items-start gap-3 p-4">
                 <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-text-muted" />

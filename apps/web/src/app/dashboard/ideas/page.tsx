@@ -7,15 +7,17 @@ import { api } from '../../../lib/trpc/client'
 import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
 import type { RecordScope } from '../../../lib/record-scope'
 import { useSession } from 'next-auth/react'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 const STATUSES = ['IDEA', 'EXPLORING', 'VALIDATED', 'ARCHIVED'] as const
 
 export default function IdeasPage() {
   const { data: session } = useSession()
+  const { scope: workspaceScope } = useWorkspaceScope()
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [scope, setScope] = useState<RecordScope>('PERSONAL')
+  const [scope, setScope] = useState<RecordScope>(workspaceScope)
 
   const { data: ideas, isLoading } = api.ideas.list.useQuery()
   const utils = api.useUtils()
@@ -42,7 +44,10 @@ export default function IdeasPage() {
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">Ideas</h1>
           <p className="mt-1 text-sm text-text-tertiary">Capture and validate ideas</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>
+        <Button size="sm" onClick={() => {
+          if (!showForm) setScope(workspaceScope)
+          setShowForm(!showForm)
+        }}>
           <Plus className="h-4 w-4" /> New
         </Button>
       </div>
@@ -87,7 +92,7 @@ export default function IdeasPage() {
             <div key={i} className="h-16 animate-pulse rounded-xl bg-card" />
           ))}
         </div>
-      ) : ideas?.length === 0 ? (
+      ) : !ideas?.some((idea) => idea.scope === workspaceScope) ? (
         <Card className="border-dashed border-border-subtle">
           <CardContent className="flex flex-col items-center py-12 text-center">
             <Lightbulb className="mb-3 h-8 w-8 text-text-tertiary" />
@@ -96,7 +101,7 @@ export default function IdeasPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {ideas?.map((idea) => (
+          {ideas?.filter((idea) => idea.scope === workspaceScope).map((idea) => (
             <Card key={idea.id}>
               <CardContent className="flex items-start gap-3 p-4">
                 <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />

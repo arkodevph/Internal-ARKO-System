@@ -382,8 +382,8 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         title: "DM ARC Construction",
         category: "Construction",
         type: "Construction services and project portfolio website",
-        domain: "dmarc-construction.vercel.app",
-        href: "https://dmarc-construction.vercel.app/",
+        domain: "dmarcconstruction.com",
+        href: "https://dmarcconstruction.com/",
         image: "/projects/dmarc-construction-preview.webp",
       },
       {
@@ -402,7 +402,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         type: "Brand website redesign",
         domain: "brodie-redesign.vercel.app",
         href: "https://brodie-redesign.vercel.app/",
-        image: "/projects/brodie-preview.svg",
+        image: "/projects/brodie-preview.webp",
       },
       {
         number: "11",
@@ -411,7 +411,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         type: "Personalized job search platform",
         domain: "gohuntly.com",
         href: "https://www.gohuntly.com/",
-        image: "/projects/huntly-preview.svg",
+        image: "/projects/huntly-preview.webp",
       },
       {
         number: "12",
@@ -420,7 +420,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         type: "Customer operations and outsourcing website",
         domain: "hivecx.asia",
         href: "https://hivecx.asia/",
-        image: "/projects/hivecx-preview.svg",
+        image: "/projects/hivecx-preview.webp",
       },
     ],
   },
@@ -442,10 +442,28 @@ export function mergeLandingContent(stored: unknown): LandingContent {
   const d = DEFAULT_LANDING_CONTENT;
   if (!stored || typeof stored !== "object") return d;
   const s = stored as Partial<LandingContent>;
-  const storedProjects = (s.projects?.items ?? []).filter(
-    (project) =>
-      project.href.replace(/\/$/, "") !== "https://kapetbalay.vercel.app",
-  );
+  const storedProjects = (s.projects?.items ?? [])
+    .filter(
+      (project) =>
+        project.href.replace(/\/$/, "") !== "https://kapetbalay.vercel.app",
+    )
+    .map((project) => {
+      if (project.title === "DM ARC Construction") {
+        return {
+          ...project,
+          domain: "dmarcconstruction.com",
+          href: "https://dmarcconstruction.com/",
+        };
+      }
+
+      const refreshedPreview = {
+        Brodie: "/projects/brodie-preview.webp",
+        Huntly: "/projects/huntly-preview.webp",
+        HiveCX: "/projects/hivecx-preview.webp",
+      }[project.title];
+
+      return refreshedPreview ? { ...project, image: refreshedPreview } : project;
+    });
   const storedProjectUrls = new Set(
     storedProjects.map((project) => project.href.replace(/\/$/, "")),
   );

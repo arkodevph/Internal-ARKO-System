@@ -2,9 +2,8 @@ name: System Keepalive
 
 on:
   schedule:
-    # Weekdays, 9:07 AM–5:57 PM in Manila. Avoid the top of each hour.
-    - cron: '7-57/10 9-17 * * 1-5'
-      timezone: Asia/Manila
+    # Run around the clock and avoid the top of each hour.
+    - cron: '7-57/10 * * * *'
   workflow_dispatch:
 
 permissions: {}
@@ -23,4 +22,4 @@ jobs:
           curl --fail --silent --show-error \
             --retry 1 --retry-all-errors \
             --max-time 120 \
-            https://arko-internal.onrender.com/health
+            https://app.arkodevph.com/health

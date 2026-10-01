@@ -14,7 +14,7 @@
 
 ## System keepalive
 
-`.github/workflows/system-keepalive.yml` pings the existing service every 10 minutes on weekdays from 9:07 AM through 5:57 PM Asia/Manila. After renaming the service, change its target URL as described above. This schedule keeps the same process for both hostnames warm during working hours; it does not provide 24/7 uptime. Check Render's shared Free instance-hour use and GitHub Actions minutes. Scheduled runs may be delayed or missed, so cold starts remain possible.
+`.github/workflows/system-keepalive.yml` monitors `https://app.arkodevph.com/health` every 10 minutes around the clock. Check Render's shared Free instance-hour use and GitHub Actions minutes. Scheduled runs may be delayed or missed, so cold starts remain possible.
 
 ## Client request GitHub progress
 

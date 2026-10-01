@@ -26,6 +26,7 @@ import { FileUploader } from '../../../components/file-uploader'
 import { AttachmentList } from '../../../components/attachment-list'
 import { RecordScopeBadge, RecordScopeField } from '../../../components/record-scope'
 import type { RecordScope } from '../../../lib/record-scope'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 // resourceType key for the generic comments system (see comments router)
 const TASK_RESOURCE = 'TASK'
@@ -45,6 +46,7 @@ const isBlocked = (task: any) => blockers(task).some((b: any) => b.status !== 'D
 
 export default function TasksPage() {
   const { data: session } = useSession()
+  const { scope: workspaceScope } = useWorkspaceScope()
   const { data: tasks, isLoading, error } = api.tasks.list.useQuery()
   const { data: users } = api.users.search.useQuery({})
   const { data: projects } = api.tasks.availableProjects.useQuery()
@@ -56,7 +58,7 @@ export default function TasksPage() {
   const [newPriority, setNewPriority] = useState('MEDIUM')
   const [newAssignee, setNewAssignee] = useState('')
   const [newProject, setNewProject] = useState('')
-  const [newScope, setNewScope] = useState<RecordScope>('PERSONAL')
+  const [newScope, setNewScope] = useState<RecordScope>(workspaceScope)
   const [newDueDate, setNewDueDate] = useState('')
   const [showAssigneeSearch, setShowAssigneeSearch] = useState(false)
   const [assigneeSearch, setAssigneeSearch] = useState('')
@@ -156,7 +158,13 @@ export default function TasksPage() {
           <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Tasks & PM</h1>
           <p className="text-sm text-text-tertiary mt-1">One delivery board. Personal tasks need a recorded review before Done.</p>
         </div>
-        <Button className="rounded-full px-5" onClick={() => setShowNew(!showNew)}>
+        <Button
+          className="rounded-full px-5"
+          onClick={() => {
+            if (!showNew) setNewScope(workspaceScope)
+            setShowNew(!showNew)
+          }}
+        >
           <Plus className="h-4 w-4" />
           {showNew ? 'Cancel' : 'New Task'}
         </Button>
@@ -386,6 +394,7 @@ export default function TasksPage() {
                 const colTasks =
                   tasks
                     ?.filter((task) => {
+                      if (task.scope !== workspaceScope) return false
                       if (task.status !== column || task.parentId) return false
                       if (workstream === 'ACTIVE' && !['TODO', 'IN_PROGRESS'].includes(task.status)) return false
                       if (workstream === 'REVIEW' && task.status !== 'REVIEW') return false

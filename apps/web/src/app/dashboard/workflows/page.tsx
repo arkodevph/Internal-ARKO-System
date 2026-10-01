@@ -9,6 +9,7 @@ import type { RecordScope } from '../../../lib/record-scope'
 import { useSession } from 'next-auth/react'
 import type { inferRouterOutputs } from '@trpc/server'
 import type { AppRouter } from '../../../server/api/root'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 const SAMPLE_DEFINITION = JSON.stringify(
   {
@@ -34,6 +35,7 @@ type WorkflowItem = inferRouterOutputs<AppRouter>['workflows']['list'][number]
 
 export default function WorkflowsPage() {
   const { data: session } = useSession()
+  const { scope: workspaceScope } = useWorkspaceScope()
   const { data: workflows, isLoading, error } = api.workflows.list.useQuery()
   const utils = api.useUtils()
 
@@ -42,7 +44,7 @@ export default function WorkflowsPage() {
   const [description, setDescription] = useState('')
   const [definition, setDefinition] = useState(SAMPLE_DEFINITION)
   const [notice, setNotice] = useState<string | null>(null)
-  const [scope, setScope] = useState<RecordScope>('PERSONAL')
+  const [scope, setScope] = useState<RecordScope>(workspaceScope)
 
   const createWf = api.workflows.create.useMutation({
     onError: (e) => setNotice(e.message),
@@ -73,7 +75,10 @@ export default function WorkflowsPage() {
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">Workflows</h1>
           <p className="text-sm text-text-tertiary mt-1">Automate your business processes</p>
         </div>
-        <Button onClick={() => setShowNew(!showNew)}>
+        <Button onClick={() => {
+          if (!showNew) setScope(workspaceScope)
+          setShowNew(!showNew)
+        }}>
           <Plus className="h-4 w-4" />
           {showNew ? 'Cancel' : 'New Workflow'}
         </Button>
@@ -166,9 +171,9 @@ export default function WorkflowsPage() {
             </Card>
           ))}
         </div>
-      ) : workflows && workflows.length > 0 ? (
+      ) : workflows?.some((workflow) => workflow.scope === workspaceScope) ? (
         <div className="grid gap-4 md:grid-cols-3">
-          {workflows.map((wf) => (
+          {workflows.filter((workflow) => workflow.scope === workspaceScope).map((wf) => (
             <WorkflowCard key={wf.id} wf={wf} onError={setNotice} canManage={wf.userId === session?.user?.id || session?.user?.role === 'ADMIN'} />
           ))}
         </div>
