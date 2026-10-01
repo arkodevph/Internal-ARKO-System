@@ -1872,6 +1872,28 @@ html.system-theme-iris-transition::view-transition-old(root) {
   );
   transform: none;
 }
+.finance-balance-card {
+  background:
+    radial-gradient(
+      circle at 88% 12%,
+      rgb(255 255 255 / 42%),
+      transparent 13rem
+    ),
+    linear-gradient(135deg, var(--color-primary-300), var(--color-primary-500));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 32%),
+    0 22px 54px color-mix(in srgb, var(--color-primary-700) 24%, transparent);
+}
+.finance-balance-card::after {
+  position: absolute;
+  right: -4rem;
+  bottom: -7rem;
+  width: 19rem;
+  height: 19rem;
+  border: 1px solid rgb(5 46 22 / 14%);
+  border-radius: 999px;
+  content: "";
+}
 .finance-reference input:focus-visible,
 .finance-reference select:focus-visible,
 .finance-reference button:focus-visible,

@@ -3,13 +3,31 @@
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@arko/ui'
-import { Plus, ArrowUpRight, ArrowDownRight, AlertCircle, Wallet, Users, CheckCircle2, RefreshCw, Calendar, Trash2, Pencil, TrendingUp, Target, Clock3, Building2, UserRound } from 'lucide-react'
+import {
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  AlertCircle,
+  Wallet,
+  Users,
+  CheckCircle2,
+  RefreshCw,
+  Calendar,
+  Trash2,
+  Pencil,
+  TrendingUp,
+  Target,
+} from 'lucide-react'
 import { api } from '../../../lib/trpc/client'
 import { formatCurrency } from '@arko/finance'
-import { AddTransactionDialog, type GhostTransaction } from './add-transaction-dialog'
+import {
+  AddTransactionDialog,
+  type GhostTransaction,
+} from './add-transaction-dialog'
 import { RecurringTransactionDialog } from './recurring-transaction-dialog'
 import { AnalyticsCharts } from './analytics-charts'
 import { hasPermission } from '../../../lib/rbac'
+import { useWorkspaceScope } from '../../../components/workspace-scope'
 
 function StatsSkeleton() {
   return (
@@ -36,22 +54,32 @@ export default function FinancePage() {
     session?.user?.permissions,
   )
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [scopeFilter, setScopeFilter] = useState<'PERSONAL' | 'COMPANY'>('PERSONAL')
+  const { scope: workspaceScope } = useWorkspaceScope()
+  const scopeFilter =
+    workspaceScope === 'COMPANY' && !canUseCompany ? 'PERSONAL' : workspaceScope
   const [recurringOpen, setRecurringOpen] = useState(false)
   const [editRecurringId, setEditRecurringId] = useState<string | undefined>()
   const [showRecurring, setShowRecurring] = useState(false)
-  const [ghostTransactions, setGhostTransactions] = useState<GhostTransaction[]>([])
+  const [ghostTransactions, setGhostTransactions] = useState<
+    GhostTransaction[]
+  >([])
   const [budgetName, setBudgetName] = useState('')
   const [budgetAmount, setBudgetAmount] = useState('')
   const [budgetCategoryId, setBudgetCategoryId] = useState('')
 
   const query = api.finance.getBalance.useQuery({ scope: scopeFilter })
   const txQuery = api.finance.getTransactions.useQuery({ scope: scopeFilter })
-  const insightsQuery = api.finance.getInsights.useQuery({ scope: scopeFilter })
+  const insightsQuery = api.finance.getInsights.useQuery({
+    scope: scopeFilter,
+  })
   const budgetsQuery = api.finance.listBudgets.useQuery({ scope: scopeFilter })
-  const categoriesQuery = api.finance.getCategories.useQuery({ scope: scopeFilter })
+  const categoriesQuery = api.finance.getCategories.useQuery({
+    scope: scopeFilter,
+  })
   const { data: pendingSplits } = api.finance.getPendingSplits.useQuery()
-  const { data: recurringList } = api.finance.listRecurring.useQuery({ scope: scopeFilter })
+  const { data: recurringList } = api.finance.listRecurring.useQuery({
+    scope: scopeFilter,
+  })
   const utils = api.useUtils()
 
   const deleteRecurringMut = api.finance.deleteRecurring.useMutation({
@@ -85,6 +113,12 @@ export default function FinancePage() {
   const transactions = txQuery.data ?? []
   const loading = query.isLoading || txQuery.isLoading
   const hasError = query.isError || txQuery.isError
+  const savingsRate = insights?.savingsRate ?? 0
+  const savingsProgress = Math.min(100, Math.max(0, savingsRate))
+  const currentPeriod = new Date().toLocaleDateString('en-PH', {
+    month: 'long',
+    year: 'numeric',
+  })
 
   const refetchAll = () => {
     query.refetch()
@@ -93,19 +127,26 @@ export default function FinancePage() {
   const refetchTransactions = () => txQuery.refetch()
 
   return (
-    <div className="analytics-reference finance-reference mx-auto max-w-[1500px] space-y-5">
+    <div className="analytics-reference finance-reference mx-auto max-w-[1500px] space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="mb-1 text-xs font-medium uppercase tracking-[0.16em] text-primary-400">Money workspace</p>
-          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Finance</h1>
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.16em] text-primary-400">
+            Money workspace
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
+            Finance
+          </h1>
           <p className="text-sm text-text-tertiary mt-1">
             {scopeFilter === 'PERSONAL'
               ? 'Your private budgets, spending, bills, and savings'
               : 'Shared company cash flow for admins and accountants'}
           </p>
         </div>
-        <Button className="min-h-10 w-full rounded-full px-5 sm:w-auto" onClick={() => setDialogOpen(true)}>
+        <Button
+          className="min-h-11 w-full rounded-xl px-5 sm:w-auto"
+          onClick={() => setDialogOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Add Transaction
         </Button>
@@ -118,11 +159,13 @@ export default function FinancePage() {
             <div className="flex items-center gap-2.5">
               <Users className="h-4 w-4 text-amber-600" />
               <p className="text-sm font-medium text-amber-300">
-                {pendingSplits.length} pending split{pendingSplits.length > 1 ? 's' : ''} to settle
+                {pendingSplits.length} pending split
+                {pendingSplits.length > 1 ? 's' : ''} to settle
               </p>
             </div>
             <span className="text-xs text-amber-300 font-medium tabular-nums">
-              ₱{pendingSplits.reduce((s, p) => s + p.amount, 0).toLocaleString()}
+              ₱
+              {pendingSplits.reduce((s, p) => s + p.amount, 0).toLocaleString()}
             </span>
           </CardContent>
         </Card>
@@ -133,143 +176,136 @@ export default function FinancePage() {
           <CardContent className="flex items-center justify-between py-6">
             <div className="flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-red-500" />
-              <p className="text-sm font-medium text-red-300">Failed to load finance data.</p>
+              <p className="text-sm font-medium text-red-300">
+                Failed to load finance data.
+              </p>
             </div>
-            <Button variant="outline" size="sm" onClick={refetchAll}>Retry</Button>
+            <Button variant="outline" size="sm" onClick={refetchAll}>
+              Retry
+            </Button>
           </CardContent>
         </Card>
       ) : loading ? (
         <StatsSkeleton />
       ) : (
         <>
-          {/* Scope tabs */}
-          <div className="dashboard-segmented inline-flex w-fit items-center gap-1 p-1">
-            {(['PERSONAL', ...(canUseCompany ? ['COMPANY' as const] : [])] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => {
-                  setScopeFilter(s)
-                  setBudgetCategoryId('')
-                }}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                  scopeFilter === s
-                    ? 'bg-primary-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.16)]'
-                    : 'text-text-secondary hover:bg-white/[0.04]'
-                }`}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  {s === 'PERSONAL' ? <UserRound className="h-3.5 w-3.5" /> : <Building2 className="h-3.5 w-3.5" />}
-                  {s === 'PERSONAL' ? 'Personal' : 'Company'}
-                </span>
-              </button>
-            ))}
+          <div className="flex justify-end">
+            <p className="text-xs text-text-tertiary">PHP · {currentPeriod}</p>
           </div>
 
           <section aria-labelledby="finance-summary">
-            <div className="mb-3 flex items-end justify-between">
-              <div>
-                <h2 id="finance-summary" className="text-base font-semibold text-text-primary">Financial position</h2>
-                <p className="mt-1 text-xs text-text-tertiary">Current totals for the selected account.</p>
-              </div>
-              <span className="hidden text-xs text-text-tertiary sm:block">PHP · Current period</span>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-            <Card className="finance-panel">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-text-tertiary">Balance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold tabular-nums text-text-primary">
-                  {formatCurrency(balance?.balance ?? 0)}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="finance-panel">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-text-tertiary">Income</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-50">
-                    <ArrowUpRight className="h-4 w-4 text-green-600" />
+            <h2 id="finance-summary" className="sr-only">
+              Financial position
+            </h2>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.75fr)]">
+              <Card className="finance-balance-card relative min-h-[18rem] overflow-hidden border-0">
+                <CardContent className="relative flex h-full min-h-[18rem] flex-col justify-between p-6 sm:p-7">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-[0.15em] text-primary-950/65">
+                        Available balance
+                      </p>
+                      <p className="mt-3 text-4xl font-bold tracking-[-0.04em] text-primary-950 tabular-nums sm:text-5xl">
+                        {formatCurrency(balance?.balance ?? 0)}
+                      </p>
+                    </div>
+                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary-950 text-primary-300">
+                      <Wallet className="h-5 w-5" />
+                    </div>
                   </div>
-                  <span className="text-2xl font-semibold tabular-nums text-primary-400">
-                    {formatCurrency(balance?.income ?? 0)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="finance-panel">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-text-tertiary">Expenses</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50">
-                    <ArrowDownRight className="h-4 w-4 text-red-600" />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-primary-950/90 p-4 text-white">
+                      <div className="flex items-center gap-2 text-xs text-white/55">
+                        <ArrowUpRight className="h-4 w-4 text-primary-300" />{' '}
+                        Income
+                      </div>
+                      <p className="mt-2 text-xl font-semibold tabular-nums">
+                        {formatCurrency(balance?.income ?? 0)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white/55 p-4 text-primary-950">
+                      <div className="flex items-center gap-2 text-xs text-primary-950/55">
+                        <ArrowDownRight className="h-4 w-4 text-red-600" />{' '}
+                        Expenses
+                      </div>
+                      <p className="mt-2 text-xl font-semibold tabular-nums">
+                        {formatCurrency(balance?.expenses ?? 0)}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-2xl font-semibold tabular-nums text-red-400">
-                    {formatCurrency(balance?.expenses ?? 0)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          </section>
+                </CardContent>
+              </Card>
 
-          <section aria-labelledby="finance-insights">
-            <div className="mb-3">
-              <h2 id="finance-insights" className="text-base font-semibold text-text-primary">Decision support</h2>
-              <p className="mt-1 text-xs text-text-tertiary">Signals derived from this month’s activity.</p>
+              <Card className="finance-panel">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">This month</CardTitle>
+                  <p className="text-xs text-text-tertiary">
+                    A quick read before you act.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div>
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-text-tertiary">
+                          Savings rate
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">
+                          {savingsRate.toFixed(1)}%
+                        </p>
+                      </div>
+                      <Target className="h-5 w-5 text-primary-500" />
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div
+                        className="h-full rounded-full bg-primary-500 transition-[width] duration-500 motion-reduce:transition-none"
+                        style={{ width: `${savingsProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 border-t border-border-subtle pt-4">
+                    <div>
+                      <p className="text-xs text-text-tertiary">
+                        30-day forecast
+                      </p>
+                      <p className="mt-1 text-base font-semibold tabular-nums text-text-primary">
+                        {formatCurrency(insights?.projectedBalance ?? 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-text-tertiary">Top expense</p>
+                      <p className="mt-1 truncate text-base font-semibold text-text-primary">
+                        {insights?.topCategory?.name ?? 'None yet'}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="rounded-xl bg-white/[0.035] px-3 py-2 text-xs leading-relaxed text-text-tertiary">
+                    {insights?.topCategory
+                      ? `${formatCurrency(insights.topCategory.amount)} spent in your leading category.`
+                      : 'Add your first transaction to unlock spending insights.'}
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-            <div className="grid gap-3 md:grid-cols-3">
-            <Card className="finance-panel">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-text-tertiary">Savings rate</p>
-                  <Target className="h-4 w-4 text-primary-500" />
-                </div>
-                <p className="mt-2 text-xl font-bold tabular-nums text-text-primary">
-                  {(insights?.savingsRate ?? 0).toFixed(1)}%
-                </p>
-                <p className="mt-1 text-xs text-text-tertiary">Income retained this month</p>
-              </CardContent>
-            </Card>
-            <Card className="finance-panel">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-text-tertiary">30-day projection</p>
-                  <TrendingUp className="h-4 w-4 text-blue-500" />
-                </div>
-                <p className="mt-2 text-xl font-bold tabular-nums text-text-primary">
-                  {formatCurrency(insights?.projectedBalance ?? 0)}
-                </p>
-                <p className="mt-1 text-xs text-text-tertiary">After upcoming recurring entries</p>
-              </CardContent>
-            </Card>
-            <Card className="finance-panel">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-text-tertiary">Top expense</p>
-                  <Clock3 className="h-4 w-4 text-amber-500" />
-                </div>
-                <p className="mt-2 truncate text-xl font-bold text-text-primary">
-                  {insights?.topCategory?.name ?? 'No spending yet'}
-                </p>
-                <p className="mt-1 text-xs text-text-tertiary">
-                  {insights?.topCategory
-                    ? `${formatCurrency(insights.topCategory.amount)} this month`
-                    : `${insights?.upcomingCount ?? 0} upcoming entries`}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
           </section>
 
           <section aria-labelledby="finance-trends">
-            <div className="mb-3">
-              <h2 id="finance-trends" className="text-base font-semibold text-text-primary">Trends and distribution</h2>
-              <p className="mt-1 text-xs text-text-tertiary">Six-month movement and spending concentration.</p>
+            <div className="mb-3 flex items-end justify-between gap-4">
+              <div>
+                <h2
+                  id="finance-trends"
+                  className="text-base font-semibold text-text-primary"
+                >
+                  Cash-flow overview
+                </h2>
+                <p className="mt-1 text-xs text-text-tertiary">
+                  Six-month movement and spending by category.
+                </p>
+              </div>
+              <TrendingUp
+                className="h-5 w-5 text-primary-500"
+                aria-hidden="true"
+              />
             </div>
             <AnalyticsCharts transactions={transactions} />
           </section>
@@ -278,7 +314,9 @@ export default function FinancePage() {
           <Card className="finance-panel">
             <CardHeader>
               <CardTitle className="text-base">Monthly budgets</CardTitle>
-              <p className="text-xs text-text-tertiary">Set limits and track category spending for this month.</p>
+              <p className="text-xs text-text-tertiary">
+                Set limits and track category spending for this month.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2 md:grid-cols-[1fr_140px_1fr_auto]">
@@ -304,11 +342,24 @@ export default function FinancePage() {
                 >
                   <option value="">Expense category</option>
                   {categoriesQuery.data
-                    ?.filter((category) => ['CREDIT_CARD', 'CASH', 'CHECKING', 'SAVINGS'].includes(category.type))
-                    .map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                    ?.filter((category) =>
+                      ['CREDIT_CARD', 'CASH', 'CHECKING', 'SAVINGS'].includes(
+                        category.type,
+                      ),
+                    )
+                    .map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
                 </select>
                 <Button
-                  disabled={!budgetName.trim() || Number(budgetAmount) <= 0 || !budgetCategoryId || createBudgetMut.isPending}
+                  disabled={
+                    !budgetName.trim() ||
+                    Number(budgetAmount) <= 0 ||
+                    !budgetCategoryId ||
+                    createBudgetMut.isPending
+                  }
                   onClick={() => {
                     const now = new Date()
                     createBudgetMut.mutate({
@@ -316,8 +367,19 @@ export default function FinancePage() {
                       amount: Number(budgetAmount),
                       scope: scopeFilter,
                       categoryIds: [budgetCategoryId],
-                      periodStart: new Date(now.getFullYear(), now.getMonth(), 1),
-                      periodEnd: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
+                      periodStart: new Date(
+                        now.getFullYear(),
+                        now.getMonth(),
+                        1,
+                      ),
+                      periodEnd: new Date(
+                        now.getFullYear(),
+                        now.getMonth() + 1,
+                        0,
+                        23,
+                        59,
+                        59,
+                      ),
                     })
                   }}
                 >
@@ -325,23 +387,36 @@ export default function FinancePage() {
                 </Button>
               </div>
               {budgets.length === 0 ? (
-                <p className="py-5 text-center text-sm text-text-tertiary">No budgets for this view yet.</p>
+                <p className="py-5 text-center text-sm text-text-tertiary">
+                  No budgets for this view yet.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {budgets.map((budget) => {
-                    const percent = Math.min(100, (budget.spent / budget.amount) * 100)
+                    const percent = Math.min(
+                      100,
+                      (budget.spent / budget.amount) * 100,
+                    )
                     return (
-                      <div key={budget.id} className="rounded-xl border border-border-subtle p-3">
+                      <div
+                        key={budget.id}
+                        className="rounded-xl border border-border-subtle p-3"
+                      >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-text-primary">{budget.name}</p>
+                            <p className="truncate text-sm font-medium text-text-primary">
+                              {budget.name}
+                            </p>
                             <p className="text-xs text-text-tertiary">
-                              {formatCurrency(budget.spent)} of {formatCurrency(budget.amount)}
+                              {formatCurrency(budget.spent)} of{' '}
+                              {formatCurrency(budget.amount)}
                             </p>
                           </div>
                           <button
                             aria-label={`Delete ${budget.name} budget`}
-                            onClick={() => deleteBudgetMut.mutate({ id: budget.id })}
+                            onClick={() =>
+                              deleteBudgetMut.mutate({ id: budget.id })
+                            }
                             className="flex h-10 w-10 items-center justify-center rounded-lg text-text-tertiary hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -370,20 +445,38 @@ export default function FinancePage() {
           <Card className="finance-panel overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base">Transaction history</CardTitle>
-              <p className="text-xs text-text-tertiary">Most recent entries for the selected account.</p>
+              <p className="text-xs text-text-tertiary">
+                Most recent entries for the selected account.
+              </p>
             </CardHeader>
             <CardContent>
               {txQuery.isError ? (
                 <div className="flex flex-col items-center py-12 text-center">
                   <AlertCircle className="h-8 w-8 text-red-300 mb-3" />
-                  <p className="text-sm font-medium text-red-600">Failed to load transactions.</p>
-                  <Button variant="outline" size="sm" className="mt-3" onClick={refetchTransactions}>Try Again</Button>
+                  <p className="text-sm font-medium text-red-600">
+                    Failed to load transactions.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={refetchTransactions}
+                  >
+                    Try Again
+                  </Button>
                 </div>
-              ) : transactions.length === 0 && ghostTransactions.length === 0 ? (
+              ) : transactions.length === 0 &&
+                ghostTransactions.length === 0 ? (
                 <div className="flex flex-col items-center py-14 text-center">
                   <Wallet className="h-10 w-10 text-text-muted mb-3" />
-                  <p className="text-sm text-text-tertiary">No transactions yet</p>
-                  <Button size="sm" className="mt-3" onClick={() => setDialogOpen(true)}>
+                  <p className="text-sm text-text-tertiary">
+                    No transactions yet
+                  </p>
+                  <Button
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => setDialogOpen(true)}
+                  >
                     <Plus className="h-3.5 w-3.5" />
                     Add Transaction
                   </Button>
@@ -391,7 +484,10 @@ export default function FinancePage() {
               ) : (
                 <div className="divide-y divide-border-subtle overflow-x-auto">
                   {ghostTransactions.map((tx) => (
-                    <div key={tx.id} className="flex min-w-[36rem] animate-pulse items-center justify-between py-3 opacity-55">
+                    <div
+                      key={tx.id}
+                      className="flex min-w-[36rem] animate-pulse items-center justify-between py-3 opacity-55"
+                    >
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="h-9 w-9 shrink-0 rounded-full bg-card" />
                         <div className="min-w-0">
@@ -409,33 +505,52 @@ export default function FinancePage() {
                         </div>
                       </div>
                       <span className="ml-3 shrink-0 text-sm font-semibold text-text-tertiary">
-                        {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
+                        {tx.type === 'INCOME' ? '+' : '-'}
+                        {formatCurrency(tx.amount)}
                       </span>
                     </div>
                   ))}
                   {transactions.map((tx) => {
-                    const unsettledShares = tx.splitShares?.filter((s) => !s.settled) ?? []
+                    const unsettledShares =
+                      tx.splitShares?.filter((s) => !s.settled) ?? []
                     return (
-                      <div key={tx.id} className="group flex min-w-[36rem] items-center justify-between py-3 transition-colors hover:bg-white/[0.025] first:pt-0 last:pb-0">
+                      <div
+                        key={tx.id}
+                        className="group flex min-w-[36rem] items-center justify-between py-3 transition-colors hover:bg-white/[0.025] first:pt-0 last:pb-0"
+                      >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-full shrink-0 ${
-                            tx.type === 'INCOME' ? 'bg-green-50' : tx.type === 'EXPENSE' ? 'bg-red-50' : 'bg-blue-50'
-                          }`}>
-                            {tx.type === 'INCOME' ? <ArrowUpRight className="h-4 w-4 text-green-600" /> :
-                             tx.type === 'EXPENSE' ? <ArrowDownRight className="h-4 w-4 text-red-600" /> :
-                             <ArrowUpRight className="h-4 w-4 text-blue-600" />}
+                          <div
+                            className={`flex h-9 w-9 items-center justify-center rounded-full shrink-0 ${
+                              tx.type === 'INCOME'
+                                ? 'bg-green-50'
+                                : tx.type === 'EXPENSE'
+                                  ? 'bg-red-50'
+                                  : 'bg-blue-50'
+                            }`}
+                          >
+                            {tx.type === 'INCOME' ? (
+                              <ArrowUpRight className="h-4 w-4 text-green-600" />
+                            ) : tx.type === 'EXPENSE' ? (
+                              <ArrowDownRight className="h-4 w-4 text-red-600" />
+                            ) : (
+                              <ArrowUpRight className="h-4 w-4 text-blue-600" />
+                            )}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="text-sm font-medium text-text-primary truncate">
-                                {tx.description || tx.category?.name || 'Untitled'}
+                                {tx.description ||
+                                  tx.category?.name ||
+                                  'Untitled'}
                               </p>
                               {/* Scope badge */}
-                              <span className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-semibold uppercase leading-none ${
-                                tx.scope === 'COMPANY'
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : 'bg-primary-50 text-primary-700'
-                              }`}>
+                              <span
+                                className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-semibold uppercase leading-none ${
+                                  tx.scope === 'COMPANY'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'bg-primary-50 text-primary-700'
+                                }`}
+                              >
                                 {tx.scope === 'COMPANY' ? 'Co' : 'Per'}
                               </span>
                               {/* Split badge */}
@@ -447,7 +562,11 @@ export default function FinancePage() {
                             </div>
                             <p className="text-xs text-text-tertiary">
                               {tx.category?.name && `${tx.category.name} `}
-                              {new Date(tx.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {new Date(tx.date).toLocaleDateString('en-PH', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
                               {unsettledShares.length > 0 && (
                                 <span className="text-amber-500 ml-1">
                                   · {unsettledShares.length} unsettled
@@ -457,10 +576,17 @@ export default function FinancePage() {
                           </div>
                         </div>
                         <div className="ml-3 flex shrink-0 items-center gap-2">
-                          <span className={`text-sm font-semibold ${
-                            tx.type === 'INCOME' ? 'text-green-600' : tx.type === 'EXPENSE' ? 'text-red-600' : 'text-blue-600'
-                          }`}>
-                            {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
+                          <span
+                            className={`text-sm font-semibold ${
+                              tx.type === 'INCOME'
+                                ? 'text-green-600'
+                                : tx.type === 'EXPENSE'
+                                  ? 'text-red-600'
+                                  : 'text-blue-600'
+                            }`}
+                          >
+                            {tx.type === 'INCOME' ? '+' : '-'}
+                            {formatCurrency(tx.amount)}
                           </span>
                           <button
                             type="button"
@@ -494,17 +620,24 @@ export default function FinancePage() {
               <CardContent>
                 <div className="divide-y divide-border-subtle">
                   {pendingSplits.map((split) => (
-                    <div key={split.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                    <div
+                      key={split.id}
+                      className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 shrink-0">
                           <Users className="h-3.5 w-3.5 text-amber-600" />
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-text-primary truncate">
-                            {split.transaction.description || split.transaction.category?.name || 'Shared expense'}
+                            {split.transaction.description ||
+                              split.transaction.category?.name ||
+                              'Shared expense'}
                           </p>
                           <p className="text-xs text-text-tertiary">
-                            From {split.transaction.user.name ?? split.transaction.user.email}
+                            From{' '}
+                            {split.transaction.user.name ??
+                              split.transaction.user.email}
                           </p>
                         </div>
                       </div>
@@ -514,7 +647,9 @@ export default function FinancePage() {
                         </span>
                         <button
                           onClick={async () => {
-                            await settleSplitMut.mutateAsync({ splitId: split.id })
+                            await settleSplitMut.mutateAsync({
+                              splitId: split.id,
+                            })
                           }}
                           className="flex items-center gap-1 rounded-lg bg-green-50 px-2.5 py-1.5 text-[11px] font-medium text-green-700 hover:bg-green-100 transition-colors"
                         >
@@ -531,7 +666,10 @@ export default function FinancePage() {
 
           {/* Recurring Transactions */}
           <Card className="finance-panel">
-            <CardHeader className="flex flex-row items-center justify-between cursor-pointer" onClick={() => setShowRecurring(!showRecurring)}>
+            <CardHeader
+              className="flex flex-row items-center justify-between cursor-pointer"
+              onClick={() => setShowRecurring(!showRecurring)}
+            >
               <div className="flex items-center gap-2">
                 <CardTitle>Recurring Transactions</CardTitle>
                 {recurringList && recurringList.length > 0 && (
@@ -543,7 +681,11 @@ export default function FinancePage() {
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); setEditRecurringId(undefined); setRecurringOpen(true) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setEditRecurringId(undefined)
+                    setRecurringOpen(true)
+                  }}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add
@@ -555,8 +697,17 @@ export default function FinancePage() {
                 {!recurringList || recurringList.length === 0 ? (
                   <div className="flex flex-col items-center py-10 text-center">
                     <RefreshCw className="h-10 w-10 text-text-muted mb-3" />
-                    <p className="text-sm text-text-tertiary">No recurring transactions</p>
-                    <Button size="sm" className="mt-3" onClick={() => { setEditRecurringId(undefined); setRecurringOpen(true) }}>
+                    <p className="text-sm text-text-tertiary">
+                      No recurring transactions
+                    </p>
+                    <Button
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => {
+                        setEditRecurringId(undefined)
+                        setRecurringOpen(true)
+                      }}
+                    >
                       <Plus className="h-3.5 w-3.5" />
                       Add Recurring
                     </Button>
@@ -564,47 +715,86 @@ export default function FinancePage() {
                 ) : (
                   <div className="divide-y divide-border-subtle">
                     {recurringList.map((r) => {
-                      const freqLabel = r.frequency === 'DAILY' ? 'Daily' : r.frequency === 'WEEKLY' ? 'Weekly' : r.frequency === 'MONTHLY' ? 'Monthly' : 'Yearly'
-                      const nextDue = new Date(r.nextDate).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                      const freqLabel =
+                        r.frequency === 'DAILY'
+                          ? 'Daily'
+                          : r.frequency === 'WEEKLY'
+                            ? 'Weekly'
+                            : r.frequency === 'MONTHLY'
+                              ? 'Monthly'
+                              : 'Yearly'
+                      const nextDue = new Date(r.nextDate).toLocaleDateString(
+                        'en-PH',
+                        { month: 'short', day: 'numeric', year: 'numeric' },
+                      )
                       return (
-                        <div key={r.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                        <div
+                          key={r.id}
+                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                        >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
-                              r.type === 'INCOME' ? 'bg-finance-50' : 'bg-red-50'
-                            }`}>
-                              <Calendar className={`h-3.5 w-3.5 ${
-                                r.type === 'INCOME' ? 'text-finance-600' : 'text-red-600'
-                              }`} />
+                            <div
+                              className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
+                                r.type === 'INCOME'
+                                  ? 'bg-finance-50'
+                                  : 'bg-red-50'
+                              }`}
+                            >
+                              <Calendar
+                                className={`h-3.5 w-3.5 ${
+                                  r.type === 'INCOME'
+                                    ? 'text-finance-600'
+                                    : 'text-red-600'
+                                }`}
+                              />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-medium text-text-primary truncate">{r.description}</p>
+                                <p className="text-sm font-medium text-text-primary truncate">
+                                  {r.description}
+                                </p>
                                 {!r.isActive && (
-                                  <span className="rounded px-1.5 py-0.5 text-[9px] font-medium bg-card text-text-tertiary">Paused</span>
+                                  <span className="rounded px-1.5 py-0.5 text-[9px] font-medium bg-card text-text-tertiary">
+                                    Paused
+                                  </span>
                                 )}
                               </div>
                               <p className="text-xs text-text-tertiary">
                                 {freqLabel} · Next: {nextDue}
-                                {r.category && <span> · {r.category.name}</span>}
+                                {r.category && (
+                                  <span> · {r.category.name}</span>
+                                )}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-3">
-                            <span className={`text-sm font-semibold ${
-                              r.type === 'INCOME' ? 'text-finance-600' : 'text-red-600'
-                            }`}>
-                              {r.type === 'INCOME' ? '+' : '-'}{formatCurrency(r.amount)}
+                            <span
+                              className={`text-sm font-semibold ${
+                                r.type === 'INCOME'
+                                  ? 'text-finance-600'
+                                  : 'text-red-600'
+                              }`}
+                            >
+                              {r.type === 'INCOME' ? '+' : '-'}
+                              {formatCurrency(r.amount)}
                             </span>
                             <button
-                              onClick={() => { setEditRecurringId(r.id); setRecurringOpen(true) }}
+                              onClick={() => {
+                                setEditRecurringId(r.id)
+                                setRecurringOpen(true)
+                              }}
                               className="rounded p-1 text-text-muted hover:text-text-secondary transition-colors"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={async () => {
-                                if (confirm('Delete this recurring transaction?')) {
-                                  await deleteRecurringMut.mutateAsync({ id: r.id })
+                                if (
+                                  confirm('Delete this recurring transaction?')
+                                ) {
+                                  await deleteRecurringMut.mutateAsync({
+                                    id: r.id,
+                                  })
                                 }
                               }}
                               className="rounded p-1 text-text-muted hover:text-red-500 transition-colors"
@@ -620,7 +810,6 @@ export default function FinancePage() {
               </CardContent>
             )}
           </Card>
-
         </>
       )}
 
@@ -628,8 +817,14 @@ export default function FinancePage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         defaultScope={scopeFilter}
-        onGhostAdd={(transaction) => setGhostTransactions((current) => [transaction, ...current])}
-        onGhostRemove={(id) => setGhostTransactions((current) => current.filter((transaction) => transaction.id !== id))}
+        onGhostAdd={(transaction) =>
+          setGhostTransactions((current) => [transaction, ...current])
+        }
+        onGhostRemove={(id) =>
+          setGhostTransactions((current) =>
+            current.filter((transaction) => transaction.id !== id),
+          )
+        }
       />
       <RecurringTransactionDialog
         open={recurringOpen}

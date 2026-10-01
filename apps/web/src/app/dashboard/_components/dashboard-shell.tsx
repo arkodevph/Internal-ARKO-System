@@ -40,6 +40,10 @@ import { DemoNexTour } from "./demo-nex-tour";
 import { DemoSystemPage } from "./demo-system-page";
 import { NotificationDrawer } from "./notification-drawer";
 import { hasPermission, type Permission } from "../../../lib/rbac";
+import {
+  WorkspaceScopeProvider,
+  WorkspaceScopeSwitcher,
+} from "../../../components/workspace-scope";
 
 const OpenPeepsAvatar = dynamic(
   () =>
@@ -81,7 +85,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Workspace",
+    label: "Plan & track",
     items: [
       {
         to: "/dashboard/tasks",
@@ -107,7 +111,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Content",
+    label: "Knowledge & communication",
     items: [
       {
         to: "/dashboard/documents",
@@ -417,12 +421,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         })).filter((g) => g.items.length > 0);
   const categories = navGroups.flatMap((g) => g.items);
   const currentCategory = categories.find((c) => isActivePath(pathname, c));
+  const companyContextAllowed =
+    pathname !== "/dashboard" && pathname !== "/dashboard/finance"
+      ? true
+      : hasPermission(
+          sessionUser?.role,
+          "transactions:manage-company",
+          sessionUser?.permissions,
+        );
   const bottomCategories = isClient
     ? CLIENT_CATEGORIES
     : isDemo
       ? DEMO_CATEGORIES
       : BOTTOM_NAV.filter(canUse);
   return (
+    <WorkspaceScopeProvider>
     <div className="dashboard-theme-root h-dvh bg-bg-app text-text-primary">
       <MobileDrawer
         open={showDrawer}
@@ -441,11 +454,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 px-4 h-14 shrink-0">
             <PanelsTopLeft className="h-4 w-4 text-text-tertiary" />
             <span className="text-sm font-semibold text-text-primary">
-              Your Dashboard
+              ARKO Workspace
             </span>
           </div>
 
-          <nav className="flex-1 min-h-0 overflow-hidden px-3 py-2">
+          <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
             {navGroups.map((group) => (
               <div key={group.label} className="mb-1.5">
                 <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
@@ -611,6 +624,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
+          {!isDemo && !isClient && (
+            <div className="flex min-h-14 shrink-0 items-center border-b border-border-subtle bg-bg-sidebar/70 px-3 md:px-6">
+              <WorkspaceScopeSwitcher allowCompany={companyContextAllowed} />
+            </div>
+          )}
+
           <main
             className={`min-h-0 flex-1 px-3 py-4 md:px-6 ${pathname === "/dashboard" && !isDemo ? "overflow-y-auto xl:overflow-hidden" : "overflow-y-auto"}`}
           >
@@ -658,5 +677,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         />
       )}
     </div>
+    </WorkspaceScopeProvider>
   );
 }
