@@ -14,7 +14,7 @@
 
 ## System keepalive
 
-`.github/workflows/system-keepalive.yml` monitors `https://app.arkodevph.com/health` every 10 minutes around the clock. Check Render's shared Free instance-hour use and GitHub Actions minutes. Scheduled runs may be delayed or missed, so cold starts remain possible.
+Supabase Cron is the primary keepalive for `https://app.arkodevph.com/health`. Apply `ops/system-keepalive.sql` to the linked Supabase project once. It installs `pg_cron` and `pg_net` and schedules a request every 10 minutes. The named job is safe to reschedule by re-running the script. Check `cron.job` for the schedule and `cron.job_run_details` plus `net._http_response` for completed requests. `.github/workflows/system-keepalive.yml` remains a backup; GitHub scheduled runs can be delayed or missed. Monitor Render's shared Free instance-hour use, since keeping a service warm consumes those hours. Render may still restart a Free service.
 
 ## Client request GitHub progress
 
