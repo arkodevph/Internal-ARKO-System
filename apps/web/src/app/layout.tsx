@@ -52,8 +52,12 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <Providers>{children}</Providers>
         <GoogleAnalytics />
-        <Analytics />
-        <SpeedInsights />
+        {process.env.VERCEL === "1" && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

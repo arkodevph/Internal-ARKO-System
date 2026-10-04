@@ -1625,6 +1625,61 @@ html.system-theme-iris-transition::view-transition-old(root) {
   }
 }
 
+@supports (appearance: base-select) {
+  html:has(.dashboard-theme-root) select:not([multiple]):not([size]),
+  html:has(.dashboard-theme-root)
+    select:not([multiple]):not([size])::picker(select) {
+    appearance: base-select;
+  }
+
+  html:has(.dashboard-theme-root)
+    select:not([multiple]):not([size])::picker(select) {
+    max-height: min(20rem, 50vh);
+    overflow-y: auto;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 0.75rem;
+    background: var(--color-card-elevated);
+    color: var(--color-text-primary);
+    box-shadow: 0 20px 45px rgb(0 0 0 / 30%);
+  }
+
+  html:has(.dashboard-theme-root) select:not([multiple]):not([size]) option {
+    padding: 0.6rem 0.75rem;
+    background: transparent;
+    color: inherit;
+  }
+
+  html:has(.dashboard-theme-root)
+    select:not([multiple]):not([size])
+    option:hover,
+  html:has(.dashboard-theme-root)
+    select:not([multiple]):not([size])
+    option:focus-visible {
+    background: color-mix(
+      in srgb,
+      var(--color-primary-500) 18%,
+      var(--color-card-elevated)
+    );
+  }
+
+  html:has(.dashboard-theme-root)
+    select:not([multiple]):not([size])
+    option:checked {
+    background: color-mix(
+      in srgb,
+      var(--color-primary-500) 24%,
+      var(--color-card-elevated)
+    );
+    color: var(--color-text-primary);
+  }
+
+  html:has(.dashboard-theme-root)
+    select:not([multiple]):not([size])
+    option:disabled {
+    opacity: 0.5;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

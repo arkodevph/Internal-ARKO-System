@@ -31,6 +31,13 @@ interface SplitEntry {
   amount: string
 }
 
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRemove, defaultScope = 'PERSONAL' }: AddTransactionDialogProps) {
   const { data: session } = useSession()
   const canUseCompany = hasPermission(
@@ -41,6 +48,7 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
   const [type, setType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE')
   const [scope, setScope] = useState<'PERSONAL' | 'COMPANY'>('PERSONAL')
   const [amount, setAmount] = useState('')
+  const [date, setDate] = useState(() => toLocalDateString(new Date()))
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -96,6 +104,7 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
     setType('EXPENSE')
     setScope(defaultScope)
     setAmount('')
+    setDate(toLocalDateString(new Date()))
     setDescription('')
     setCategoryId('')
     setIsSplit(false)
@@ -123,7 +132,7 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
     splits.every((s) => s.userId && parseFloat(s.amount) > 0) &&
     Math.abs(totalSplitAmount - parsedAmount) < 0.01
   )
-  const isValid = parsedAmount > 0 && categoryId && splitValid
+  const isValid = parsedAmount > 0 && categoryId && !!date && splitValid
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -132,6 +141,7 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
     const splitWith = isSplit
       ? splits.map((s) => ({ userId: s.userId, amount: parseFloat(s.amount) }))
       : undefined
+    const transactionDate = new Date(`${date}T12:00:00`)
 
     const ghostId = `pending-${crypto.randomUUID()}`
     onGhostAdd?.({
@@ -141,7 +151,7 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
       amount: parsedAmount,
       description: description || undefined,
       categoryName: categories?.find((category) => category.id === categoryId)?.name,
-      date: new Date(),
+      date: transactionDate,
     })
     onOpenChange(false)
 
@@ -151,6 +161,7 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
         amount: parsedAmount,
         description: description || undefined,
         categoryId,
+        date: transactionDate,
         scope,
         isSplit,
         splitWith,
@@ -259,6 +270,21 @@ export function AddTransactionDialog({ open, onOpenChange, onGhostAdd, onGhostRe
                   required
                 />
               </div>
+            </div>
+
+            {/* Date */}
+            <div>
+              <label htmlFor="transaction-date" className="block text-sm font-medium text-text-secondary mb-1.5">
+                Date
+              </label>
+              <input
+                id="transaction-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                required
+              />
             </div>
 
             {/* Description */}

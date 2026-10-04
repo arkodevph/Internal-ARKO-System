@@ -76,7 +76,9 @@ export default function TasksPage() {
   const [notice, setNotice] = useState<string | null>(null)
 
   const createTask = api.tasks.create.useMutation({
+    onError: () => setNotice('Could not create the task. Please try again.'),
     onSuccess: () => {
+      setNotice(null)
       setNewTitle('')
       setNewDesc('')
       setNewPriority('MEDIUM')
