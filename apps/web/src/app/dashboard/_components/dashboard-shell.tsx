@@ -29,6 +29,8 @@ import {
   Palette,
   ClipboardList,
   Mail,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { api } from "../../../lib/trpc/client";
 import dynamic from "next/dynamic";
@@ -64,7 +66,7 @@ type NavCategory = {
 
 type NavGroup = { label: string; items: NavCategory[] };
 
-// Grouped, labelled navigation. Kept compact enough to fit without scrolling.
+// Grouped, labelled navigation.
 const NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
@@ -186,7 +188,7 @@ function isActivePath(pathname: string, item: NavCategory) {
   return item.end ? pathname === item.to : pathname.startsWith(item.to);
 }
 
-/* ─── Unread badge sources ─── */
+/* --- Unread badge sources --- */
 
 function useUnreadCounts(enabled = true) {
   const { data: notifications } = api.notifications.unreadCount.useQuery(
@@ -204,42 +206,58 @@ function useUnreadCounts(enabled = true) {
   };
 }
 
-/* ─── Nav row in the labelled sidebar ─── */
+/* --- Nav row --- */
 
 function NavRow({
   item,
   active,
   badge,
   onClick,
+  collapsed,
 }: {
   item: NavCategory;
   active: boolean;
   badge?: number;
   onClick?: () => void;
+  collapsed?: boolean;
 }) {
   return (
     <Link
       href={item.to}
       onClick={onClick}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer ${
+      title={collapsed ? item.label : undefined}
+      className={[
+        "group relative flex items-center rounded-lg transition-colors cursor-pointer text-sm",
+        collapsed ? "justify-center py-2 mx-auto w-10" : "gap-3 px-3 py-1.5",
         active
           ? "bg-card text-text-primary font-medium"
-          : "text-text-secondary hover:bg-card/[0.03] hover:text-text-primary"
-      }`}
+          : "text-text-secondary hover:bg-card/[0.05] hover:text-text-primary",
+      ].join(" ")}
     >
       {active && (
         <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-primary-500" />
       )}
       <item.icon
-        className={`h-[18px] w-[18px] shrink-0 ${
+        className={[
+          "h-[18px] w-[18px] shrink-0",
           active
             ? "text-text-primary"
-            : "text-text-tertiary group-hover:text-text-secondary"
-        }`}
+            : "text-text-tertiary group-hover:text-text-secondary",
+        ].join(" ")}
       />
-      <span className="flex-1 truncate">{item.label}</span>
-      {badge ? (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[10px] font-bold text-white">
+      {!collapsed && (
+        <>
+          <span className="flex-1 truncate">{item.label}</span>
+          {badge ? (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[10px] font-bold text-white">
+              {badge > 9 ? "9+" : badge}
+            </span>
+          ) : null}
+        </>
+      )}
+      {/* Badge visible even in collapsed mode */}
+      {collapsed && badge ? (
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] font-bold text-white">
           {badge > 9 ? "9+" : badge}
         </span>
       ) : null}
@@ -247,7 +265,7 @@ function NavRow({
   );
 }
 
-/* ─── Mobile nav drawer ─── */
+/* --- Mobile nav drawer --- */
 
 function MobileDrawer({
   open,
@@ -280,11 +298,12 @@ function MobileDrawer({
       )}
 
       <div
-        className={`fixed left-0 top-0 z-50 flex h-full w-72 flex-col bg-bg-sidebar shadow-xl transition-transform duration-300 ease-out md:hidden ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={[
+          "fixed left-0 top-0 z-50 flex h-full w-72 flex-col bg-bg-sidebar shadow-xl transition-transform duration-300 ease-out md:hidden",
+          open ? "translate-x-0" : "-translate-x-full",
+        ].join(" ")}
       >
-        <div className="flex items-center justify-between border-b border-border-subtle px-4 h-14">
+        <div className="flex items-center justify-between border-b border-border-subtle px-4 h-14 shrink-0">
           <span
             className="flex items-center gap-2 text-lg font-bold text-text-primary"
             style={{ fontFamily: "'Oswald', sans-serif" }}
@@ -300,7 +319,7 @@ function MobileDrawer({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+        <div className="flex-1 overflow-y-auto p-2 space-y-0.5 custom-sidebar-scroll">
           {categories.map((item) => (
             <NavRow
               key={item.to}
@@ -314,7 +333,7 @@ function MobileDrawer({
           ))}
         </div>
 
-        <div className="border-t border-border-subtle p-3">
+        <div className="border-t border-border-subtle p-3 shrink-0">
           <div className="mb-2 flex items-center gap-3 px-1">
             <OpenPeepsAvatar userId={user?.id} size={32} />
             <div className="min-w-0 flex-1">
@@ -353,7 +372,7 @@ function MobileDrawer({
   );
 }
 
-/* ─── Shell ─── */
+/* --- Shell --- */
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -370,9 +389,29 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [showSearch, setShowSearch] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  // Sidebar collapsed state — restored from localStorage on mount
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const unread = useUnreadCounts(!isDemo);
   const assistantIdentity = useAssistantIdentity();
+
+  // Restore sidebar collapsed state from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("arko-sidebar-collapsed");
+      if (stored !== null) setSidebarCollapsed(stored === "true");
+    } catch {}
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("arko-sidebar-collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (showSearch && searchRef.current) searchRef.current.focus();
@@ -434,6 +473,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     : isDemo
       ? DEMO_CATEGORIES
       : BOTTOM_NAV.filter(canUse);
+
   return (
     <WorkspaceScopeProvider>
     <div className="dashboard-theme-root h-dvh bg-bg-app text-text-primary">
@@ -449,99 +489,199 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       />
 
       <div className="flex h-full">
-        {/* ── Sidebar ── */}
-        <aside className="hidden md:flex h-full w-60 shrink-0 flex-col border-r border-border-subtle bg-bg-sidebar">
-          <div className="flex items-center gap-2 px-4 h-14 shrink-0">
-            <PanelsTopLeft className="h-4 w-4 text-text-tertiary" />
-            <span className="text-sm font-semibold text-text-primary">
-              ARKO Workspace
-            </span>
+        {/* === Sidebar === */}
+        <aside
+          style={{ width: sidebarCollapsed ? "60px" : "240px" }}
+          className="hidden md:flex h-full shrink-0 flex-col border-r border-border-subtle bg-bg-sidebar transition-[width] duration-300 ease-in-out overflow-hidden"
+        >
+          {/* Sidebar header */}
+          <div className="relative flex items-center gap-2 border-b border-border-subtle h-14 shrink-0 px-2">
+            {/* Title — fades out when collapsed */}
+            <div
+              className={[
+                "flex items-center gap-2 flex-1 min-w-0 overflow-hidden transition-opacity duration-200",
+                sidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100",
+              ].join(" ")}
+            >
+              <PanelsTopLeft className="h-4 w-4 text-text-tertiary shrink-0" />
+              <span className="text-sm font-semibold text-text-primary whitespace-nowrap">
+                ARKO Workspace
+              </span>
+            </div>
+
+            {/* Collapse / expand toggle button */}
+            <button
+              onClick={toggleSidebar}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-tertiary hover:bg-card hover:text-text-primary transition-colors cursor-pointer ml-auto"
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </button>
           </div>
 
-          <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
-            {navGroups.map((group) => (
-              <div key={group.label} className="mb-1.5">
-                <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
-                  {group.label}
-                </p>
-                <div className="space-y-0.5">
-                  {group.items.map((item) => (
-                    <NavRow
-                      key={item.to}
-                      item={item}
-                      active={isActivePath(pathname, item)}
-                      badge={
-                        item.to === "/dashboard/messages"
-                          ? unread.messages
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
+          {/* Scrollable nav — overflow-y-auto fixes lower items being cut off at small heights/high zoom */}
+          <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 px-2 custom-sidebar-scroll">
+            {sidebarCollapsed ? (
+              /* Icon-only mode */
+              <div className="space-y-0.5">
+                {categories.map((item) => (
+                  <NavRow
+                    key={item.to}
+                    item={item}
+                    active={isActivePath(pathname, item)}
+                    badge={
+                      item.to === "/dashboard/messages"
+                        ? unread.messages
+                        : undefined
+                    }
+                    collapsed={true}
+                  />
+                ))}
               </div>
-            ))}
+            ) : (
+              /* Grouped mode */
+              navGroups.map((group) => (
+                <div key={group.label} className="mb-1.5">
+                  <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => (
+                      <NavRow
+                        key={item.to}
+                        item={item}
+                        active={isActivePath(pathname, item)}
+                        badge={
+                          item.to === "/dashboard/messages"
+                            ? unread.messages
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </nav>
 
-          {/* User / status card at the bottom */}
-          <div className="border-t border-border-subtle p-3">
-            <div className="flex items-center gap-3 rounded-xl bg-card p-3">
-              <div className="relative shrink-0">
-                <OpenPeepsAvatar
-                  userId={user?.id}
-                  avatarJson={
-                    profile?.avatar &&
-                    typeof profile.avatar === "object" &&
-                    Object.keys(profile.avatar).length > 0
-                      ? JSON.stringify(profile.avatar)
-                      : undefined
-                  }
-                  size={36}
-                />
-                {profile?.image && (
-                  <img
-                    src={profile.image}
-                    alt=""
-                    className="absolute inset-0 h-full w-full rounded-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
+          {/* User / status card — always visible at bottom */}
+          <div className="border-t border-border-subtle p-3 shrink-0">
+            {sidebarCollapsed ? (
+              /* Collapsed: stacked avatar + icon buttons */
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative">
+                  <OpenPeepsAvatar
+                    userId={user?.id}
+                    avatarJson={
+                      profile?.avatar &&
+                      typeof profile.avatar === "object" &&
+                      Object.keys(profile.avatar).length > 0
+                        ? JSON.stringify(profile.avatar)
+                        : undefined
+                    }
+                    size={32}
                   />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-text-primary">
-                  {user?.name ?? "User"}
-                </p>
-                <span className="flex items-center gap-1.5 text-[11px] font-medium text-pos">
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${status === "loading" ? "bg-text-tertiary animate-pulse" : "bg-pos"}`}
-                  />
-                  {status === "loading" ? "Connecting…" : "Active"}
-                </span>
-              </div>
-              <div className="flex items-center gap-0.5">
-                {!isDemo && (
+                  {profile?.image && (
+                    <img
+                      src={profile.image}
+                      alt=""
+                      className="absolute inset-0 h-full w-full rounded-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  {!isDemo && (
+                    <button
+                      onClick={() => router.push("/dashboard/settings")}
+                      title="Settings"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => router.push("/dashboard/settings")}
-                    title="Settings"
-                    className="rounded-lg p-1.5 text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
+                    onClick={handleLogout}
+                    title="Sign out"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-neg-bg hover:text-neg transition-colors cursor-pointer"
                   >
-                    <Settings className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" />
                   </button>
-                )}
-                <button
-                  onClick={handleLogout}
-                  title="Sign out"
-                  className="rounded-lg p-1.5 text-text-tertiary hover:bg-neg-bg hover:text-neg transition-colors cursor-pointer"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Expanded: full user card */
+              <div className="flex items-center gap-3 rounded-xl bg-card p-3">
+                <div className="relative shrink-0">
+                  <OpenPeepsAvatar
+                    userId={user?.id}
+                    avatarJson={
+                      profile?.avatar &&
+                      typeof profile.avatar === "object" &&
+                      Object.keys(profile.avatar).length > 0
+                        ? JSON.stringify(profile.avatar)
+                        : undefined
+                    }
+                    size={36}
+                  />
+                  {profile?.image && (
+                    <img
+                      src={profile.image}
+                      alt=""
+                      className="absolute inset-0 h-full w-full rounded-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-text-primary">
+                    {user?.name ?? "User"}
+                  </p>
+                  <span className="flex items-center gap-1.5 text-[11px] font-medium text-pos">
+                    <span
+                      className={[
+                        "h-1.5 w-1.5 rounded-full",
+                        status === "loading"
+                          ? "bg-text-tertiary animate-pulse"
+                          : "bg-pos",
+                      ].join(" ")}
+                    />
+                    {status === "loading" ? "Connecting\u2026" : "Active"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  {!isDemo && (
+                    <button
+                      onClick={() => router.push("/dashboard/settings")}
+                      title="Settings"
+                      className="rounded-lg p-1.5 text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    title="Sign out"
+                    className="rounded-lg p-1.5 text-text-tertiary hover:bg-neg-bg hover:text-neg transition-colors cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 
-        {/* ── Main content ── */}
+        {/* === Main content === */}
         <div className="flex flex-1 flex-col min-w-0">
           <header className="sticky top-0 z-30 flex items-center justify-between shrink-0 border-b border-border-subtle bg-bg-app/80 px-3 md:px-6 h-14 backdrop-blur-md">
             <div className="flex items-center gap-2 min-w-0">
@@ -616,7 +756,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <Bell className="h-4 w-4" />
                   {unread.notifications > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neg px-1 text-[9px] font-bold text-white">
-                      {unread.notifications > 99 ? "99+" : unread.notifications}
+                      {unread.notifications > 99
+                        ? "99+"
+                        : unread.notifications}
                     </span>
                   )}
                 </button>
@@ -631,7 +773,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           )}
 
           <main
-            className={`min-h-0 flex-1 px-3 py-4 md:px-6 ${pathname === "/dashboard" && !isDemo ? "overflow-y-auto xl:overflow-hidden" : "overflow-y-auto"}`}
+            className={[
+              "min-h-0 flex-1 px-3 py-4 md:px-6 custom-scrollbar",
+              pathname === "/dashboard" && !isDemo
+                ? "overflow-y-auto xl:overflow-hidden"
+                : "overflow-y-auto",
+            ].join(" ")}
           >
             {isDemo ? <DemoSystemPage pathname={pathname} /> : children}
           </main>
@@ -644,15 +791,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.to}
                   href={item.to}
-                  className={`flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-2 py-1 transition-colors cursor-pointer ${
+                  className={[
+                    "flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-2 py-1 transition-colors cursor-pointer",
                     active
                       ? "text-text-primary"
-                      : "text-text-tertiary hover:text-text-secondary"
-                  }`}
+                      : "text-text-tertiary hover:text-text-secondary",
+                  ].join(" ")}
                 >
                   <item.icon className="h-4 w-4" />
                   <span
-                    className={`text-[9px] leading-tight ${active ? "font-semibold" : "font-medium"}`}
+                    className={[
+                      "text-[9px] leading-tight",
+                      active ? "font-semibold" : "font-medium",
+                    ].join(" ")}
                   >
                     {item.label}
                   </span>
