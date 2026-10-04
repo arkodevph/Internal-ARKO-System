@@ -118,7 +118,7 @@ export default function FloatingAssistant() {
 
   return (
     <aside
-      className="floating-nex-shell fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-3 z-[45] md:bottom-5 md:right-5"
+      className={`floating-nex-shell fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-3 lg:bottom-5 lg:right-5 ${open ? 'z-[60]' : 'z-[45]'}`}
       aria-label={`${identity.assistantName} assistant`}
     >
       <AnimatePresence>
@@ -324,24 +324,23 @@ export default function FloatingAssistant() {
 
       <motion.button
         type="button"
+        tabIndex={0}
         onClick={() => setOpen((current) => !current)}
         whileTap={reduceMotion ? undefined : { scale: 0.96 }}
         aria-expanded={open}
         aria-controls="public-nex-panel"
         aria-label={`${open ? 'Close' : 'Open'} ${identity.assistantName} assistant`}
-        className="floating-nex-trigger nex-terminal-trigger group relative flex h-16 items-center rounded-full pl-2 pr-4 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
+        className="floating-nex-trigger nex-terminal-trigger group relative flex h-12 w-12 items-center justify-center rounded-full text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid lg:h-16 lg:w-auto lg:justify-start lg:pl-2 lg:pr-4"
       >
         <span className="relative">
-          {!reduceMotion && (
-            <span className="absolute inset-0 animate-ping border border-acid/40" />
-          )}
+          <span className="absolute inset-0 border border-acid/40 motion-safe:animate-ping motion-reduce:hidden" />
           <NexMascot
             iconStyle={identity.iconStyle}
             accentColor="#B8FF2E"
             size="md"
           />
         </span>
-        <span className="ml-3 text-left">
+        <span className="ml-3 hidden text-left lg:block">
           <span className="display block text-base leading-none">
             Ask {identity.assistantName}
           </span>

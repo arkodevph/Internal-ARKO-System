@@ -23,7 +23,7 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
       className="group/hero relative z-10 bg-acid text-ink"
     >
       <div className="relative z-10">
-        <div className="px-6 pb-16 pt-32 md:px-10 md:pb-24 md:pt-44 lg:pr-[44vw]">
+        <div className="px-6 pb-6 pt-28 md:px-10 md:pb-8 md:pt-44 lg:pb-24 lg:pr-[44vw]">
           <p className="eyebrow mb-6 text-ink/70">{hero.eyebrow}</p>
           <h1 className="display text-[clamp(2.75rem,11vw,9rem)]">
             {hero.headingLead}
@@ -35,7 +35,7 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
               />
             </span>
           </h1>
-          <div className="mt-10 flex flex-col gap-6">
+          <div className="mt-8 flex flex-col gap-6 md:mt-10">
             <p className="max-w-md text-base font-medium text-ink/80 md:text-lg">
               {hero.paragraph}
             </p>
@@ -48,7 +48,7 @@ function Hero({ hero }: { hero: LandingContent["hero"] }) {
           ARKO
         </div>
       </div>
-      <div className="pointer-events-none absolute -bottom-14 -right-[2%] w-[112vw] [perspective:1000px] md:-bottom-40 md:right-[8%] md:w-[min(78vw,1240px)]">
+      <div className="hero-character pointer-events-none relative mx-auto aspect-[5/4] w-full max-w-md overflow-hidden [perspective:1000px] lg:absolute lg:-bottom-40 lg:right-[8%] lg:aspect-auto lg:w-[min(78vw,1240px)] lg:max-w-none lg:overflow-visible">
         <HeroCharacter />
       </div>
     </section>
