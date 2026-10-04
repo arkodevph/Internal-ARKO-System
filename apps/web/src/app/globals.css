@@ -211,6 +211,25 @@ html.system-theme-iris-transition::view-transition-old(root) {
   color: var(--color-ink);
 }
 
+@media (max-width: 1023px) {
+  .landing-root {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  .landing-root .hero-character > div {
+    position: absolute;
+    top: 0;
+    left: -46%;
+    width: 140%;
+  }
+}
+
+@media (max-width: 1023px) {
+  .landing-root:has([data-mobile-project-cta="visible"]) .floating-nex-shell {
+    bottom: calc(8.25rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* Auth page - landing-page geometry without WebGL. */
 .auth-art-grid {
   background-image:
@@ -1328,8 +1347,8 @@ html.system-theme-iris-transition::view-transition-old(root) {
   content: "";
 }
 
-@media (max-width: 767px) {
-  .floating-nex-shell:has(.floating-nex-input:focus) {
+@media (max-width: 1023px) {
+  .landing-root .floating-nex-shell:has(.floating-nex-input:focus) {
     bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
   .floating-nex-shell:has(.floating-nex-input:focus) .floating-nex-panel {

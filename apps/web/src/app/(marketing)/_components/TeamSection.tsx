@@ -37,7 +37,7 @@ const TEAM = [
     number: '04',
     name: 'Justine Cane',
     image: '/team/justine-cane-professional.webp',
-    portfolio: 'https://jayceebacurin.arkodevph.com',
+    portfolio: 'https://justinebacurin1927.github.io/My-Portfolio/',
     offset: 'sm:mt-6 lg:mt-14',
     tilt: 'lg:rotate-2',
   },

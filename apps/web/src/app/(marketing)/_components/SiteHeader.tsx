@@ -54,67 +54,69 @@ export default function SiteHeader() {
   const greenBgHeader = onGreen;
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 max-md:border-b max-md:border-white/10 max-md:bg-ink/95 max-md:backdrop-blur-md ${
-        greenBgHeader
-          ? "border-b border-white/10 bg-ink/90 backdrop-blur-md"
-          : "bg-acid/90 backdrop-blur-sm"
-      }`}
-    >
-      <div className="flex h-14 items-center justify-between px-4 md:h-20 md:px-10">
-        <Link href="/" aria-label="ARKO Software Studio home">
-          <Image
-            src="/brand/arko-logo-wordmark.png"
-            alt=""
-            width={991}
-            height={453}
-            priority
-            className="h-10 w-auto object-contain md:h-14"
-          />
-          <span className="sr-only">Arko home</span>
-        </Link>
+    <>
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 max-lg:border-b max-lg:border-white/10 max-lg:bg-ink/95 max-lg:backdrop-blur-md ${
+          greenBgHeader
+            ? "border-b border-white/10 bg-ink/90 backdrop-blur-md"
+            : "bg-acid/90 backdrop-blur-sm"
+        }`}
+      >
+        <div className="flex h-14 items-center justify-between px-4 lg:h-20 lg:px-10">
+          <Link href="/" aria-label="ARKO Software Studio home">
+            <Image
+              src="/brand/arko-logo-wordmark.png"
+              alt=""
+              width={991}
+              height={453}
+              priority
+              className="h-10 w-auto object-contain lg:h-14"
+            />
+            <span className="sr-only">Arko home</span>
+          </Link>
 
-        <nav className="hidden items-center gap-7 md:flex">
-          {NAV.map((item) => (
+          <nav className="hidden items-center gap-7 lg:flex">
+            {NAV.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className={`eyebrow transition-colors hover:opacity-60 ${
+                  greenBgHeader ? "text-white" : "text-ink"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="hidden items-center gap-6 lg:flex">
             <a
-              key={item.label}
-              href={item.href}
+              href="/auth/login"
               className={`eyebrow transition-colors hover:opacity-60 ${
                 greenBgHeader ? "text-white" : "text-ink"
               }`}
             >
-              {item.label}
+              Login
             </a>
-          ))}
-        </nav>
-
-        <div className="hidden items-center gap-4 md:flex md:gap-6">
-          <a
-            href="/auth/login"
-            className={`eyebrow transition-colors hover:opacity-60 ${
-              greenBgHeader ? "text-white" : "text-ink"
-            }`}
-          >
-            Login
-          </a>
-          <StarBorder
-            as="a"
+            <StarBorder
+              as="a"
+              href="/#contact"
+              color={greenBgHeader ? "#b8ff2e" : "#0a0a0a"}
+              className="scale-100"
+            >
+              Start a project
+            </StarBorder>
+          </div>
+          <Link
             href="/#contact"
-            color={greenBgHeader ? "#b8ff2e" : "#0a0a0a"}
-            className="scale-90 md:scale-100"
+            className="mono inline-flex min-h-10 items-center border border-acid px-3 text-[0.58rem] font-bold uppercase tracking-wider text-acid lg:hidden"
           >
-            Start a project
-          </StarBorder>
+            Start project
+          </Link>
         </div>
-        <Link
-          href="/#contact"
-          className="mono inline-flex min-h-10 items-center border border-acid px-3 text-[0.58rem] font-bold uppercase tracking-wider text-acid md:hidden"
-        >
-          Start project
-        </Link>
-      </div>
+      </header>
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
         aria-label="Mobile navigation"
       >
         {[
@@ -143,6 +145,6 @@ export default function SiteHeader() {
           </Link>
         ))}
       </nav>
-    </header>
+    </>
   );
 }

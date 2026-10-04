@@ -9,31 +9,34 @@ export default function StickyMobileCta() {
   useEffect(() => {
     // Show after the user scrolls past the hero, hide when the contact
     // section (the CTA's own destination) is on screen.
-    const onScroll = () => setVisible(window.scrollY > 600)
+    const onScroll = () => {
+      const hero = document.getElementById('top')
+      const contactBounds = document
+        .getElementById('contact')
+        ?.getBoundingClientRect()
+      const pastHero = hero
+        ? hero.getBoundingClientRect().bottom <= 0
+        : window.scrollY > 600
+      const contactVisible =
+        contactBounds &&
+        contactBounds.top < window.innerHeight &&
+        contactBounds.bottom > 0
+      setVisible(pastHero && !contactVisible)
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-
-    const contact = document.getElementById('contact')
-    let observer: IntersectionObserver | undefined
-    if (contact) {
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) setVisible(false)
-        },
-        { threshold: 0 },
-      )
-      observer.observe(contact)
-    }
+    window.addEventListener('resize', onScroll)
 
     return () => {
       window.removeEventListener('scroll', onScroll)
-      observer?.disconnect()
+      window.removeEventListener('resize', onScroll)
     }
   }, [])
 
   return (
     <div
-      className={`fixed inset-x-3 z-40 transition-all duration-300 md:hidden ${
+      data-mobile-project-cta={visible ? 'visible' : 'hidden'}
+      className={`fixed inset-x-3 z-40 transition-all duration-300 lg:hidden ${
         visible
           ? 'translate-y-0 opacity-100'
           : 'pointer-events-none translate-y-4 opacity-0'
