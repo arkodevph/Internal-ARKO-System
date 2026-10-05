@@ -4,6 +4,7 @@ import type {
   DocumentType,
 } from "../../lib/documents/schema";
 import { formatDocumentAmount } from "../../lib/documents/schema";
+import BillingStatementSheet from "./BillingStatementSheet";
 
 type DocumentSheetProps = {
   type: DocumentType;
@@ -52,6 +53,18 @@ export default function DocumentSheet({
   content,
   lineItems,
 }: DocumentSheetProps) {
+  if (type === "INVOICE") {
+    return (
+      <BillingStatementSheet
+        invoiceNumber={invoiceNumber}
+        issueDate={issueDate}
+        dueDate={dueDate}
+        projectName={projectName}
+        content={content}
+        lineItems={lineItems}
+      />
+    );
+  }
   const total = lineItems.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
     0,
@@ -78,7 +91,7 @@ export default function DocumentSheet({
             <dd>{formatDate(issueDate)}</dd>
           </div>
           <div>
-            <dt>{type === "INVOICE" ? "Due" : "Valid / target"}</dt>
+            <dt>Valid / target</dt>
             <dd>{formatDate(dueDate)}</dd>
           </div>
         </dl>
