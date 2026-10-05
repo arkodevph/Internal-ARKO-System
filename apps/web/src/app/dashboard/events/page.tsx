@@ -47,6 +47,38 @@ function ProfileAvatar({ user, size }: { user?: CalendarUser | null; size: numbe
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 // Month grid is Monday-first, matching the reference layout
 const MONTH_HEADS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const HOURS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'))
+const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
+
+function EventTimeField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const [hour24, minute] = value.split(':').map(Number)
+  const hour12 = String(hour24 % 12 || 12).padStart(2, '0')
+  const period = hour24 >= 12 ? 'PM' : 'AM'
+  const fieldClass = 'min-w-0 w-full rounded-lg border border-border-subtle bg-card px-2 py-2 text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20'
+
+  function updateTime(nextHour = hour12, nextMinute = String(minute).padStart(2, '0'), nextPeriod = period) {
+    const nextHour24 = Number(nextHour) % 12 + (nextPeriod === 'PM' ? 12 : 0)
+    onChange(`${String(nextHour24).padStart(2, '0')}:${nextMinute}`)
+  }
+
+  return (
+    <fieldset className="min-w-0">
+      <legend className="mb-1 text-xs font-medium text-text-secondary">{label}</legend>
+      <div className="grid grid-cols-3 gap-1">
+        <select aria-label={`${label} hour`} value={hour12} onChange={(event) => updateTime(event.target.value)} className={fieldClass}>
+          {HOURS.map((hour) => <option key={hour} value={hour}>{hour}</option>)}
+        </select>
+        <select aria-label={`${label} minute`} value={String(minute).padStart(2, '0')} onChange={(event) => updateTime(hour12, event.target.value)} className={fieldClass}>
+          {MINUTES.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select aria-label={`${label} period`} value={period} onChange={(event) => updateTime(hour12, String(minute).padStart(2, '0'), event.target.value)} className={fieldClass}>
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </fieldset>
+  )
+}
 
 function fmtTime(t: string) {
   const [h, m] = t.split(':').map(Number)
@@ -298,26 +330,20 @@ export default function EventsPage() {
                 rows={2}
                 className="block w-full resize-none rounded-lg border border-border-subtle bg-card px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               />
-              <div className="flex gap-2">
+              <div>
+                <label htmlFor="event-date" className="mb-1 block text-xs font-medium text-text-secondary">Date</label>
                 <input
+                  id="event-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="flex-1 rounded-lg border border-border-subtle bg-card px-3 py-2 text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  className="block w-full min-w-0 rounded-lg border border-border-subtle bg-card px-3 py-2 text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
+              </div>
+              <div className="grid gap-3">
+                <EventTimeField label="Start time" value={startTime} onChange={setStartTime} />
+                <EventTimeField label="End time" value={endTime} onChange={setEndTime} />
               </div>
               <RecordScopeField value={scope} onChange={setScope} />
               {error && (
