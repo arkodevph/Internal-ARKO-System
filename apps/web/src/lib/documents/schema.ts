@@ -20,6 +20,35 @@ const timelineEventSchema = z.object({
   approval: z.string().optional(),
 });
 
+export const billingStatementSchema = z.object({
+  projectName: z.string(),
+  developmentTeam: z.string(),
+  status: z.string(),
+  contactPerson: z.string(),
+  currentMilestone: z.number().int().nonnegative(),
+  milestones: z.array(
+    z.object({
+      title: z.string(),
+      percentage: z.number().finite().min(0).max(100),
+      status: z.enum(["Due", "Upcoming", "Paid"]),
+    }),
+  ),
+  milestoneDescription: z.string(),
+  allocationNotes: z.string(),
+  paymentMethod: z.string(),
+  accountName: z.string(),
+  accountNumber: z.string(),
+  paymentReference: z.string(),
+  confirmationEmail: z.string(),
+  billingNotes: z.string(),
+  issuerName: z.string(),
+  issuerDescription: z.string(),
+  issuerRepresentative: z.string(),
+  issuerContact: z.string(),
+});
+
+export type BillingStatement = z.infer<typeof billingStatementSchema>;
+
 export const documentContentSchema = z.object({
   currency: z.string().trim().toUpperCase().optional(),
   from: partySchema.optional(),
@@ -29,6 +58,7 @@ export const documentContentSchema = z.object({
   legalNotice: z.string().optional(),
   sections: z.array(documentSectionSchema).optional(),
   timelineEvents: z.array(timelineEventSchema).optional(),
+  billingStatement: billingStatementSchema.optional(),
 });
 
 export type DocumentContent = z.infer<typeof documentContentSchema>;
@@ -55,6 +85,9 @@ export function formatDocumentAmount(
   }
 
   try {
+    if (currency === "PHP") {
+      return `₱${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
@@ -109,6 +142,50 @@ export function validateDocumentForPublish(input: {
   if (type === "INVOICE") {
     if (!input.issueDate) errors.push("Set the invoice issue date.");
     if (!input.dueDate) errors.push("Set the invoice due date.");
+    if (content.billingStatement) {
+      const billing = content.billingStatement;
+      if (!billing.projectName.trim())
+        errors.push("Add the billing project name.");
+      if (
+        !billing.milestones.length ||
+        billing.milestones.some(
+          (item) => !item.title.trim() || item.percentage <= 0,
+        )
+      ) {
+        errors.push(
+          "Add named payment milestones with percentages above zero.",
+        );
+      }
+      if (
+        Math.abs(
+          billing.milestones.reduce((sum, item) => sum + item.percentage, 0) -
+            100,
+        ) > 0.000001
+      ) {
+        errors.push("Payment milestone percentages must total 100%.");
+      }
+      const current = billing.milestones[billing.currentMilestone];
+      if (!current || current.status === "Paid")
+        errors.push("Select an unpaid milestone for this payment request.");
+      if (
+        lineItems.reduce(
+          (sum, item) => sum + item.quantity * item.unitPrice,
+          0,
+        ) <= 0
+      ) {
+        errors.push("Set a project fee above zero.");
+      }
+      if (
+        !billing.paymentMethod.trim() ||
+        !billing.accountName.trim() ||
+        !billing.accountNumber.trim()
+      ) {
+        errors.push(
+          "Complete the payment method, account name, and account number.",
+        );
+      }
+      if (!billing.issuerName.trim()) errors.push("Add the issuer name.");
+    }
   }
 
   if (

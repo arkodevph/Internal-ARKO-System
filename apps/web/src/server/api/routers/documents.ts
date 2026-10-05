@@ -175,6 +175,7 @@ export const documentsRouter = router({
         status: z.enum(DOCUMENT_STATUS).optional(),
         issueDate: z.date().nullable().optional(),
         dueDate: z.date().nullable().optional(),
+        invoiceNumber: z.string().trim().min(1).max(100).nullable().optional(),
         content: documentContentSchema.optional(),
         lineItems: z.array(lineItemSchema).optional(),
       }),
@@ -212,7 +213,7 @@ export const documentsRouter = router({
       const nextDueDate =
         input.dueDate === undefined ? existing.dueDate : input.dueDate;
 
-      if (input.status === "PUBLISHED") {
+      if ((input.status ?? existing.status) === "PUBLISHED") {
         const errors = validateDocumentForPublish({
           type: existing.type,
           title: nextTitle,
@@ -229,7 +230,22 @@ export const documentsRouter = router({
         }
       }
 
-      let invoiceNumber = existing.invoiceNumber;
+      let invoiceNumber =
+        input.invoiceNumber === undefined
+          ? existing.invoiceNumber
+          : input.invoiceNumber;
+      if (invoiceNumber && invoiceNumber !== existing.invoiceNumber) {
+        const duplicate = await ctx.prisma.document.findUnique({
+          where: { invoiceNumber },
+          select: { id: true },
+        });
+        if (duplicate && duplicate.id !== existing.id) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "This billing statement number is already in use.",
+          });
+        }
+      }
       let publishedAt = existing.publishedAt;
       if (input.status === "PUBLISHED") {
         publishedAt ??= new Date();

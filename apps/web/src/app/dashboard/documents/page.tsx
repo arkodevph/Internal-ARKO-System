@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { createPortal } from "react-dom";
 import { Button, Card } from "@arko/ui";
 import {
   Copy,
@@ -16,6 +17,12 @@ import {
   X,
 } from "lucide-react";
 import DocumentSheet from "../../../components/documents/DocumentSheet";
+import BillingStatementEditor from "../../../components/documents/BillingStatementEditor";
+import {
+  BILLING_NOTICE,
+  calculateBillingAmounts,
+  getBillingStatement,
+} from "../../../lib/documents/billing";
 import {
   formatDocumentAmount,
   parseDocumentContent,
@@ -57,6 +64,7 @@ export default function DocumentsPage() {
   const [editStatus, setEditStatus] = useState<DocumentStatus>("DRAFT");
   const [editIssueDate, setEditIssueDate] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
+  const [editInvoiceNumber, setEditInvoiceNumber] = useState("");
   const [editContent, setEditContent] = useState<DocumentContent>({});
   const [editLineItems, setEditLineItems] = useState<DocumentLineItem[]>([]);
 
@@ -81,7 +89,20 @@ export default function DocumentsPage() {
     setEditStatus(detail.status);
     setEditIssueDate(toDateInput(detail.issueDate));
     setEditDueDate(toDateInput(detail.dueDate));
-    setEditContent(parseDocumentContent(detail.content));
+    setEditInvoiceNumber(detail.invoiceNumber || "");
+    const content = parseDocumentContent(detail.content);
+    const billingStatement = getBillingStatement(content, detail.project?.name);
+    setEditContent(
+      detail.type === "INVOICE"
+        ? {
+            ...content,
+            currency: content.currency || "PHP",
+            from: { ...content.from, name: billingStatement.issuerName },
+            legalNotice: content.legalNotice || BILLING_NOTICE,
+            billingStatement,
+          }
+        : content,
+    );
     setEditLineItems(
       detail.lineItems.map((item) => ({
         description: item.description,
@@ -153,6 +174,9 @@ export default function DocumentsPage() {
       status: editStatus,
       issueDate: fromDateInput(editIssueDate),
       dueDate: fromDateInput(editDueDate),
+      ...(detail.type === "INVOICE"
+        ? { invoiceNumber: editInvoiceNumber.trim() || null }
+        : {}),
       content: editContent,
       lineItems: editLineItems.map((item, sortOrder) => ({
         ...item,
@@ -191,11 +215,11 @@ export default function DocumentsPage() {
             </span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Documents and invoices
+            Documents and billing statements
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Generate editable project boilerplates, publish a private client
-            link, and print a clean A4 PDF.
+            Create editable project documents, publish a private client link,
+            and print a clean A4 PDF.
           </p>
         </div>
         <Button onClick={() => setNewOpen(true)}>
@@ -211,7 +235,7 @@ export default function DocumentsPage() {
         {[
           ["All documents", metrics.total],
           ["Published", metrics.published],
-          ["Invoices", metrics.invoices],
+          ["Billing statements", metrics.invoices],
           ["Timelines", metrics.timelines],
         ].map(([label, value]) => (
           <Card key={label} className="p-4">
@@ -237,7 +261,11 @@ export default function DocumentsPage() {
               onClick={() => setTypeFilter(type)}
               className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-semibold ${typeFilter === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
             >
-              {type === "ALL" ? "All types" : type}
+              {type === "ALL"
+                ? "All types"
+                : type === "INVOICE"
+                  ? "Billing statements"
+                  : type}
             </button>
           ))}
         </div>
@@ -303,7 +331,11 @@ export default function DocumentsPage() {
                 <Card className="flex h-full flex-col justify-between p-5 transition-colors hover:border-primary/50">
                   <div>
                     <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
-                      <span className="text-primary">{document.type}</span>
+                      <span className="text-primary">
+                        {document.type === "INVOICE"
+                          ? "Billing statement"
+                          : document.type}
+                      </span>
                       <span className="text-muted-foreground">
                         {document.status}
                       </span>
@@ -323,7 +355,16 @@ export default function DocumentsPage() {
                   <div className="mt-6 flex items-end justify-between border-t pt-4">
                     <span className="text-xs text-muted-foreground">
                       {document.lineItems.length > 0
-                        ? formatDocumentAmount(total, content.currency)
+                        ? formatDocumentAmount(
+                            document.type === "INVOICE" &&
+                              content.billingStatement
+                              ? calculateBillingAmounts(
+                                  content.billingStatement,
+                                  document.lineItems,
+                                ).amountDue
+                              : total,
+                            content.currency,
+                          )
                         : `Updated ${new Date(document.updatedAt).toLocaleDateString()}`}
                     </span>
                     <span className="flex items-center gap-1 text-xs font-semibold text-primary">
@@ -380,7 +421,7 @@ export default function DocumentsPage() {
                 <option value="">Choose a project</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
-                    {project.name} - {" "}
+                    {project.name} -{" "}
                     {project.client?.name || project.client?.email}
                   </option>
                 ))}
@@ -398,7 +439,7 @@ export default function DocumentsPage() {
                     onClick={() => setNewType(type)}
                     className={`border p-3 text-left text-xs font-semibold ${newType === type ? "border-primary bg-primary/10 text-primary" : "rounded-md"}`}
                   >
-                    {type}
+                    {type === "INVOICE" ? "Billing statement" : type}
                   </button>
                 ))}
               </div>
@@ -443,488 +484,550 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {viewingId && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-3 md:p-8">
-          {detailLoading || !detail ? (
-            <div className="flex min-h-full items-center justify-center text-white">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Loading document
-            </div>
-          ) : (
-            <div className="mx-auto grid max-w-[96rem] gap-5 lg:h-[calc(100vh-4rem)] lg:grid-cols-2 lg:overflow-hidden">
-              <div className="print:hidden rounded-xl border bg-background p-5 shadow-2xl lg:overflow-y-auto">
-                <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                      {detail.type} / {detail.status}
-                    </div>
-                    <input
-                      value={editTitle}
-                      onChange={(event) => setEditTitle(event.target.value)}
-                      disabled={detail.status === "ARCHIVED"}
-                      aria-label="Document title"
-                      className="mt-2 w-full border-b bg-transparent py-1 text-xl font-bold outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={() => window.print()}>
-                      <Printer className="mr-2 h-4 w-4" />
-                      Print / Save PDF
-                    </Button>
-                    {detail.status === "PUBLISHED" && detail.shareToken && (
-                      <Button
-                        variant="outline"
-                        onClick={() => void copyShareUrl(detail.shareToken)}
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        {copied ? "Copied" : "Copy client link"}
-                      </Button>
-                    )}
-                    {detail.status === "PUBLISHED" && (
-                      <Button
-                        variant="outline"
-                        disabled={rotateShareToken.isPending}
-                        onClick={() =>
-                          rotateShareToken.mutate({ id: detail.id })
-                        }
-                        title="Invalidates the previous client link"
-                      >
-                        <Share2 className="mr-2 h-4 w-4" />
-                        Rotate link
-                      </Button>
-                    )}
-                    <Button variant="outline" onClick={closeDetail}>
-                      <X className="mr-2 h-4 w-4" />
-                      Close
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Document details
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <label className="text-xs">
-                        Issue date
-                        <input
-                          type="date"
-                          value={editIssueDate}
-                          onChange={(event) =>
-                            setEditIssueDate(event.target.value)
-                          }
-                          disabled={detail.status === "ARCHIVED"}
-                          className="mt-1 w-full rounded border bg-background p-2"
-                        />
-                      </label>
-                      <label className="text-xs">
-                        Due / target date
-                        <input
-                          type="date"
-                          value={editDueDate}
-                          onChange={(event) =>
-                            setEditDueDate(event.target.value)
-                          }
-                          disabled={detail.status === "ARCHIVED"}
-                          className="mt-1 w-full rounded border bg-background p-2"
-                        />
-                      </label>
-                    </div>
-                    {(detail.type === "INVOICE" ||
-                      detail.type === "PROPOSAL") && (
-                      <label className="block text-xs">
-                        Currency (ISO code)
-                        <input
-                          value={editContent.currency || ""}
-                          maxLength={3}
-                          placeholder="PHP"
-                          onChange={(event) =>
-                            setEditContent((content) => ({
-                              ...content,
-                              currency: event.target.value.toUpperCase(),
-                            }))
-                          }
-                          disabled={detail.status === "ARCHIVED"}
-                          className="mt-1 w-full rounded border bg-background p-2 uppercase"
-                        />
-                      </label>
-                    )}
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <PartyEditor
-                        label="Provider"
-                        party={editContent.from}
-                        disabled={detail.status === "ARCHIVED"}
-                        onChange={(from) =>
-                          setEditContent((content) => ({ ...content, from }))
-                        }
-                      />
-                      <PartyEditor
-                        label="Client"
-                        party={editContent.billTo}
-                        disabled={detail.status === "ARCHIVED"}
-                        onChange={(billTo) =>
-                          setEditContent((content) => ({ ...content, billTo }))
-                        }
-                      />
-                    </div>
-                    <label className="block text-xs">
-                      Summary
-                      <textarea
-                        rows={4}
-                        value={editContent.summary || ""}
-                        onChange={(event) =>
-                          setEditContent((content) => ({
-                            ...content,
-                            summary: event.target.value,
-                          }))
-                        }
-                        disabled={detail.status === "ARCHIVED"}
-                        className="mt-1 w-full rounded border bg-background p-2"
-                      />
-                    </label>
-                    {detail.type === "AGREEMENT" && (
-                      <label className="block text-xs">
-                        Legal review notice
-                        <textarea
-                          rows={3}
-                          value={editContent.legalNotice || ""}
-                          onChange={(event) =>
-                            setEditContent((content) => ({
-                              ...content,
-                              legalNotice: event.target.value,
-                            }))
-                          }
-                          disabled={detail.status === "ARCHIVED"}
-                          className="mt-1 w-full rounded border bg-background p-2"
-                        />
-                      </label>
-                    )}
-                    <label className="block text-xs">
-                      Terms, assumptions, and instructions
-                      <textarea
-                        rows={4}
-                        value={editContent.terms || ""}
-                        onChange={(event) =>
-                          setEditContent((content) => ({
-                            ...content,
-                            terms: event.target.value,
-                          }))
-                        }
-                        disabled={detail.status === "ARCHIVED"}
-                        className="mt-1 w-full rounded border bg-background p-2"
-                      />
-                    </label>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Editable boilerplate
-                    </h3>
-                    {editContent.sections?.map((section, index) => (
-                      <div key={index} className="rounded border p-3">
-                        <input
-                          aria-label={`Section ${index + 1} title`}
-                          value={section.title}
-                          onChange={(event) =>
-                            setEditContent((content) => ({
-                              ...content,
-                              sections: content.sections?.map(
-                                (item, itemIndex) =>
-                                  itemIndex === index
-                                    ? { ...item, title: event.target.value }
-                                    : item,
-                              ),
-                            }))
-                          }
-                          disabled={detail.status === "ARCHIVED"}
-                          className="w-full border-b bg-transparent pb-1 text-xs font-semibold"
-                        />
-                        <textarea
-                          aria-label={`${section.title} content`}
-                          rows={4}
-                          value={section.body}
-                          onChange={(event) =>
-                            setEditContent((content) => ({
-                              ...content,
-                              sections: content.sections?.map(
-                                (item, itemIndex) =>
-                                  itemIndex === index
-                                    ? { ...item, body: event.target.value }
-                                    : item,
-                              ),
-                            }))
-                          }
-                          disabled={detail.status === "ARCHIVED"}
-                          className="mt-2 w-full resize-y bg-transparent text-xs"
-                        />
+      {viewingId &&
+        createPortal(
+          <div className="document-editor-overlay fixed inset-0 z-50 overflow-y-auto bg-black/80 p-3 md:p-8">
+            {detailLoading || !detail ? (
+              <div className="flex min-h-full items-center justify-center text-white">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Loading document
+              </div>
+            ) : (
+              <div className="document-editor-layout mx-auto grid max-w-[96rem] gap-5 lg:h-[calc(100vh-4rem)] lg:grid-cols-2 lg:overflow-hidden">
+                <div className="document-editor-panel print:hidden rounded-xl border bg-background p-5 shadow-2xl lg:overflow-y-auto">
+                  <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                        {detail.type === "INVOICE"
+                          ? "Billing statement"
+                          : detail.type}{" "}
+                        / {detail.status}
                       </div>
-                    ))}
-                    {detail.type === "TIMELINE" && (
-                      <div className="flex justify-end">
+                      <input
+                        value={editTitle}
+                        onChange={(event) => setEditTitle(event.target.value)}
+                        disabled={detail.status === "ARCHIVED"}
+                        aria-label="Document title"
+                        className="mt-2 w-full border-b bg-transparent py-1 text-xl font-bold outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print / Save PDF
+                      </Button>
+                      {detail.status === "PUBLISHED" && detail.shareToken && (
                         <Button
                           variant="outline"
-                          disabled={detail.status === "ARCHIVED"}
-                          onClick={() =>
-                            setEditContent((content) => ({
-                              ...content,
-                              timelineEvents: [
-                                ...(content.timelineEvents || []),
-                                {
-                                  title: "",
-                                  date: null,
-                                  status: "NOT_STARTED",
-                                  description: "",
-                                  dependency: "",
-                                  approval: "",
-                                },
-                              ],
-                            }))
-                          }
+                          onClick={() => void copyShareUrl(detail.shareToken)}
                         >
-                          <Plus className="mr-1 h-3.5 w-3.5" />
-                          Add milestone
+                          <Copy className="mr-2 h-4 w-4" />
+                          {copied ? "Copied" : "Copy client link"}
                         </Button>
-                      </div>
-                    )}
-                    {detail.type === "TIMELINE" &&
-                      editContent.timelineEvents?.map((event, index) => (
-                        <div
-                          key={index}
-                          className="relative grid gap-2 rounded border p-3 sm:grid-cols-2"
+                      )}
+                      {detail.status === "PUBLISHED" && (
+                        <Button
+                          variant="outline"
+                          disabled={rotateShareToken.isPending}
+                          onClick={() =>
+                            rotateShareToken.mutate({ id: detail.id })
+                          }
+                          title="Invalidates the previous client link"
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
+                          <Share2 className="mr-2 h-4 w-4" />
+                          Rotate link
+                        </Button>
+                      )}
+                      <Button variant="outline" onClick={closeDetail}>
+                        <X className="mr-2 h-4 w-4" />
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`mt-5 grid gap-5 ${detail.type === "INVOICE" ? "" : "lg:grid-cols-2"}`}
+                  >
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Document details
+                      </h3>
+                      {detail.type === "INVOICE" && (
+                        <label className="block text-xs">
+                          Billing statement number
+                          <input
+                            value={editInvoiceNumber}
+                            placeholder="ARKO-PROJECT-001 (assigned automatically if blank)"
+                            onChange={(event) =>
+                              setEditInvoiceNumber(event.target.value)
+                            }
+                            disabled={detail.status === "ARCHIVED"}
+                            className="mt-1 w-full rounded border bg-background p-2"
+                          />
+                        </label>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="text-xs">
+                          Issue date
+                          <input
+                            type="date"
+                            value={editIssueDate}
+                            onChange={(event) =>
+                              setEditIssueDate(event.target.value)
+                            }
+                            disabled={detail.status === "ARCHIVED"}
+                            className="mt-1 w-full rounded border bg-background p-2"
+                          />
+                        </label>
+                        <label className="text-xs">
+                          Due / target date
+                          <input
+                            type="date"
+                            value={editDueDate}
+                            onChange={(event) =>
+                              setEditDueDate(event.target.value)
+                            }
+                            disabled={detail.status === "ARCHIVED"}
+                            className="mt-1 w-full rounded border bg-background p-2"
+                          />
+                        </label>
+                      </div>
+                      {(detail.type === "INVOICE" ||
+                        detail.type === "PROPOSAL") && (
+                        <label className="block text-xs">
+                          Currency (ISO code)
+                          <input
+                            value={editContent.currency || ""}
+                            maxLength={3}
+                            placeholder="PHP"
+                            onChange={(event) =>
                               setEditContent((content) => ({
                                 ...content,
-                                timelineEvents: content.timelineEvents?.filter(
-                                  (_, eventIndex) => eventIndex !== index,
+                                currency: event.target.value.toUpperCase(),
+                              }))
+                            }
+                            disabled={detail.status === "ARCHIVED"}
+                            className="mt-1 w-full rounded border bg-background p-2 uppercase"
+                          />
+                        </label>
+                      )}
+                      <div
+                        className={`grid gap-3 ${detail.type === "INVOICE" ? "" : "sm:grid-cols-2"}`}
+                      >
+                        {detail.type !== "INVOICE" && (
+                          <PartyEditor
+                            label="Provider"
+                            party={editContent.from}
+                            disabled={detail.status === "ARCHIVED"}
+                            onChange={(from) =>
+                              setEditContent((content) => ({
+                                ...content,
+                                from,
+                              }))
+                            }
+                          />
+                        )}
+                        <PartyEditor
+                          label="Client"
+                          party={editContent.billTo}
+                          disabled={detail.status === "ARCHIVED"}
+                          onChange={(billTo) =>
+                            setEditContent((content) => ({
+                              ...content,
+                              billTo,
+                            }))
+                          }
+                        />
+                      </div>
+                      <label className="block text-xs">
+                        Summary
+                        <textarea
+                          rows={4}
+                          value={editContent.summary || ""}
+                          onChange={(event) =>
+                            setEditContent((content) => ({
+                              ...content,
+                              summary: event.target.value,
+                            }))
+                          }
+                          disabled={detail.status === "ARCHIVED"}
+                          className="mt-1 w-full rounded border bg-background p-2"
+                        />
+                      </label>
+                      {(detail.type === "AGREEMENT" ||
+                        detail.type === "INVOICE") && (
+                        <label className="block text-xs">
+                          {detail.type === "INVOICE"
+                            ? "Billing statement notice"
+                            : "Legal review notice"}
+                          <textarea
+                            rows={3}
+                            value={editContent.legalNotice || ""}
+                            onChange={(event) =>
+                              setEditContent((content) => ({
+                                ...content,
+                                legalNotice: event.target.value,
+                              }))
+                            }
+                            disabled={detail.status === "ARCHIVED"}
+                            className="mt-1 w-full rounded border bg-background p-2"
+                          />
+                        </label>
+                      )}
+                      <label className="block text-xs">
+                        {detail.type === "INVOICE"
+                          ? "Additional billing terms"
+                          : "Terms, assumptions, and instructions"}
+                        <textarea
+                          rows={4}
+                          value={editContent.terms || ""}
+                          onChange={(event) =>
+                            setEditContent((content) => ({
+                              ...content,
+                              terms: event.target.value,
+                            }))
+                          }
+                          disabled={detail.status === "ARCHIVED"}
+                          className="mt-1 w-full rounded border bg-background p-2"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        {detail.type === "INVOICE"
+                          ? "Billing template"
+                          : "Editable boilerplate"}
+                      </h3>
+                      {detail.type === "INVOICE" &&
+                        editContent.billingStatement && (
+                          <BillingStatementEditor
+                            value={editContent.billingStatement}
+                            lineItems={editLineItems}
+                            currency={editContent.currency}
+                            disabled={detail.status === "ARCHIVED"}
+                            onChange={(billingStatement) =>
+                              setEditContent((content) => ({
+                                ...content,
+                                from: {
+                                  ...content.from,
+                                  name: billingStatement.issuerName,
+                                },
+                                billingStatement,
+                              }))
+                            }
+                          />
+                        )}
+                      {editContent.sections?.map((section, index) => (
+                        <div key={index} className="rounded border p-3">
+                          <input
+                            aria-label={`Section ${index + 1} title`}
+                            value={section.title}
+                            onChange={(event) =>
+                              setEditContent((content) => ({
+                                ...content,
+                                sections: content.sections?.map(
+                                  (item, itemIndex) =>
+                                    itemIndex === index
+                                      ? { ...item, title: event.target.value }
+                                      : item,
                                 ),
                               }))
                             }
                             disabled={detail.status === "ARCHIVED"}
-                            aria-label={`Remove milestone ${index + 1}`}
-                            className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                          <input
-                            aria-label={`Milestone ${index + 1} title`}
-                            value={event.title}
-                            onChange={(change) =>
-                              updateTimelineEvent(
-                                index,
-                                { title: change.target.value },
-                                setEditContent,
-                              )
-                            }
-                            disabled={detail.status === "ARCHIVED"}
-                            className="rounded border bg-background p-2 text-xs"
-                          />
-                          <input
-                            type="date"
-                            aria-label={`${event.title} date`}
-                            value={event.date || ""}
-                            onChange={(change) =>
-                              updateTimelineEvent(
-                                index,
-                                { date: change.target.value },
-                                setEditContent,
-                              )
-                            }
-                            disabled={detail.status === "ARCHIVED"}
-                            className="rounded border bg-background p-2 text-xs"
-                          />
-                          <input
-                            aria-label={`${event.title} status`}
-                            value={event.status}
-                            onChange={(change) =>
-                              updateTimelineEvent(
-                                index,
-                                { status: change.target.value },
-                                setEditContent,
-                              )
-                            }
-                            disabled={detail.status === "ARCHIVED"}
-                            className="rounded border bg-background p-2 text-xs"
-                          />
-                          <input
-                            aria-label={`${event.title} dependency`}
-                            placeholder="Dependency"
-                            value={event.dependency || ""}
-                            onChange={(change) =>
-                              updateTimelineEvent(
-                                index,
-                                { dependency: change.target.value },
-                                setEditContent,
-                              )
-                            }
-                            disabled={detail.status === "ARCHIVED"}
-                            className="rounded border bg-background p-2 text-xs"
+                            className="w-full border-b bg-transparent pb-1 text-xs font-semibold"
                           />
                           <textarea
-                            aria-label={`${event.title} description`}
-                            placeholder="Description"
-                            value={event.description || ""}
-                            onChange={(change) =>
-                              updateTimelineEvent(
-                                index,
-                                { description: change.target.value },
-                                setEditContent,
-                              )
+                            aria-label={`${section.title} content`}
+                            rows={4}
+                            value={section.body}
+                            onChange={(event) =>
+                              setEditContent((content) => ({
+                                ...content,
+                                sections: content.sections?.map(
+                                  (item, itemIndex) =>
+                                    itemIndex === index
+                                      ? { ...item, body: event.target.value }
+                                      : item,
+                                ),
+                              }))
                             }
                             disabled={detail.status === "ARCHIVED"}
-                            className="rounded border bg-background p-2 text-xs"
-                          />
-                          <textarea
-                            aria-label={`${event.title} approval`}
-                            placeholder="Approval / sign-off"
-                            value={event.approval || ""}
-                            onChange={(change) =>
-                              updateTimelineEvent(
-                                index,
-                                { approval: change.target.value },
-                                setEditContent,
-                              )
-                            }
-                            disabled={detail.status === "ARCHIVED"}
-                            className="rounded border bg-background p-2 text-xs"
+                            className="mt-2 w-full resize-y bg-transparent text-xs"
                           />
                         </div>
                       ))}
-                  </div>
-                </div>
-
-                {(detail.type === "INVOICE" || detail.type === "PROPOSAL") && (
-                  <div className="mt-6 border-t pt-5">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Line items
-                      </h3>
-                      <Button
-                        variant="outline"
-                        disabled={detail.status === "ARCHIVED"}
-                        onClick={() =>
-                          setEditLineItems((items) => [
-                            ...items,
-                            {
-                              description: "",
-                              quantity: 1,
-                              unitPrice: 0,
-                              sortOrder: items.length,
-                            },
-                          ])
-                        }
-                      >
-                        <Plus className="mr-1 h-3.5 w-3.5" />
-                        Add item
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {editLineItems.map((item, index) => (
-                        <LineItemEditor
-                          key={index}
-                          item={item}
-                          index={index}
-                          disabled={detail.status === "ARCHIVED"}
-                          onChange={(next) =>
-                            setEditLineItems((items) =>
-                              items.map((current, itemIndex) =>
-                                itemIndex === index ? next : current,
-                              ),
-                            )
-                          }
-                          onRemove={() =>
-                            setEditLineItems((items) =>
-                              items.filter(
-                                (_, itemIndex) => itemIndex !== index,
-                              ),
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {formErrors.length > 0 && (
-                  <div
-                    role="alert"
-                    className="mt-5 border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
-                  >
-                    <strong>Before publishing:</strong>
-                    <ul className="mt-1 list-disc pl-5">
-                      {formErrors.map((error) => (
-                        <li key={error}>{error}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    {detail.status === "DRAFT" && (
-                      <Button
-                        variant="outline"
-                        className="text-destructive"
-                        disabled={deleteDocument.isPending}
-                        onClick={() => {
-                          if (window.confirm("Delete this draft document?"))
-                            deleteDocument.mutate({ id: detail.id });
-                        }}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete draft
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs">
-                      Status{" "}
-                      <select
-                        value={editStatus}
-                        disabled={detail.status === "ARCHIVED"}
-                        onChange={(event) =>
-                          setEditStatus(event.target.value as DocumentStatus)
-                        }
-                        className="ml-2 rounded border bg-background px-2 py-2"
-                      >
-                        <option value="DRAFT">Draft</option>
-                        <option value="PUBLISHED">Published</option>
-                        <option value="ARCHIVED">Archived</option>
-                      </select>
-                    </label>
-                    <Button
-                      disabled={
-                        detail.status === "ARCHIVED" || updateDocument.isPending
-                      }
-                      onClick={saveDocument}
-                    >
-                      {updateDocument.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {detail.type === "TIMELINE" && (
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            disabled={detail.status === "ARCHIVED"}
+                            onClick={() =>
+                              setEditContent((content) => ({
+                                ...content,
+                                timelineEvents: [
+                                  ...(content.timelineEvents || []),
+                                  {
+                                    title: "",
+                                    date: null,
+                                    status: "NOT_STARTED",
+                                    description: "",
+                                    dependency: "",
+                                    approval: "",
+                                  },
+                                ],
+                              }))
+                            }
+                          >
+                            <Plus className="mr-1 h-3.5 w-3.5" />
+                            Add milestone
+                          </Button>
+                        </div>
                       )}
-                      Save changes
-                    </Button>
+                      {detail.type === "TIMELINE" &&
+                        editContent.timelineEvents?.map((event, index) => (
+                          <div
+                            key={index}
+                            className="relative grid gap-2 rounded border p-3 sm:grid-cols-2"
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditContent((content) => ({
+                                  ...content,
+                                  timelineEvents:
+                                    content.timelineEvents?.filter(
+                                      (_, eventIndex) => eventIndex !== index,
+                                    ),
+                                }))
+                              }
+                              disabled={detail.status === "ARCHIVED"}
+                              aria-label={`Remove milestone ${index + 1}`}
+                              className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                            <input
+                              aria-label={`Milestone ${index + 1} title`}
+                              value={event.title}
+                              onChange={(change) =>
+                                updateTimelineEvent(
+                                  index,
+                                  { title: change.target.value },
+                                  setEditContent,
+                                )
+                              }
+                              disabled={detail.status === "ARCHIVED"}
+                              className="rounded border bg-background p-2 text-xs"
+                            />
+                            <input
+                              type="date"
+                              aria-label={`${event.title} date`}
+                              value={event.date || ""}
+                              onChange={(change) =>
+                                updateTimelineEvent(
+                                  index,
+                                  { date: change.target.value },
+                                  setEditContent,
+                                )
+                              }
+                              disabled={detail.status === "ARCHIVED"}
+                              className="rounded border bg-background p-2 text-xs"
+                            />
+                            <input
+                              aria-label={`${event.title} status`}
+                              value={event.status}
+                              onChange={(change) =>
+                                updateTimelineEvent(
+                                  index,
+                                  { status: change.target.value },
+                                  setEditContent,
+                                )
+                              }
+                              disabled={detail.status === "ARCHIVED"}
+                              className="rounded border bg-background p-2 text-xs"
+                            />
+                            <input
+                              aria-label={`${event.title} dependency`}
+                              placeholder="Dependency"
+                              value={event.dependency || ""}
+                              onChange={(change) =>
+                                updateTimelineEvent(
+                                  index,
+                                  { dependency: change.target.value },
+                                  setEditContent,
+                                )
+                              }
+                              disabled={detail.status === "ARCHIVED"}
+                              className="rounded border bg-background p-2 text-xs"
+                            />
+                            <textarea
+                              aria-label={`${event.title} description`}
+                              placeholder="Description"
+                              value={event.description || ""}
+                              onChange={(change) =>
+                                updateTimelineEvent(
+                                  index,
+                                  { description: change.target.value },
+                                  setEditContent,
+                                )
+                              }
+                              disabled={detail.status === "ARCHIVED"}
+                              className="rounded border bg-background p-2 text-xs"
+                            />
+                            <textarea
+                              aria-label={`${event.title} approval`}
+                              placeholder="Approval / sign-off"
+                              value={event.approval || ""}
+                              onChange={(change) =>
+                                updateTimelineEvent(
+                                  index,
+                                  { approval: change.target.value },
+                                  setEditContent,
+                                )
+                              }
+                              disabled={detail.status === "ARCHIVED"}
+                              className="rounded border bg-background p-2 text-xs"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {(detail.type === "INVOICE" ||
+                    detail.type === "PROPOSAL") && (
+                    <div className="mt-6 border-t pt-5">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {detail.type === "INVOICE"
+                            ? "Project fee line items"
+                            : "Line items"}
+                        </h3>
+                        <Button
+                          variant="outline"
+                          disabled={detail.status === "ARCHIVED"}
+                          onClick={() =>
+                            setEditLineItems((items) => [
+                              ...items,
+                              {
+                                description: "",
+                                quantity: 1,
+                                unitPrice: 0,
+                                sortOrder: items.length,
+                              },
+                            ])
+                          }
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Add item
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {editLineItems.map((item, index) => (
+                          <LineItemEditor
+                            key={index}
+                            item={item}
+                            index={index}
+                            disabled={detail.status === "ARCHIVED"}
+                            onChange={(next) =>
+                              setEditLineItems((items) =>
+                                items.map((current, itemIndex) =>
+                                  itemIndex === index ? next : current,
+                                ),
+                              )
+                            }
+                            onRemove={() =>
+                              setEditLineItems((items) =>
+                                items.filter(
+                                  (_, itemIndex) => itemIndex !== index,
+                                ),
+                              )
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {formErrors.length > 0 && (
+                    <div
+                      role="alert"
+                      className="mt-5 border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+                    >
+                      <strong>Before publishing:</strong>
+                      <ul className="mt-1 list-disc pl-5">
+                        {formErrors.map((error) => (
+                          <li key={error}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      {detail.status === "DRAFT" && (
+                        <Button
+                          variant="outline"
+                          className="text-destructive"
+                          disabled={deleteDocument.isPending}
+                          onClick={() => {
+                            if (window.confirm("Delete this draft document?"))
+                              deleteDocument.mutate({ id: detail.id });
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete draft
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs">
+                        Status{" "}
+                        <select
+                          value={editStatus}
+                          disabled={detail.status === "ARCHIVED"}
+                          onChange={(event) =>
+                            setEditStatus(event.target.value as DocumentStatus)
+                          }
+                          className="ml-2 rounded border bg-background px-2 py-2"
+                        >
+                          <option value="DRAFT">Draft</option>
+                          <option value="PUBLISHED">Published</option>
+                          <option value="ARCHIVED">Archived</option>
+                        </select>
+                      </label>
+                      <Button
+                        disabled={
+                          detail.status === "ARCHIVED" ||
+                          updateDocument.isPending
+                        }
+                        onClick={saveDocument}
+                      >
+                        {updateDocument.isPending && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Save changes
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="print-document-root lg:overflow-y-auto lg:pr-2">
-                <DocumentSheet
-                  type={detail.type}
-                  title={editTitle}
-                  invoiceNumber={detail.invoiceNumber}
-                  issueDate={fromDateInput(editIssueDate)}
-                  dueDate={fromDateInput(editDueDate)}
-                  projectName={detail.project?.name}
-                  content={editContent}
-                  lineItems={editLineItems}
-                />
+                <div className="print-document-root lg:overflow-y-auto lg:pr-2">
+                  <DocumentSheet
+                    type={detail.type}
+                    title={editTitle}
+                    invoiceNumber={editInvoiceNumber}
+                    issueDate={fromDateInput(editIssueDate)}
+                    dueDate={fromDateInput(editDueDate)}
+                    projectName={detail.project?.name}
+                    content={editContent}
+                    lineItems={editLineItems}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
