@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import DocumentSheet from "../../../components/documents/DocumentSheet";
 import BillingStatementEditor from "../../../components/documents/BillingStatementEditor";
+import ServiceAgreementEditor from "../../../components/documents/ServiceAgreementEditor";
+import { getServiceAgreement } from "../../../lib/documents/agreement";
 import {
   BILLING_NOTICE,
   calculateBillingAmounts,
@@ -101,7 +103,15 @@ export default function DocumentsPage() {
             legalNotice: content.legalNotice || BILLING_NOTICE,
             billingStatement,
           }
-        : content,
+        : detail.type === "AGREEMENT"
+          ? {
+              ...content,
+              serviceAgreement: getServiceAgreement(
+                content,
+                detail.project?.name,
+              ),
+            }
+          : content,
     );
     setEditLineItems(
       detail.lineItems.map((item) => ({
@@ -174,7 +184,7 @@ export default function DocumentsPage() {
       status: editStatus,
       issueDate: fromDateInput(editIssueDate),
       dueDate: fromDateInput(editDueDate),
-      ...(detail.type === "INVOICE"
+      ...(detail.type === "INVOICE" || detail.type === "AGREEMENT"
         ? { invoiceNumber: editInvoiceNumber.trim() || null }
         : {}),
       content: editContent,
@@ -552,12 +562,19 @@ export default function DocumentsPage() {
                       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         Document details
                       </h3>
-                      {detail.type === "INVOICE" && (
+                      {(detail.type === "INVOICE" ||
+                        detail.type === "AGREEMENT") && (
                         <label className="block text-xs">
-                          Billing statement number
+                          {detail.type === "AGREEMENT"
+                            ? "Agreement number"
+                            : "Billing statement number"}
                           <input
                             value={editInvoiceNumber}
-                            placeholder="ARKO-PROJECT-001 (assigned automatically if blank)"
+                            placeholder={
+                              detail.type === "AGREEMENT"
+                                ? "Enter agreement number"
+                                : "ARKO-PROJECT-001 (assigned automatically if blank)"
+                            }
                             onChange={(event) =>
                               setEditInvoiceNumber(event.target.value)
                             }
@@ -568,7 +585,9 @@ export default function DocumentsPage() {
                       )}
                       <div className="grid grid-cols-2 gap-3">
                         <label className="text-xs">
-                          Issue date
+                          {detail.type === "AGREEMENT"
+                            ? "Agreement date"
+                            : "Issue date"}
                           <input
                             type="date"
                             value={editIssueDate}
@@ -659,7 +678,7 @@ export default function DocumentsPage() {
                         <label className="block text-xs">
                           {detail.type === "INVOICE"
                             ? "Billing statement notice"
-                            : "Legal review notice"}
+                            : "Agreement footer note"}
                           <textarea
                             rows={3}
                             value={editContent.legalNotice || ""}
@@ -697,7 +716,9 @@ export default function DocumentsPage() {
                       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         {detail.type === "INVOICE"
                           ? "Billing template"
-                          : "Editable boilerplate"}
+                          : detail.type === "AGREEMENT"
+                            ? "Agreement template"
+                            : "Editable boilerplate"}
                       </h3>
                       {detail.type === "INVOICE" &&
                         editContent.billingStatement && (
@@ -714,6 +735,19 @@ export default function DocumentsPage() {
                                   name: billingStatement.issuerName,
                                 },
                                 billingStatement,
+                              }))
+                            }
+                          />
+                        )}
+                      {detail.type === "AGREEMENT" &&
+                        editContent.serviceAgreement && (
+                          <ServiceAgreementEditor
+                            value={editContent.serviceAgreement}
+                            disabled={detail.status === "ARCHIVED"}
+                            onChange={(serviceAgreement) =>
+                              setEditContent((content) => ({
+                                ...content,
+                                serviceAgreement,
                               }))
                             }
                           />

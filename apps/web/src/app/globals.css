@@ -1676,15 +1676,54 @@ html.system-theme-iris-transition::view-transition-old(root) {
   .billing-table th, .billing-table td { padding: 5px; }
 }
 
+/* Client service agreements follow ARKO's serif contract template. */
+.agreement-sheet {
+  padding: 22mm 24mm;
+}
+.agreement-brand {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+.agreement-section p {
+  margin-bottom: 7px;
+  orphans: 3;
+  widows: 3;
+}
+.agreement-signatures th {
+  width: 50%;
+  color: #00533b;
+}
+.agreement-signature-line {
+  display: inline-block;
+  width: min(100%, 170px);
+  height: 1em;
+  border-bottom: 1px solid #555;
+}
+.agreement-footer {
+  margin-top: 22px;
+  color: #555;
+  font-size: 9pt;
+  font-style: italic;
+}
+.agreement-footer p {
+  margin: 0 0 5px;
+}
+@media (max-width: 640px) {
+  .agreement-sheet { padding: 24px 18px; }
+}
+
 @page {
   size: A4;
   margin: 12mm;
+  background: #fff;
 }
 @media print {
   html,
   body {
     background: #fff !important;
     color: #171717 !important;
+    color-scheme: light !important;
   }
   body * {
     visibility: hidden !important;
@@ -1731,6 +1770,15 @@ html.system-theme-iris-transition::view-transition-old(root) {
   .billing-page-frame > thead { display: table-header-group; }
   .billing-page-frame > thead .billing-brand { margin-bottom: 14px; padding-top: 4px; }
   .billing-table tr { break-inside: avoid; page-break-inside: avoid; }
+  .agreement-sheet { padding: 10mm 12mm; }
+  .agreement-section h2 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .agreement-section p {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
   .document-editor-overlay {
     position: absolute !important;
     inset: 0 !important;

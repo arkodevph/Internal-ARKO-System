@@ -1,6 +1,10 @@
 import { describe, it, expect } from "@jest/globals";
 import { generateDocumentTemplate } from "../documents/templates";
-import { validateDocumentForPublish } from "../documents/schema";
+import {
+  parseDocumentContent,
+  validateDocumentForPublish,
+} from "../documents/schema";
+import { getServiceAgreement } from "../documents/agreement";
 
 describe("generateDocumentTemplate", () => {
   const sampleProject = {
@@ -66,7 +70,7 @@ describe("generateDocumentTemplate", () => {
     );
   });
 
-  it("generates a valid Agreement template with legal sections", () => {
+  it("generates the ARKO agreement using the selected project and client, with incomplete pricing left for editing", () => {
     const doc = generateDocumentTemplate({
       type: "AGREEMENT",
       project: sampleProject,
@@ -75,8 +79,21 @@ describe("generateDocumentTemplate", () => {
 
     expect(doc.title).toBe("Service Agreement - Mobile App Redesign");
     expect(doc.content.sections).toBeDefined();
-    expect(doc.content.sections!.length).toBeGreaterThan(0);
-    expect(doc.content.legalNotice).toContain("not legal advice");
+    expect(doc.content.sections).toHaveLength(11);
+    expect(doc.content.sections![0].body).toContain(sampleProject.summary);
+    expect(doc.content.sections![0].body).toContain("Figma UI Kit");
+    expect(doc.content.summary).toContain(sampleClient.name);
+    expect(doc.content.serviceAgreement?.projectName).toBe(sampleProject.name);
+    expect(doc.content.from?.name).toBe("Arko Dev");
+    expect(doc.dueDate).toEqual(sampleProject.dueDate);
+    expect(doc.content.sections![1].body).toContain("October 1, 2026");
+    expect(doc.content.sections![2].body).toContain("[ADD TOTAL PROJECT COST]");
+    expect(doc.content.sections![4].body).toContain(
+      "subject to third-party licenses",
+    );
+    expect(doc.content.sections![4].body).toContain(sampleProject.name);
+    expect(JSON.stringify(doc.content)).not.toContain("Huntly");
+    expect(doc.content.legalNotice).toContain("plain-language working record");
     expect(doc.lineItems).toHaveLength(0);
   });
 
@@ -90,6 +107,40 @@ describe("generateDocumentTemplate", () => {
     expect(doc.title).toBe("Proposal - Mobile App Redesign");
     expect(doc.lineItems).toHaveLength(1);
     expect(doc.lineItems[0].description).toContain("Deliverable: Figma UI Kit");
+  });
+
+  it("retains existing agreement clauses and terms when supplying missing display metadata", () => {
+    const original = {
+      from: { name: "Original provider" },
+      summary: "Original summary",
+      terms: "Custom agreed terms",
+      sections: [{ title: "Ownership", body: "Original ownership wording" }],
+    };
+    const parsed = parseDocumentContent(original);
+    expect(getServiceAgreement(parsed, "Original project").projectName).toBe(
+      "Original project",
+    );
+    expect(parsed).toEqual(original);
+  });
+
+  it("keeps an undated and unpriced agreement as an editable draft", () => {
+    const doc = generateDocumentTemplate({
+      type: "AGREEMENT",
+      project: { id: "p1", name: "New Project" },
+      client: sampleClient,
+    });
+    expect(doc.dueDate).toBeUndefined();
+    expect(doc.content.sections![1].body).toContain(
+      "[ADD TARGET DELIVERY DATE]",
+    );
+    expect(
+      validateDocumentForPublish({
+        type: "AGREEMENT",
+        title: doc.title,
+        content: doc.content,
+        lineItems: [],
+      }),
+    ).toContain("Replace every [ADD …] placeholder before publishing.");
   });
 
   it("generates a valid Timeline template with milestone schedule", () => {
