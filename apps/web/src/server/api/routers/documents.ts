@@ -242,10 +242,7 @@ export const documentsRouter = router({
         if (duplicate && duplicate.id !== existing.id) {
           throw new TRPCError({
             code: "CONFLICT",
-            message:
-              existing.type === "AGREEMENT"
-                ? "This agreement number is already in use."
-                : "This billing statement number is already in use.",
+            message: "This billing statement number is already in use.",
           });
         }
       }

@@ -49,17 +49,6 @@ export const billingStatementSchema = z.object({
 
 export type BillingStatement = z.infer<typeof billingStatementSchema>;
 
-export const serviceAgreementSchema = z.object({
-  projectName: z.string(),
-  developmentTeam: z.string(),
-  representativeName: z.string(),
-  clientSignature: z.string(),
-  clientSignedDate: z.string(),
-  representativeSignedDate: z.string(),
-});
-
-export type ServiceAgreement = z.infer<typeof serviceAgreementSchema>;
-
 export const documentContentSchema = z.object({
   currency: z.string().trim().toUpperCase().optional(),
   from: partySchema.optional(),
@@ -70,7 +59,6 @@ export const documentContentSchema = z.object({
   sections: z.array(documentSectionSchema).optional(),
   timelineEvents: z.array(timelineEventSchema).optional(),
   billingStatement: billingStatementSchema.optional(),
-  serviceAgreement: serviceAgreementSchema.optional(),
 });
 
 export type DocumentContent = z.infer<typeof documentContentSchema>;
