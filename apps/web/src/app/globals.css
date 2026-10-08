@@ -1544,6 +1544,138 @@ html.system-theme-iris-transition::view-transition-old(root) {
   }
 }
 
+/* ARKO billing statement: the same serif document in the editor and PDF. */
+.billing-statement {
+  padding: 18mm 20mm;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 11pt;
+  line-height: 1.3;
+  color: #111;
+  color-scheme: light;
+  overflow-wrap: anywhere;
+}
+.billing-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  color: #00533b;
+  font-size: 18pt;
+  font-weight: 700;
+}
+.billing-brand img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.billing-page-frame {
+  width: 100%;
+  border: 0;
+  border-collapse: collapse;
+}
+.billing-page-frame > thead > tr > td,
+.billing-page-frame > tbody > tr > td {
+  padding: 0;
+  vertical-align: top;
+}
+.billing-statement h1 {
+  max-width: none;
+  margin: 0 0 12px;
+  font-size: 15pt;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: normal;
+  text-align: center;
+}
+.billing-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 10pt;
+}
+.billing-table th,
+.billing-table td {
+  border: 1px solid #999;
+  padding: 5px 7px;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 400;
+}
+.billing-table th {
+  font-weight: 700;
+}
+.billing-table thead th {
+  background: #00533b;
+  color: #fff;
+  padding-block: 7px;
+}
+.billing-metadata th {
+  width: 32%;
+  color: #00533b;
+}
+.billing-section {
+  margin-top: 19px;
+}
+.billing-section h2 {
+  margin: 0 0 8px;
+  border-bottom: 1px solid #00533b;
+  color: #00533b;
+  font-size: 12pt;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+  break-after: avoid;
+}
+.billing-section p {
+  margin: 0 0 5px;
+}
+.billing-project-table th:last-child,
+.billing-project-table td:last-child {
+  width: 31%;
+}
+.billing-project-table td:last-child,
+.billing-schedule td:last-child {
+  text-align: right;
+}
+.billing-schedule th:first-child {
+  width: 32%;
+}
+.billing-schedule th:nth-child(2) {
+  width: 19%;
+}
+.billing-section .billing-amount-due {
+  margin-top: 10px;
+  font-size: 12pt;
+}
+.billing-summary-text {
+  color: #444;
+}
+.billing-notes {
+  list-style: disc;
+  padding-left: 13px;
+  margin: 0 0 5px;
+}
+.billing-notes li {
+  margin-bottom: 3px;
+}
+.billing-statement a,
+.billing-contact {
+  color: #0000ee;
+}
+.billing-section .billing-disclaimer {
+  margin-top: 18px;
+  color: #555;
+  font-size: 9pt;
+  font-style: italic;
+}
+@media (max-width: 640px) {
+  .billing-statement { padding: 24px 18px; font-size: 10pt; }
+  .billing-statement h1 { font-size: 13pt; }
+  .billing-table { font-size: 9pt; }
+  .billing-table th, .billing-table td { padding: 5px; }
+}
+
 @page {
   size: A4;
   margin: 12mm;
@@ -1593,6 +1725,28 @@ html.system-theme-iris-transition::view-transition-old(root) {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+  .billing-statement { font-size: 11pt; }
+  .billing-table { font-size: 10pt; }
+  .billing-table thead { display: table-header-group; }
+  .billing-page-frame > thead { display: table-header-group; }
+  .billing-page-frame > thead .billing-brand { margin-bottom: 14px; padding-top: 4px; }
+  .billing-table tr { break-inside: avoid; page-break-inside: avoid; }
+  .document-editor-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .document-editor-layout {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    max-width: none !important;
+  }
+  .document-editor-panel { display: none !important; }
+  .document-editor-overlay .print-document-root { position: static !important; }
 }
 
 @layer base {
