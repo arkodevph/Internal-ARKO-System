@@ -41,29 +41,21 @@ describe("generateDocumentTemplate", () => {
     email: "client@acme.com",
   };
 
-  it("generates an ARKO billing statement with a project fee and payment schedule", () => {
+  it("generates a valid Invoice template from milestones", () => {
     const doc = generateDocumentTemplate({
       type: "INVOICE",
       project: sampleProject,
       client: sampleClient,
     });
 
-    expect(doc.title).toBe("Mobile App Redesign Billing Statement");
+    expect(doc.title).toBe("Invoice - Mobile App Redesign");
     expect(doc.content.billTo?.name).toBe("Acme Corp");
     expect(doc.content.billTo?.email).toBe("client@acme.com");
-    expect(doc.lineItems).toHaveLength(1);
-    expect(doc.lineItems[0].description).toContain(
-      "Total Agreed Development Fee",
-    );
+    expect(doc.lineItems).toHaveLength(2);
+    expect(doc.lineItems[0].description).toContain("Milestone: Design System");
     expect(doc.lineItems.every((item) => item.unitPrice === 0)).toBe(true);
-    expect(doc.content.currency).toBe("PHP");
-    expect(
-      doc.content.billingStatement?.milestones.map((item) => item.percentage),
-    ).toEqual([40, 30, 30]);
-    expect(doc.content.from?.name).toBe("ARKO Dev Team");
-    expect(doc.content.legalNotice).toContain(
-      "not represented as an official tax invoice",
-    );
+    expect(doc.content.currency).toBe("");
+    expect(doc.content.terms).toContain("[ADD");
   });
 
   it("generates a valid Agreement template with legal sections", () => {
@@ -106,7 +98,7 @@ describe("generateDocumentTemplate", () => {
     expect(doc.content.timelineEvents![1].approval).toContain("[ADD");
   });
 
-  it("blocks publishing a billing statement without its project fee", () => {
+  it("blocks publishing while required placeholders and currency remain unresolved", () => {
     const doc = generateDocumentTemplate({
       type: "INVOICE",
       project: sampleProject,
@@ -123,6 +115,11 @@ describe("generateDocumentTemplate", () => {
       dueDate: doc.dueDate,
     });
 
-    expect(errors).toContain("Set a project fee above zero.");
+    expect(errors).toContain(
+      "Replace every [ADD …] placeholder before publishing.",
+    );
+    expect(errors).toContain(
+      "Set a three-letter currency code, such as PHP or USD.",
+    );
   });
 });

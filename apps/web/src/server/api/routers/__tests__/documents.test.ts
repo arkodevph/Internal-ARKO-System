@@ -1,6 +1,5 @@
 import { describe, it, expect, jest } from "@jest/globals";
 import { documentsRouter } from "../documents";
-import { createBillingStatement } from "../../../../lib/documents/billing";
 
 const mockDate = new Date("2026-08-07");
 
@@ -60,11 +59,6 @@ const ctx = (over: any = {}) => {
             ),
           ),
         findUnique: jest.fn().mockImplementation(({ where }: any) => {
-          if (where?.invoiceNumber)
-            return Promise.resolve(
-              docs.find((d: any) => d.invoiceNumber === where.invoiceNumber) ??
-                null,
-            );
           if (where?.id)
             return Promise.resolve(
               docs.find((d: any) => d.id === where.id) ?? null,
@@ -165,7 +159,7 @@ describe("documents router", () => {
         type: "INVOICE",
       });
 
-      expect(doc.title).toBe("Client Portal Redesign Billing Statement");
+      expect(doc.title).toBe("Invoice - Client Portal Redesign");
       expect(doc.type).toBe("INVOICE");
       expect(doc.status).toBe("DRAFT");
     });
@@ -181,115 +175,6 @@ describe("documents router", () => {
   });
 
   describe("update", () => {
-    it("rejects a custom statement number already used by another document", async () => {
-      const c = ctx({
-        _docs: [
-          {
-            id: "doc-1",
-            type: "INVOICE",
-            status: "DRAFT",
-            createdById: "u1",
-            title: "Draft",
-            content: {},
-            lineItems: [],
-          },
-          { id: "doc-2", invoiceNumber: "ARKO-HUNTLY-001", createdById: "u2" },
-        ],
-      });
-      await expect(
-        documentsRouter
-          .createCaller(c)
-          .update({ id: "doc-1", invoiceNumber: "ARKO-HUNTLY-001" }),
-      ).rejects.toThrow("This billing statement number is already in use.");
-      expect(c.prisma.document.update).not.toHaveBeenCalled();
-    });
-
-    it("validates billing edits to published statements even when the status is omitted", async () => {
-      const billingStatement = createBillingStatement("Huntly");
-      const c = ctx({
-        _docs: [
-          {
-            id: "doc-1",
-            title: "Huntly",
-            type: "INVOICE",
-            status: "PUBLISHED",
-            createdById: "u1",
-            issueDate: mockDate,
-            dueDate: mockDate,
-            content: {
-              currency: "PHP",
-              summary: "Project development",
-              from: { name: "ARKO" },
-              billTo: { name: "Huntly" },
-              billingStatement,
-            },
-            lineItems: [
-              {
-                description: "Development fee",
-                quantity: 1,
-                unitPrice: 30000,
-                sortOrder: 0,
-              },
-            ],
-          },
-        ],
-      });
-      await expect(
-        documentsRouter.createCaller(c).update({
-          id: "doc-1",
-          content: {
-            currency: "PHP",
-            summary: "Project development",
-            from: { name: "ARKO" },
-            billTo: { name: "Huntly" },
-            billingStatement: {
-              ...billingStatement,
-              milestones: billingStatement.milestones.map((milestone, index) =>
-                index === 0 ? { ...milestone, percentage: 50 } : milestone,
-              ),
-            },
-          },
-        }),
-      ).rejects.toThrow("Payment milestone percentages must total 100%.");
-      expect(c.prisma.document.update).not.toHaveBeenCalled();
-    });
-
-    it("saves billing fields and a custom statement number and reloads them", async () => {
-      const c = ctx({
-        _docs: [
-          {
-            id: "doc-1",
-            title: "Huntly",
-            type: "INVOICE",
-            status: "DRAFT",
-            createdById: "u1",
-            content: {},
-            lineItems: [],
-          },
-        ],
-      });
-      const billingStatement = createBillingStatement(
-        "Huntly SaaS Initial MVP",
-      );
-      await documentsRouter.createCaller(c).update({
-        id: "doc-1",
-        invoiceNumber: "ARKO-HUNTLY-001",
-        content: { currency: "PHP", billingStatement },
-        lineItems: [
-          {
-            description: "Total Development Fee",
-            quantity: 1,
-            unitPrice: 30000,
-            sortOrder: 0,
-          },
-        ],
-      });
-      const saved = await documentsRouter.createCaller(c).get({ id: "doc-1" });
-      expect(saved.invoiceNumber).toBe("ARKO-HUNTLY-001");
-      expect((saved.content as any).billingStatement).toEqual(billingStatement);
-      expect(saved.lineItems[0].unitPrice).toBe(30000);
-    });
-
     it("updates title and assigns invoice number on publish", async () => {
       const c = ctx({
         _docs: [

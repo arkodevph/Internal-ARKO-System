@@ -1,5 +1,4 @@
 import type { DocumentContent, DocumentLineItem, DocumentType } from "./schema";
-import { BILLING_NOTICE, createBillingStatement } from "./billing";
 
 export interface DocumentTemplateInput {
   type: DocumentType;
@@ -94,34 +93,18 @@ export function generateDocumentTemplate(
 
   if (type === "INVOICE") {
     return {
-      title: `${project.name} Billing Statement`,
+      title: `Invoice - ${project.name}`,
       dueDate: defaultDueDate,
       content: {
         ...parties,
-        from: {
-          name: "ARKO Dev Team",
-          email: "hello@arkodevph.com",
-          address: "",
-        },
-        currency: "PHP",
+        currency: "",
         summary:
           project.summary ||
-          `Software development services for ${project.name}.`,
-        terms: "",
-        legalNotice: BILLING_NOTICE,
-        billingStatement: {
-          ...createBillingStatement(project.name),
-          contactPerson: client?.name || "",
-        },
+          `Invoice for ${project.name}. [ADD BILLING SUMMARY]`,
+        terms: "[ADD PAYMENT TERMS, TAX TREATMENT, AND PAYMENT INSTRUCTIONS]",
+        sections: [{ title: "Project reference", body: project.name }],
       },
-      lineItems: [
-        {
-          description: `${project.name} — Total Agreed Development Fee`,
-          quantity: 1,
-          unitPrice: 0,
-          sortOrder: 0,
-        },
-      ],
+      lineItems: buildLineItems(input),
     };
   }
 
