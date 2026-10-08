@@ -290,6 +290,52 @@ describe("documents router", () => {
       expect(saved.lineItems[0].unitPrice).toBe(30000);
     });
 
+    it("saves agreement metadata and its number for the published client view", async () => {
+      const content = {
+        from: { name: "Arko Dev" },
+        billTo: { name: "Client Corp" },
+        summary: "Agreed project scope",
+        sections: [
+          { title: "1. Scope of work", body: "Keep the agreed scope." },
+        ],
+        serviceAgreement: {
+          projectName: "Client Portal Redesign",
+          developmentTeam: "ARKO Team",
+          representativeName: "Rovic James P. Somontina",
+          clientSignature: "Client Representative",
+          clientSignedDate: "2026-08-21",
+          representativeSignedDate: "2026-08-22",
+        },
+      };
+      const c = ctx({
+        _docs: [
+          {
+            id: "agreement-1",
+            title: "Service Agreement",
+            type: "AGREEMENT",
+            status: "DRAFT",
+            createdById: "u1",
+            content: {},
+            lineItems: [],
+            shareToken: "agreement-share-token-1234567890",
+          },
+        ],
+      });
+      const caller = documentsRouter.createCaller(c);
+      await caller.update({
+        id: "agreement-1",
+        invoiceNumber: "AGREEMENT-TEST-001",
+        content,
+        status: "PUBLISHED",
+      });
+      const shared = await caller.publicGet({
+        token: "agreement-share-token-1234567890",
+      });
+      expect(shared.invoiceNumber).toBe("AGREEMENT-TEST-001");
+      expect(shared.content).toEqual(content);
+      expect(shared).not.toHaveProperty("createdById");
+    });
+
     it("updates title and assigns invoice number on publish", async () => {
       const c = ctx({
         _docs: [

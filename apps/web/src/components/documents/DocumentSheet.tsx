@@ -5,6 +5,7 @@ import type {
 } from "../../lib/documents/schema";
 import { formatDocumentAmount } from "../../lib/documents/schema";
 import BillingStatementSheet from "./BillingStatementSheet";
+import ServiceAgreementSheet from "./ServiceAgreementSheet";
 
 type DocumentSheetProps = {
   type: DocumentType;
@@ -62,6 +63,16 @@ export default function DocumentSheet({
         projectName={projectName}
         content={content}
         lineItems={lineItems}
+      />
+    );
+  }
+  if (type === "AGREEMENT") {
+    return (
+      <ServiceAgreementSheet
+        invoiceNumber={invoiceNumber}
+        issueDate={issueDate}
+        projectName={projectName}
+        content={content}
       />
     );
   }
