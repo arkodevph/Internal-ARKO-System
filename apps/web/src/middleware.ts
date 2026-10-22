@@ -31,6 +31,12 @@ const HEADERS: Record<string, string> = {
       "https://dmarcconstruction.com",
       "https://freshphonesph.vercel.app",
       "https://brodie-redesign.vercel.app",
+      "https://smartway-finance.vercel.app",
+      "https://smartway-finance-version-2.vercel.app",
+      "https://cloud-pg.vercel.app",
+      "https://cloudpg-version-3.vercel.app",
+      "https://ocd-redesign.vercel.app",
+      "https://rm-internet-website.vercel.app",
     ].join(" "),
     "frame-ancestors 'none'",
     // Hardening: block plugin embeds, <base> hijacking, and cross-origin form posts.

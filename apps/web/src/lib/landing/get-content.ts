@@ -34,7 +34,7 @@ export async function loadLandingContent(): Promise<LandingContent> {
  */
 const cachedLandingContent = unstable_cache(
   loadLandingContent,
-  ['landing-content-v3'],
+  ['landing-content-v4'],
   // Tag-based revalidation is immediate on admin save; the time window is a
   // self-heal fallback so a changed content shape can't stay cached indefinitely.
   { tags: [LANDING_CACHE_TAG], revalidate: 3600 },
