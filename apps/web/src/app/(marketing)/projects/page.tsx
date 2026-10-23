@@ -76,7 +76,7 @@ export default async function ProjectsPage() {
             <div className="absolute inset-[11%] border-2 border-dashed border-ink/20" />
             <ProjectHelmet />
             <span className="mono absolute bottom-[12%] right-[4%] z-20 border-2 border-ink bg-ink px-3 py-2 text-[0.55rem] font-bold text-acid">
-              LIVE / 09
+              LIVE / {String(projects.items.length).padStart(2, "0")}
             </span>
           </div>
         </div>

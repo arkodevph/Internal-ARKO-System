@@ -390,10 +390,10 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         number: "09",
         title: "Fresh Phones PH",
         category: "E-commerce",
-        type: "Mobile device catalog and flexible payment platform",
+        type: "Paluwagan platform and customer portal",
         domain: "freshphonesph.vercel.app",
         href: "https://freshphonesph.vercel.app/",
-        image: "/projects/freshphonesph-preview.webp",
+        image: "/projects/freshphonesph-platform-preview.webp",
       },
       {
         number: "10",
@@ -421,6 +421,60 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
         domain: "hivecx.asia",
         href: "https://hivecx.asia/",
         image: "/projects/hivecx-preview.webp",
+      },
+      {
+        number: "13",
+        title: "Smartway Finance V1",
+        category: "Finance",
+        type: "Finance broker website",
+        domain: "smartway-finance.vercel.app",
+        href: "https://smartway-finance.vercel.app/",
+        image: "/projects/smartway-finance-v1-preview.webp",
+      },
+      {
+        number: "14",
+        title: "Smartway Finance V2",
+        category: "Finance",
+        type: "Finance broker website redesign",
+        domain: "smartway-finance-version-2.vercel.app",
+        href: "https://smartway-finance-version-2.vercel.app/",
+        image: "/projects/smartway-finance-v2-preview.webp",
+      },
+      {
+        number: "15",
+        title: "CloudPG V1",
+        category: "Finance",
+        type: "Payment services website",
+        domain: "cloud-pg.vercel.app",
+        href: "https://cloud-pg.vercel.app/",
+        image: "/projects/cloudpg-v1-preview.webp",
+      },
+      {
+        number: "16",
+        title: "CloudPG V2",
+        category: "Finance",
+        type: "Payment services website redesign",
+        domain: "cloudpg-version-3.vercel.app",
+        href: "https://cloudpg-version-3.vercel.app/",
+        image: "/projects/cloudpg-v2-preview.webp",
+      },
+      {
+        number: "17",
+        title: "OCD Brilliance",
+        category: "Care Services",
+        type: "Care services website redesign",
+        domain: "ocd-redesign.vercel.app",
+        href: "https://ocd-redesign.vercel.app/",
+        image: "/projects/ocd-brilliance-preview.webp",
+      },
+      {
+        number: "18",
+        title: "RM Internet Services",
+        category: "Internet Services",
+        type: "Internet provider website",
+        domain: "rm-internet-website.vercel.app",
+        href: "https://rm-internet-website.vercel.app/",
+        image: "/projects/rm-internet-services-preview.webp",
       },
     ],
   },
@@ -454,6 +508,13 @@ export function mergeLandingContent(stored: unknown): LandingContent {
           domain: "dmarcconstruction.com",
           href: "https://dmarcconstruction.com/",
         };
+      }
+
+      if (project.href.replace(/\/$/, "") === "https://freshphonesph.vercel.app") {
+        const current = d.projects.items.find(
+          (item) => item.title === "Fresh Phones PH",
+        )!;
+        return { ...project, type: current.type, image: current.image };
       }
 
       const refreshedPreview = {
