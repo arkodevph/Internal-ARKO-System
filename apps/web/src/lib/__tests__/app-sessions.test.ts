@@ -37,7 +37,18 @@ describe('application sessions', () => {
     jest.mocked(compare).mockReset().mockResolvedValue(true as never)
   })
 
-  it('separates client and staff logins', async () => {
+  it.each(['internal', 'finance', 'portal', 'pm'] as const)('rejects intern login and existing tokens for %s', async application => {
+    const intern = { ...user, role: 'INTERN' };
+    findUser.mockResolvedValue(intern);
+    expect(await createAppSession(intern.email, 'password', application)).toBeNull();
+    findSession.mockResolvedValue({ id: 'old', application, accessExpiresAt: new Date(Date.now() + 60_000), refreshExpiresAt: new Date(Date.now() + 60_000), authVersion: 2, user: intern });
+    expect(await getAppSession('old-access', application)).toBeNull();
+    expect(await refreshAppSession('old-refresh', application)).toBeNull();
+    expect(createSession).not.toHaveBeenCalled();
+    expect(updateSession).not.toHaveBeenCalled();
+  });
+
+  it('separates client and staff logins' , async () => {
     expect(await createAppSession('user@example.com', 'password', 'portal')).toBeNull()
     expect(createSession).not.toHaveBeenCalled()
     findUser.mockResolvedValue({ ...user, role: 'CLIENT' })

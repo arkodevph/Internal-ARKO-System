@@ -18,6 +18,7 @@ function newToken() {
 }
 
 function canEnter(application: Application, role: Role, permissions: unknown) {
+  if (role === 'INTERN') return false
   if (application === 'portal') return role === 'CLIENT'
   if (application === 'finance') {
     return role !== 'CLIENT' && role !== 'DEMO' &&

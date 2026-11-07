@@ -10,6 +10,7 @@ export default async function DashboardLayout({
 }) {
   const session = await auth()
   if (!session) redirect('/auth/login')
+  if (session.user?.role === 'INTERN') redirect('/intern')
   if (session.user?.role === 'CLIENT') {
     const path = (await headers()).get('x-arko-pathname') || ''
     const clientPath = path === '/dashboard/client-portal' ||

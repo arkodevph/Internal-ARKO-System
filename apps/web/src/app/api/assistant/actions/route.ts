@@ -36,6 +36,7 @@ const DEFAULT_TRANSACTION_CATEGORIES = {
 
 export async function POST(request: Request) {
   const session = await auth();
+  if (session?.user?.role === "INTERN") return NextResponse.json({ error: "Intern accounts cannot access the main system." }, { status: 403 });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

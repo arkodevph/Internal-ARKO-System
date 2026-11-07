@@ -139,6 +139,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Admin",
     items: [
+      { to: "/dashboard/interns", icon: Book, label: "Intern Management", roles: ["ADMIN"] },
       {
         to: "/dashboard/client-portal",
         icon: BriefcaseBusiness,
@@ -766,7 +767,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          {!isDemo && !isClient && (
+          {!isDemo && !isClient && !pathname.startsWith("/dashboard/interns") && (
             <div className="flex min-h-14 shrink-0 items-center border-b border-border-subtle bg-bg-sidebar/70 px-3 md:px-6">
               <WorkspaceScopeSwitcher allowCompany={companyContextAllowed} />
             </div>
@@ -817,7 +818,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {isDemo ? (
         <DemoNexTour key={pathname} />
       ) : (
-        pathname !== "/dashboard/assistant" && (
+        pathname !== "/dashboard/assistant" && !pathname.startsWith("/dashboard/interns") && (
           <FloatingNexChat identity={assistantIdentity} pathname={pathname} />
         )
       )}

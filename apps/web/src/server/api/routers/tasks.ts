@@ -22,7 +22,11 @@ async function assertTaskAccess(ctx: any, taskId: string) {
   if (!task) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' })
   }
-  if (task.assigneeId && task.assigneeId !== ctx.user.id) {
+  if (ctx.userRole !== 'ADMIN' && ctx.userRole !== 'INTERN' && task.assigneeId) {
+    const assignee = await ctx.prisma.user.findUnique({ where: { id: task.assigneeId }, select: { role: true } })
+    if (assignee?.role === 'INTERN') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can manage intern assignments.' })
+  }
+  if ((ctx.userRole === "INTERN" || task.assigneeId) && task.assigneeId !== ctx.user.id) {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: { role: true },
@@ -132,6 +136,7 @@ export const tasksRouter = router({
         const target = await ctx.prisma.user.findUnique({
           where: { id: input.assigneeId },
         })
+        if (target?.role === 'INTERN' && ctx.userRole !== 'ADMIN') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can assign work to interns.' })
         if (!target) {
           throw new TRPCError({
             code: 'NOT_FOUND',
@@ -240,6 +245,8 @@ export const tasksRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' })
       }
 
+      await assertTaskAccess(ctx, input.taskId)
+
       // Only the current assignee or an ADMIN can reassign
       if (task.assigneeId !== userId) {
         const user = await ctx.prisma.user.findUnique({
@@ -258,6 +265,7 @@ export const tasksRouter = router({
       const target = await ctx.prisma.user.findUnique({
         where: { id: input.assigneeId },
       })
+      if (target?.role === 'INTERN' && ctx.userRole !== 'ADMIN') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can assign work to interns.' })
       if (!target) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' })
       }
@@ -287,9 +295,9 @@ export const tasksRouter = router({
       }
 
       return ctx.prisma.task.update({
-        where: { id: input.id },
+        where: { id: input.id, ...(ctx.userRole === 'INTERN' ? { assigneeId: ctx.user.id! } : {}) },
         data: { status: input.status },
-        include: assigneeInclude,
+        select: { id: true, status: true },
       })
     }),
 

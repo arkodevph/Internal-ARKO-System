@@ -9,6 +9,7 @@ const idSchema = z.string().cuid()
 
 export async function GET(request: Request) {
   const session = await auth()
+  if (session?.user?.role === "INTERN") return NextResponse.json({ error: "Intern accounts cannot access the main system." }, { status: 403 })
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
 
 export async function DELETE(request: Request) {
   const session = await auth()
+  if (session?.user?.role === "INTERN") return NextResponse.json({ error: "Intern accounts cannot access the main system." }, { status: 403 })
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

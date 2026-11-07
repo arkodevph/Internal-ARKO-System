@@ -133,6 +133,7 @@ export const ROLE_PERMISSION_PRESETS: Record<Role, readonly Permission[]> = {
       permission !== "tasks:create-reminder",
   ),
   CLIENT: ["users:read"],
+  INTERN: ["tasks:read", "tasks:update"],
   DEMO: [],
 };
 
@@ -150,6 +151,8 @@ export function resolvePermissions(
   role: Role,
   storedPermissions: unknown,
 ): Permission[] {
+  // Intern access is a hard boundary, even if stale custom permissions remain.
+  if (role === "INTERN") return defaultPermissionsForRole(role);
   if (storedPermissions === null || storedPermissions === undefined) {
     return defaultPermissionsForRole(role);
   }

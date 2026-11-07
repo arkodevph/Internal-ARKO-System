@@ -38,6 +38,7 @@ import {
   BriefcaseBusiness,
   Calculator,
   Eye,
+  BookOpen,
 } from "lucide-react";
 import { api } from "../../../lib/trpc/client";
 import { generateAvatarSeed, avatarConfigToJson } from "../../../lib/avatar";
@@ -69,6 +70,7 @@ const roleConfig = {
     color: "bg-blue-500/10 text-blue-400",
     icon: BriefcaseBusiness,
   },
+  INTERN: { label: "Intern", color: "bg-card text-text-secondary", icon: BookOpen },
   DEMO: { label: "Demo", color: "bg-amber-500/10 text-amber-400", icon: Eye },
 };
 
@@ -1330,6 +1332,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
                   "ACCOUNTANT",
                   "USER",
                   "CLIENT",
+                  "INTERN",
                   "DEMO",
                 ] as const
               ).map((r) => (

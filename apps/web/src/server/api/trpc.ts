@@ -21,6 +21,13 @@ const enforceAuth = t.middleware(({ ctx, next, path }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
+  if (ctx.userRole === "INTERN" && ![
+    'interns.overview', 'interns.saveLog', 'interns.deleteLog',
+    'interns.saveProfile', 'interns.saveSubmission', 'interns.tasks',
+    'tasks.updateStatus', 'users.getProfile', 'users.updateProfile',
+  ].includes(path)) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Intern accounts can only access the intern portal.' })
+  }
   const isAllowed = ctx.application && ALLOWED_APP_PROCEDURES[ctx.application]
   if (isAllowed && !isAllowed(path)) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'This app cannot access that feature.' })
