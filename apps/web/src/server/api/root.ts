@@ -1,4 +1,5 @@
 import { router } from './trpc'
+import { internsRouter } from './routers/interns'
 import { financeRouter } from './routers/finance'
 import { tasksRouter } from './routers/tasks'
 import { workflowsRouter } from './routers/workflows'
@@ -21,6 +22,7 @@ import { emailMarketingRouter } from './routers/email-marketing'
 import { tasksRouter as pmTasksRouter } from '../../../../pm/src/server/api/routers/tasks'
 
 export const appRouter = router({
+  interns: internsRouter,
   finance: financeRouter,
   tasks: tasksRouter,
   workflows: workflowsRouter,

@@ -57,6 +57,7 @@ export function middleware(request: NextRequest) {
     }
     if (path === '/dashboard' || path.startsWith('/dashboard/') ||
         path === '/auth' || path.startsWith('/auth/') || path === '/login' ||
+        path === '/intern' || path.startsWith('/intern/') ||
         path === '/app' || path === '/finance' || path === '/portal' || path === '/pm') {
       const destination = path === '/login' ? '/auth/login' : path
       return NextResponse.redirect(new URL(destination + request.nextUrl.search, appUrl))
@@ -93,7 +94,7 @@ export function middleware(request: NextRequest) {
   // Prevent the browser from caching authenticated pages (HTTP cache + bfcache).
   // Without this, hitting Back after signing out restores the cached dashboard
   // instead of forcing a fresh request (which redirects to login).
-  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/intern")) {
     response.headers.set(
       "Cache-Control",
       "no-store, max-age=0, must-revalidate",

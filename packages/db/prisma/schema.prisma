@@ -27,6 +27,12 @@ model User {
   updatedAt    DateTime   @updatedAt
   authVersion  Int        @default(0)
 
+  internProfile            InternProfile?
+  internLearningLogs       InternLearningLog[]
+  internSubmissions        InternSubmission[]
+  internAssignments        InternActivityAssignment[]
+  internActivitiesCreated  InternActivity[]
+
   accounts                 Account[]
   sessions                 Session[]
   appSessions              AppSession[]
@@ -199,6 +205,7 @@ enum Role {
   MEMBER
   USER
   CLIENT
+  INTERN
   DEMO
 }
 
@@ -1453,4 +1460,70 @@ model LandingContent {
 model LandingVisitDaily {
   date      DateTime @id
   viewCount Int      @default(0)
+}
+
+// Intern records are private to their owner and reviewable by existing admins.
+model InternProfile {
+  userId        String   @id
+  school        String   @default("")
+  course        String   @default("")
+  track         String   @default("")
+  bio           String   @default("")
+  startDate     DateTime? @db.Date
+  requiredHours Int      @default(0)
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InternLearningLog {
+  id         String   @id @default(cuid())
+  userId     String
+  date       DateTime @db.Date
+  learned    String
+  workedOn   String   @default("")
+  blockers   String   @default("")
+  hours      Float    @default(0)
+  feedback   String   @default("")
+  reviewedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, date])
+}
+
+model InternActivity {
+  id          String   @id @default(cuid())
+  creatorId   String
+  title       String
+  kind        String
+  description String
+  resourceUrl String   @default("")
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  creator     User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  submissions InternSubmission[]
+  assignments InternActivityAssignment[]
+}
+
+model InternSubmission {
+  id         String   @id @default(cuid())
+  userId     String
+  activityId String
+  response   String   @default("")
+  status     String   @default("IN_PROGRESS")
+  feedback   String   @default("")
+  reviewedAt DateTime?
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity   InternActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  @@unique([userId, activityId])
+}
+
+model InternActivityAssignment {
+  userId     String
+  activityId String
+  createdAt  DateTime @default(now())
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity   InternActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  @@id([userId, activityId])
 }

@@ -588,6 +588,15 @@ function LoginForm() {
             </button>
 
             <Link
+              href="/intern/login"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 text-sm font-medium text-white transition-colors hover:border-acid hover:text-acid focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid"
+            >
+              Intern sign in
+            </Link>
+            <p className="text-center text-xs leading-relaxed text-zinc-400">
+              Learning logs, exercises, and your assigned tasks.
+            </p>
+            <Link
               href="/#contact"
               className="mono mt-3 flex w-full items-center justify-center border border-white/25 bg-ink/70 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors hover:border-acid hover:text-acid"
             >

@@ -4,7 +4,7 @@ export const recordScopeSchema = z.enum(['PERSONAL', 'COMPANY'])
 export type RecordScope = z.infer<typeof recordScopeSchema>
 
 export function userCanSeeCompanyRecords(role: string | undefined): boolean {
-  return role !== 'CLIENT'
+  return role !== 'CLIENT' && role !== 'INTERN'
 }
 
 export function ownedOrCompany(userId: string, role: string | undefined) {
