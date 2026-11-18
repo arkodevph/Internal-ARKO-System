@@ -47,34 +47,61 @@ const HEADERS: Record<string, string> = {
 };
 
 export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
-  const host = request.nextUrl.hostname
-  const appUrl = 'https://app.arkodevph.com'
-  const publicSite = process.env.VERCEL === '1' || process.env.ARKO_SURFACE === 'site' || host === 'arkodevph.com'
+  const path = request.nextUrl.pathname;
+  const host = request.nextUrl.hostname;
+  const appUrl = "https://app.arkodevph.com";
+  const publicSite =
+    process.env.VERCEL === "1" ||
+    process.env.ARKO_SURFACE === "site" ||
+    host === "arkodevph.com";
   if (publicSite) {
-    if (path.startsWith('/documents/share/')) {
-      return NextResponse.redirect(new URL(path + request.nextUrl.search, appUrl))
+    if (path.startsWith("/documents/share/")) {
+      return NextResponse.redirect(
+        new URL(path + request.nextUrl.search, appUrl),
+      );
     }
-    if (path === '/dashboard' || path.startsWith('/dashboard/') ||
-        path === '/auth' || path.startsWith('/auth/') || path === '/login' ||
-        path === '/app' || path === '/finance' || path === '/portal' || path === '/pm') {
-      const destination = path === '/login' ? '/auth/login' : path
-      return NextResponse.redirect(new URL(destination + request.nextUrl.search, appUrl))
+    if (
+      path === "/dashboard" ||
+      path.startsWith("/dashboard/") ||
+      path === "/auth" ||
+      path.startsWith("/auth/") ||
+      path === "/login" ||
+      path === "/intern" ||
+      path.startsWith("/intern/") ||
+      path === "/app" ||
+      path === "/finance" ||
+      path === "/portal" ||
+      path === "/pm"
+    ) {
+      const destination = path === "/login" ? "/auth/login" : path;
+      return NextResponse.redirect(
+        new URL(destination + request.nextUrl.search, appUrl),
+      );
     }
-    if (path === '/health') return new NextResponse(null, { status: 404 })
-    if ((path === '/api' || path.startsWith('/api/')) &&
-        path !== '/api/landing/view' && path !== '/api/landing/content' && path !== '/api/assistant/public-chat') {
-      if (path.startsWith('/api/email-marketing/unsubscribe/')) {
-        return NextResponse.redirect(new URL(path + request.nextUrl.search, appUrl))
+    if (path === "/health") return new NextResponse(null, { status: 404 });
+    if (
+      (path === "/api" || path.startsWith("/api/")) &&
+      path !== "/api/landing/view" &&
+      path !== "/api/landing/content" &&
+      path !== "/api/assistant/public-chat"
+    ) {
+      if (path.startsWith("/api/email-marketing/unsubscribe/")) {
+        return NextResponse.redirect(
+          new URL(path + request.nextUrl.search, appUrl),
+        );
       }
-      return new NextResponse(null, { status: 404 })
+      return new NextResponse(null, { status: 404 });
     }
   }
-  if (!publicSite && (host === 'app.arkodevph.com' || host === 'arko.onrender.com') && path === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (
+    !publicSite &&
+    (host === "app.arkodevph.com" || host === "arko.onrender.com") &&
+    path === "/"
+  ) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-arko-pathname', path)
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-arko-pathname", path);
   const response =
     request.nextUrl.hostname === "www.arkodevph.com"
       ? NextResponse.redirect(
@@ -93,7 +120,11 @@ export function middleware(request: NextRequest) {
   // Prevent the browser from caching authenticated pages (HTTP cache + bfcache).
   // Without this, hitting Back after signing out restores the cached dashboard
   // instead of forcing a fresh request (which redirects to login).
-  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    path === "/intern" ||
+    path.startsWith("/intern/")
+  ) {
     response.headers.set(
       "Cache-Control",
       "no-store, max-age=0, must-revalidate",

@@ -11,16 +11,13 @@ function shortDate(date: string) {
   }).format(new Date(`${date}T00:00:00Z`))
 }
 
-function emptyTrafficSeries() {
-  return Array.from({ length: 30 }, (_, index) => {
-    const date = new Date()
-    date.setUTCDate(date.getUTCDate() - (29 - index))
-    return { date: date.toISOString().slice(0, 10), views: 0 }
-  })
-}
-
 export function LandingTrafficChart({ data }: { data: TrafficPoint[] }) {
-  const points = data.length > 1 ? data : emptyTrafficSeries()
+  // Dates generated during render can differ between SSR and hydration.
+  // Wait for actual history instead of inventing a dated zero-visit series.
+  if (data.length < 2) {
+    return <div className="flex h-full min-h-24 items-center justify-center text-sm text-text-tertiary">Visit history will appear here when available.</div>
+  }
+  const points = data
   const maxViews = Math.max(...points.map((point) => point.views), 1)
   const total = points.reduce((sum, point) => sum + point.views, 0)
   const width = 760

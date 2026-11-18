@@ -134,6 +134,7 @@ export const ROLE_PERMISSION_PRESETS: Record<Role, readonly Permission[]> = {
   ),
   CLIENT: ["users:read"],
   DEMO: [],
+  INTERN: [],
 };
 
 const PERMISSION_SET = new Set<string>(PERMISSIONS);
@@ -150,6 +151,7 @@ export function resolvePermissions(
   role: Role,
   storedPermissions: unknown,
 ): Permission[] {
+  if (role === "INTERN") return [];
   if (storedPermissions === null || storedPermissions === undefined) {
     return defaultPermissionsForRole(role);
   }

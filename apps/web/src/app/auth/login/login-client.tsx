@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
@@ -350,7 +349,6 @@ function QuotePanel({
 /* ─── Login form ─── */
 
 function LoginForm() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -372,6 +370,7 @@ function LoginForm() {
         email,
         password,
         redirect: false,
+        redirectTo: "/dashboard",
       });
 
       if (result?.error) {
@@ -385,9 +384,11 @@ function LoginForm() {
       sessionStorage.removeItem(CACHE_KEY);
       // Start this session with an empty cache so no prior user's data shows.
       queryClient.clear();
-      router.prefetch("/dashboard");
       setRedirecting(true);
-      router.push("/dashboard");
+      // Start a new document after switching accounts. Client navigation can
+      // reuse a previous session's cached /dashboard → /intern redirect.
+      // The server resolves /dashboard using the newly authenticated role.
+      window.location.replace("/dashboard");
     } catch (err: any) {
       console.error("signIn error:", err);
       setError(err?.message || "Sign in failed. Check console for details.");

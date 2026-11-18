@@ -1,71 +1,76 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Card, CardContent, Button } from '@arko/ui'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { useState } from "react";
+import { Card, CardContent, Button } from "@arko/ui";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 interface Category {
-  id: string
-  name: string
-  icon: string
+  id: string;
+  name: string;
+  icon: string;
 }
 
 interface ResourcesFormProps {
-  categories: Category[]
-  editId?: string
-  initialTitle?: string
-  initialUrl?: string
-  initialDescription?: string
-  initialCategoryId?: string
-  initialIsPublic?: boolean
+  categories: Category[];
+  editId?: string;
+  initialTitle?: string;
+  initialUrl?: string;
+  initialDescription?: string;
+  initialCategoryId?: string;
+  initialInternShared?: boolean;
+  initialIsPublic?: boolean;
   onSubmit: (data: {
-    title: string
-    url?: string
-    description?: string
-    categoryId?: string
-    isPublic: boolean
-  }) => void
-  onCancel: () => void
-  isSaving: boolean
-  error: string
+    title: string;
+    url?: string;
+    description?: string;
+    categoryId?: string;
+    internShared: boolean;
+    isPublic: boolean;
+  }) => void;
+  onCancel: () => void;
+  isSaving: boolean;
+  error: string;
 }
 
 export function ResourcesForm({
   categories,
   editId,
-  initialTitle = '',
-  initialUrl = '',
-  initialDescription = '',
+  initialTitle = "",
+  initialUrl = "",
+  initialDescription = "",
   initialCategoryId,
+  initialInternShared = false,
   initialIsPublic = true,
   onSubmit,
   onCancel,
   isSaving,
   error,
 }: ResourcesFormProps) {
-  const [title, setTitle] = useState(initialTitle)
-  const [url, setUrl] = useState(initialUrl)
-  const [description, setDescription] = useState(initialDescription)
-  const [categoryId, setCategoryId] = useState(initialCategoryId ?? '')
-  const [isPublic, setIsPublic] = useState(initialIsPublic)
+  const [title, setTitle] = useState(initialTitle);
+  const [url, setUrl] = useState(initialUrl);
+  const [description, setDescription] = useState(initialDescription);
+  const [categoryId, setCategoryId] = useState(initialCategoryId ?? "");
+  const [internShared, setInternShared] = useState(initialInternShared);
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) return
+    e.preventDefault();
+    if (!title.trim()) return;
     onSubmit({
       title: title.trim(),
       url: url.trim() || undefined,
       description: description || undefined,
       categoryId: categoryId || undefined,
       isPublic,
-    })
-  }
+      internShared,
+    });
+  };
 
   return (
     <Card className="mb-4">
       <CardContent className="p-4">
         <p className="mb-3 text-xs font-medium text-text-tertiary">
-          {editId ? 'Edit Resource' : 'New Resource'}
+          {editId ? "Edit Resource" : "New Resource"}
         </p>
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
@@ -116,13 +121,28 @@ export function ResourcesForm({
               className="h-3.5 w-3.5 rounded border-border-subtle"
             />
             <span>
-              {isPublic ? 'Public' : 'Private'} - {' '}
+              {isPublic ? "Public" : "Private"} -{" "}
               <span className="text-text-tertiary">
-                {isPublic ? 'visible to everyone' : 'only you can see this'}
+                {isPublic ? "visible to the team" : "only you can see this"}
               </span>
             </span>
           </label>
 
+          <label className="flex items-start gap-2 text-sm text-text-secondary">
+            <input
+              type="checkbox"
+              checked={internShared}
+              onChange={(e) => setInternShared(e.target.checked)}
+              className="mt-1 h-4 w-4"
+            />
+            <span>
+              Share with interns
+              <span className="block text-xs text-text-secondary">
+                Includes this resource and its company attachments in the intern
+                portal.
+              </span>
+            </span>
+          </label>
           {error && (
             <div className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2">
               <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
@@ -134,9 +154,9 @@ export function ResourcesForm({
               {isSaving ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : editId ? (
-                'Save Changes'
+                "Save Changes"
               ) : (
-                'Add'
+                "Add"
               )}
             </Button>
             {editId && (
@@ -153,5 +173,5 @@ export function ResourcesForm({
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

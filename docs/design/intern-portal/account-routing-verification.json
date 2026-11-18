@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-11-16T15:06:57.628Z",
+  "reportedFailure": "Admin returned to intern portal after switching from an intern account",
+  "freshContextBeforeChange": "Passed once; reported existing-browser failure was not reproduced in that fresh context",
+  "afterChange": [
+    {
+      "role": "INTERN",
+      "loginPath": "/intern",
+      "freshLoginDocument": true,
+      "staleCallbackIgnored": true,
+      "logoutClearedSession": true,
+      "backAfterLogoutDenied": true
+    },
+    {
+      "role": "ADMIN",
+      "loginPath": "/dashboard",
+      "freshLoginDocument": true,
+      "staleCallbackIgnored": true,
+      "logoutClearedSession": true,
+      "backAfterLogoutDenied": true
+    },
+    {
+      "role": "INTERN",
+      "loginPath": "/intern",
+      "freshLoginDocument": true,
+      "staleCallbackIgnored": true,
+      "logoutClearedSession": true,
+      "backAfterLogoutDenied": true
+    },
+    {
+      "role": "ADMIN",
+      "loginPath": "/dashboard",
+      "freshLoginDocument": true,
+      "staleCallbackIgnored": true,
+      "logoutClearedSession": true,
+      "backAfterLogoutDenied": true
+    }
+  ],
+  "adminManualPreviewRetained": true,
+  "browserErrors": []
+}

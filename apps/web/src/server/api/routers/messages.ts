@@ -1,3 +1,4 @@
+import { INTERN_CONTACT_ROLES } from "../../../lib/intern-access";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, requirePermission } from "../trpc";
@@ -66,7 +67,13 @@ export const messagesRouter = router({
     for (const c of convos) for (const p of c.participants) known.add(p.userId);
 
     return ctx.prisma.user.findMany({
-      where: { id: { notIn: [...known] }, status: "ACTIVE" },
+      where: {
+        id: { notIn: [...known] },
+        status: "ACTIVE",
+        ...(ctx.userRole === "INTERN"
+          ? { role: { in: [...INTERN_CONTACT_ROLES] } }
+          : {}),
+      },
       select: {
         id: true,
         name: true,
@@ -284,6 +291,22 @@ export const messagesRouter = router({
               "Clients can only message their assigned ARKO project team",
           });
         }
+      }
+
+      if (ctx.userRole === "INTERN") {
+        const contact = await ctx.prisma.user.findFirst({
+          where: {
+            id: input.participantId,
+            status: "ACTIVE",
+            role: { in: [...INTERN_CONTACT_ROLES] },
+          },
+          select: { id: true },
+        });
+        if (!contact)
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Choose an active ARKO team member.",
+          });
       }
 
       const include = {

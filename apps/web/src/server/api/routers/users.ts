@@ -1,3 +1,4 @@
+import { INTERN_CONTACT_ROLES } from "../../../lib/intern-access";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { hash, compare } from "bcryptjs";
@@ -89,12 +90,15 @@ export const usersRouter = router({
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id!;
       const search = input?.query?.trim() ?? "";
-      const projectOwnerIds = ctx.userRole === 'CLIENT'
-        ? (await ctx.prisma.clientProject.findMany({
-            where: { clientId: userId },
-            select: { ownerId: true },
-          })).map((project) => project.ownerId)
-        : null;
+      const projectOwnerIds =
+        ctx.userRole === "CLIENT"
+          ? (
+              await ctx.prisma.clientProject.findMany({
+                where: { clientId: userId },
+                select: { ownerId: true },
+              })
+            ).map((project) => project.ownerId)
+          : null;
 
       const where = search
         ? {
@@ -111,7 +115,17 @@ export const usersRouter = router({
         : { id: { not: userId } };
 
       return ctx.prisma.user.findMany({
-        where: projectOwnerIds ? { AND: [where, { id: { in: projectOwnerIds } }] } : where,
+        where:
+          ctx.userRole === "INTERN"
+            ? {
+                AND: [
+                  where,
+                  { status: "ACTIVE", role: { in: [...INTERN_CONTACT_ROLES] } },
+                ],
+              }
+            : projectOwnerIds
+              ? { AND: [where, { id: { in: projectOwnerIds } }] }
+              : where,
         select: {
           id: true,
           name: true,
@@ -208,7 +222,15 @@ export const usersRouter = router({
         title: z.string().optional(),
         password: z.string().optional(),
         role: z
-          .enum(["ADMIN", "ACCOUNTANT", "MEMBER", "USER", "CLIENT", "DEMO"])
+          .enum([
+            "ADMIN",
+            "ACCOUNTANT",
+            "MEMBER",
+            "USER",
+            "CLIENT",
+            "DEMO",
+            "INTERN",
+          ])
           .default("MEMBER"),
         permissions: z
           .array(z.enum(PERMISSIONS as [Permission, ...Permission[]]))
@@ -251,7 +273,9 @@ export const usersRouter = router({
           password: hashedPassword,
           role: input.role,
           permissions:
-            input.permissions ?? defaultPermissionsForRole(input.role),
+            input.role === "INTERN"
+              ? []
+              : (input.permissions ?? defaultPermissionsForRole(input.role)),
           status: input.canAccess ? "ACTIVE" : "RESTRICTED",
         },
         select: {
@@ -365,6 +389,7 @@ export const usersRouter = router({
           "USER",
           "CLIENT",
           "DEMO",
+          "INTERN",
         ]),
       }),
     )
@@ -414,6 +439,7 @@ export const usersRouter = router({
           "USER",
           "CLIENT",
           "DEMO",
+          "INTERN",
         ]),
         permissions: z.array(
           z.enum(PERMISSIONS as [Permission, ...Permission[]]),

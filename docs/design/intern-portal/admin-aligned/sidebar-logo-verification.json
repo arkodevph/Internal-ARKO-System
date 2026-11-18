@@ -1,0 +1,20 @@
+[
+  {
+    "role": "intern",
+    "path": "/intern",
+    "desktopLogoRendered": true,
+    "logoSize": 24,
+    "collapseExpand": true,
+    "mobileLogoRendered": true,
+    "browserErrors": []
+  },
+  {
+    "role": "admin",
+    "path": "/dashboard",
+    "desktopLogoRendered": true,
+    "logoSize": 24,
+    "collapseExpand": true,
+    "mobileLogoRendered": true,
+    "browserErrors": []
+  }
+]

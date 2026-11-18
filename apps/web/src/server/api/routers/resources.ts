@@ -1,38 +1,38 @@
-import { z } from 'zod'
-import { TRPCError } from '@trpc/server'
-import { router, protectedProcedure, requirePermission } from '../trpc'
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { router, protectedProcedure, requirePermission } from "../trpc";
 
-const TYPE = ['LINK', 'FILE', 'DOC'] as const
+const TYPE = ["LINK", "FILE", "DOC"] as const;
 
 /** A resource/category is readable if it's public OR owned by the current user. */
 function visibleTo(userId: string) {
-  return { OR: [{ isPublic: true }, { userId }] }
+  return { OR: [{ isPublic: true }, { userId }] };
 }
 
 /** Load a resource and assert the caller may manage it (creator or ADMIN). */
 async function manageableResource(ctx: any, id: string) {
-  const row = await ctx.prisma.resource.findUnique({ where: { id } })
-  if (!row) throw new TRPCError({ code: 'NOT_FOUND' })
-  if (row.userId !== ctx.user.id && ctx.userRole !== 'ADMIN') {
-    throw new TRPCError({ code: 'FORBIDDEN' })
+  const row = await ctx.prisma.resource.findUnique({ where: { id } });
+  if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+  if (row.userId !== ctx.user.id && ctx.userRole !== "ADMIN") {
+    throw new TRPCError({ code: "FORBIDDEN" });
   }
-  return row
+  return row;
 }
 
 /** Load a category and assert the caller may manage it (creator or ADMIN). */
 async function manageableCategory(ctx: any, id: string) {
-  const row = await ctx.prisma.resourceCategory.findUnique({ where: { id } })
-  if (!row) throw new TRPCError({ code: 'NOT_FOUND' })
-  if (row.userId !== ctx.user.id && ctx.userRole !== 'ADMIN') {
-    throw new TRPCError({ code: 'FORBIDDEN' })
+  const row = await ctx.prisma.resourceCategory.findUnique({ where: { id } });
+  if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+  if (row.userId !== ctx.user.id && ctx.userRole !== "ADMIN") {
+    throw new TRPCError({ code: "FORBIDDEN" });
   }
-  return row
+  return row;
 }
 
 export const resourcesRouter = router({
   /** Paginated, searchable list of resources the caller can see (public or own). */
   list: protectedProcedure
-    .use(requirePermission('resources:read'))
+    .use(requirePermission("resources:read"))
     .input(
       z
         .object({
@@ -44,26 +44,26 @@ export const resourcesRouter = router({
         .default({}),
     )
     .query(async ({ ctx, input }) => {
-      const userId = ctx.user.id!
-      const isAdmin = ctx.userRole === 'ADMIN'
+      const userId = ctx.user.id!;
+      const isAdmin = ctx.userRole === "ADMIN";
 
-      const and: any[] = [visibleTo(userId)]
-      if (input.categoryId) and.push({ categoryId: input.categoryId })
+      const and: any[] = [visibleTo(userId)];
+      if (input.categoryId) and.push({ categoryId: input.categoryId });
       if (input.search) {
         and.push({
           OR: [
-            { title: { contains: input.search, mode: 'insensitive' } },
-            { description: { contains: input.search, mode: 'insensitive' } },
+            { title: { contains: input.search, mode: "insensitive" } },
+            { description: { contains: input.search, mode: "insensitive" } },
             { tags: { has: input.search } },
           ],
-        })
+        });
       }
-      const where = { AND: and }
+      const where = { AND: and };
 
       const [rows, total] = await Promise.all([
         ctx.prisma.resource.findMany({
           where,
-          orderBy: { updatedAt: 'desc' },
+          orderBy: { updatedAt: "desc" },
           skip: (input.page - 1) * input.pageSize,
           take: input.pageSize,
           include: {
@@ -72,7 +72,7 @@ export const resourcesRouter = router({
           },
         }),
         ctx.prisma.resource.count({ where }),
-      ])
+      ]);
 
       return {
         items: rows.map((r: any) => ({
@@ -84,21 +84,22 @@ export const resourcesRouter = router({
         page: input.page,
         pageSize: input.pageSize,
         totalPages: Math.max(1, Math.ceil(total / input.pageSize)),
-      }
+      };
     }),
 
   create: protectedProcedure
-    .use(requirePermission('resources:create'))
+    .use(requirePermission("resources:create"))
     .input(
       z.object({
         title: z.string().min(1).max(255),
         url: z.string().url().optional(),
-        resourceType: z.enum(TYPE).default('LINK'),
+        resourceType: z.enum(TYPE).default("LINK"),
         description: z.string().optional(),
         tags: z.array(z.string()).default([]),
         fileId: z.string().optional(),
         categoryId: z.string().optional(),
         isPublic: z.boolean().default(true),
+        internShared: z.boolean().default(false),
       }),
     )
     .mutation(({ ctx, input }) =>
@@ -106,7 +107,7 @@ export const resourcesRouter = router({
     ),
 
   update: protectedProcedure
-    .use(requirePermission('resources:update'))
+    .use(requirePermission("resources:update"))
     .input(
       z.object({
         id: z.string(),
@@ -118,47 +119,50 @@ export const resourcesRouter = router({
         fileId: z.string().optional(),
         categoryId: z.string().optional().nullable(),
         isPublic: z.boolean().optional(),
+        internShared: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await manageableResource(ctx, input.id)
-      const { id, ...data } = input
-      return ctx.prisma.resource.update({ where: { id }, data })
+      await manageableResource(ctx, input.id);
+      const { id, ...data } = input;
+      return ctx.prisma.resource.update({ where: { id }, data });
     }),
 
   delete: protectedProcedure
-    .use(requirePermission('resources:delete'))
+    .use(requirePermission("resources:delete"))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await manageableResource(ctx, input.id)
-      return ctx.prisma.resource.delete({ where: { id: input.id } })
+      await manageableResource(ctx, input.id);
+      return ctx.prisma.resource.delete({ where: { id: input.id } });
     }),
 
   // ── Category (box) procedures ──
 
-  listCategories: protectedProcedure.use(requirePermission('resources:read')).query(async ({ ctx }) => {
-    const userId = ctx.user.id!
-    const isAdmin = ctx.userRole === 'ADMIN'
-    const rows = await ctx.prisma.resourceCategory.findMany({
-      where: visibleTo(userId),
-      orderBy: { name: 'asc' },
-      include: {
-        _count: { select: { resources: { where: visibleTo(userId) } } },
-      },
-    })
-    return rows.map((c: any) => ({
-      ...c,
-      count: c._count?.resources ?? 0,
-      canManage: c.userId === userId || isAdmin,
-    }))
-  }),
+  listCategories: protectedProcedure
+    .use(requirePermission("resources:read"))
+    .query(async ({ ctx }) => {
+      const userId = ctx.user.id!;
+      const isAdmin = ctx.userRole === "ADMIN";
+      const rows = await ctx.prisma.resourceCategory.findMany({
+        where: visibleTo(userId),
+        orderBy: { name: "asc" },
+        include: {
+          _count: { select: { resources: { where: visibleTo(userId) } } },
+        },
+      });
+      return rows.map((c: any) => ({
+        ...c,
+        count: c._count?.resources ?? 0,
+        canManage: c.userId === userId || isAdmin,
+      }));
+    }),
 
   createCategory: protectedProcedure
-    .use(requirePermission('resources:create'))
+    .use(requirePermission("resources:create"))
     .input(
       z.object({
         name: z.string().min(1).max(100),
-        icon: z.string().default('Folder'),
+        icon: z.string().default("Folder"),
         isPublic: z.boolean().default(true),
       }),
     )
@@ -169,7 +173,7 @@ export const resourcesRouter = router({
     ),
 
   updateCategory: protectedProcedure
-    .use(requirePermission('resources:update'))
+    .use(requirePermission("resources:update"))
     .input(
       z.object({
         id: z.string(),
@@ -179,16 +183,16 @@ export const resourcesRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await manageableCategory(ctx, input.id)
-      const { id, ...data } = input
-      return ctx.prisma.resourceCategory.update({ where: { id }, data })
+      await manageableCategory(ctx, input.id);
+      const { id, ...data } = input;
+      return ctx.prisma.resourceCategory.update({ where: { id }, data });
     }),
 
   deleteCategory: protectedProcedure
-    .use(requirePermission('resources:delete'))
+    .use(requirePermission("resources:delete"))
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await manageableCategory(ctx, input.id)
-      return ctx.prisma.resourceCategory.delete({ where: { id: input.id } })
+      await manageableCategory(ctx, input.id);
+      return ctx.prisma.resourceCategory.delete({ where: { id: input.id } });
     }),
-})
+});

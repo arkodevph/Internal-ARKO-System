@@ -2360,3 +2360,13 @@ html.system-theme-iris-transition::view-transition-old(root) {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.35);
 }
+
+/* Intern surface shares the admin shell with readable light-theme accents. */
+html[data-system-theme="light"] [data-workspace-surface="intern"] {
+  --color-pos: #137545;
+  --color-pos-bg: #eaf5ef;
+  --color-primary-400: #137545;
+  --color-primary-300: #166534;
+  --color-primary-200: #14532d;
+  --color-workflow-500: #9a5b00;
+}

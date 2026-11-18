@@ -200,6 +200,7 @@ enum Role {
   USER
   CLIENT
   DEMO
+  INTERN
 }
 
 enum UserStatus {
@@ -582,6 +583,7 @@ model Event {
   color       String           @default("#2D6A4F")
   userId      String
   scope       TransactionScope @default(PERSONAL)
+  internShared Boolean         @default(false)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -692,6 +694,7 @@ model Resource {
   fileId       String?
   categoryId   String?
   isPublic     Boolean  @default(true) // public resources are visible/accessible to all users
+  internShared Boolean  @default(false)
   userId       String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
