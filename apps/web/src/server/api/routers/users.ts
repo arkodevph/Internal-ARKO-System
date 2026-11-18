@@ -75,6 +75,18 @@ async function findAvailableEmail(
   });
 }
 
+function assertInternManagement(
+  role: string | undefined,
+  targetRole: string | undefined,
+) {
+  if (targetRole === "INTERN" && role !== "ADMIN") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only admins can manage intern accounts.",
+    });
+  }
+}
+
 // ── Router ───────────────────────────────────────────────
 
 export const usersRouter = router({
@@ -239,6 +251,7 @@ export const usersRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      assertInternManagement(ctx.userRole, input.role);
       // Auto-generate email from name
       const nameParts = input.name.trim().split(/\s+/);
       const firstName = nameParts[0];
@@ -345,8 +358,10 @@ export const usersRouter = router({
 
       const user = await ctx.prisma.user.findUnique({
         where: { id: targetId },
-        select: { id: true },
+        select: { id: true, role: true },
       });
+      if (targetId !== ctx.user.id)
+        assertInternManagement(ctx.userRole, user?.role);
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
@@ -394,6 +409,7 @@ export const usersRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      assertInternManagement(ctx.userRole, input.role);
       if (input.userId === ctx.user.id && input.role !== "ADMIN") {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -403,8 +419,9 @@ export const usersRouter = router({
 
       const user = await ctx.prisma.user.findUnique({
         where: { id: input.userId },
-        select: { id: true },
+        select: { id: true, role: true },
       });
+      assertInternManagement(ctx.userRole, user?.role);
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
@@ -448,6 +465,7 @@ export const usersRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      assertInternManagement(ctx.userRole, input.role);
       if (
         input.userId === ctx.user.id &&
         (input.role !== "ADMIN" ||
@@ -462,8 +480,9 @@ export const usersRouter = router({
 
       const user = await ctx.prisma.user.findUnique({
         where: { id: input.userId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, role: true },
       });
+      assertInternManagement(ctx.userRole, user?.role);
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
@@ -510,8 +529,9 @@ export const usersRouter = router({
 
       const user = await ctx.prisma.user.findUnique({
         where: { id: input.userId },
-        select: { id: true },
+        select: { id: true, role: true },
       });
+      assertInternManagement(ctx.userRole, user?.role);
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
@@ -530,8 +550,9 @@ export const usersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: input.userId },
-        select: { id: true, email: true },
+        select: { id: true, email: true, role: true },
       });
+      assertInternManagement(ctx.userRole, user?.role);
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
@@ -561,8 +582,9 @@ export const usersRouter = router({
 
       const user = await ctx.prisma.user.findUnique({
         where: { id: input.userId },
-        select: { id: true },
+        select: { id: true, role: true },
       });
+      assertInternManagement(ctx.userRole, user?.role);
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }

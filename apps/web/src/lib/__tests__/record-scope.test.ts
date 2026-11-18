@@ -1,8 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { ownedOrCompany, userCanSeeCompanyRecords } from '../record-scope'
+import { assignedOrCompany, ownedOrCompany, userCanSeeCompanyRecords } from '../record-scope'
 
 describe('record scope policy', () => {
+  it('restricts interns to their own records and assigned tasks', () => {
+    expect(userCanSeeCompanyRecords('INTERN')).toBe(false)
+    expect(ownedOrCompany('i1', 'INTERN')).toEqual({ userId: 'i1' })
+    expect(assignedOrCompany('i1', 'INTERN')).toEqual({ assigneeId: 'i1' })
+  })
   it('lets internal users query their personal records and company records', () => {
     expect(ownedOrCompany('u1', 'USER')).toEqual({
       OR: [{ userId: 'u1' }, { scope: 'COMPANY' }],

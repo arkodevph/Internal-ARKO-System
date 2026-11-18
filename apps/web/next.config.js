@@ -1,3 +1,4 @@
+// Public site deployment: retrigger after enabling public repository access.
 const path = require('path')
 
 /** @type {import('next').NextConfig} */

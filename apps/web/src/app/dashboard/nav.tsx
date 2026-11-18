@@ -34,6 +34,7 @@ type DashboardNavItem = {
 };
 
 const navItems: DashboardNavItem[] = [
+  { href: "/dashboard/interns", label: "Intern Management", roles: ["ADMIN"], icon: <BookOpen className="h-5 w-5" /> },
   {
     href: "/dashboard",
     label: "Dashboard",

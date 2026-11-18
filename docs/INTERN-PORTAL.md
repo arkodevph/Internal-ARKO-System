@@ -2,7 +2,38 @@
 
 The intern workspace is available at `/intern` in the existing `apps/web`
 application. It shares ARKO's Auth.js login, database records and messaging
-service. It includes Dashboard, My Tasks, Documents, Resources, Messages and Calendar.
+service. It includes Dashboard, My Tasks, Documents, Resources, Messages, Calendar,
+Learning Log, Exercises & Studies and Profile.
+
+## Merged learning and admin tools
+
+The remote `feat/intern-portal` implementation is integrated with the existing
+project workspace. `/intern` remains the dashboard, and the existing task,
+document, resource, message and calendar pages remain available. The shared admin
+shell now also links to `/intern/log`, `/intern/studies` and `/intern/profile`.
+Learning logs include hours, daily reflections and CSV export; assigned studies
+and exercises support drafts, submission and administrator feedback. Profile
+fields include school, course, start date and required hours.
+
+The dedicated `/intern/login` page is public. Workspace pages share one protected
+route-group layout, allowing INTERN accounts and administrator preview. Both
+sign-in forms load a fresh document at `/dashboard`, where the current role
+chooses its home. The learning pages use the existing `interns` router; work and
+shared services keep the `intern` router. Interns receive only explicitly listed
+learning procedures and no staff task permission grants.
+
+Administrators open **Intern Management** at `/dashboard/interns` to inspect
+intern records, assign studies/exercises and review logs/submissions. Creating,
+changing or deleting intern accounts and assigning intern work remain restricted
+to administrators, including when staff have delegated user-management rights.
+Staff task-status responses retain their existing assignee/project fields.
+
+Migration `20261107140000_intern_portal` adds the five learning/profile tables.
+It precedes the existing sharing migration. For the local database that already
+had the INTERN enum and sharing columns applied manually, only the new tables
+were created, and both exact migration checksums were recorded after verifying
+the existing columns. The incoming migration file was preserved unchanged. No
+remote migration was applied.
 
 ## Stored documents
 
@@ -69,8 +100,8 @@ Intern sign-in redirects from `/dashboard` to `/intern`. Administrators can
 preview the portal using **Intern Portal** in the main navigation; the preview
 shows the administrator's own task assignments. Intern messages use existing
 participant-scoped conversations; new direct conversations can be started with
-active ARKO staff. Staff manage group creation. No OJT time or attendance tracking
-is included.
+active ARKO staff. Staff manage group creation. Learning logs record hours; attendance clocks
+and DTR forms are not included.
 
 Sign-in always starts a fresh browser document at `/dashboard`, where the server
 chooses the account's home: interns go to `/intern`, clients to their client
@@ -124,3 +155,24 @@ Run `pnpm --filter @arko/web test -- --runInBand` and
 `pnpm --filter @arko/web build`. The intern router suite tests role, API, task,
 resource, calendar, messaging and attachment boundaries. Application-session
 tests cover exclusion from legacy staff/client sessions.
+
+## Merge verification — 2026-11-18
+
+Integrated remote commit `da5e676` with the saved local project workspace and
+Documents implementation. All 487 tests in 62 suites and the final production
+build pass. Optimized-browser checks cover all nine intern destinations, the
+public intern login, real log save/reload/CSV export, assigned exercise draft /
+submission / admin review, both themes, 390/320px layouts, drawer links/Escape,
+retained local sign-in, role boundaries and same-browser intern/admin switches.
+No browser exceptions or unexpected failed API reads in the completed paced run.
+The existing 100 requests/IP/minute guard remains unchanged; an earlier
+accelerated run exceeded it, so the final harness paced its requests.
+
+Incoming table wrappers now establish a containing block so screen-reader labels
+inside wide tables do not expand the phone page. Tables retain their own
+horizontal scroll. The shared five-item phone bar is preserved; learning pages
+are available in the drawer and desktop sidebar. All synthetic test records were
+removed. Screenshots and the returned check summary are under
+`docs/design/intern-portal/merge-20261118/`. Local preview runs independently as
+`arko-intern-preview.service` (transient user service; not enabled for boot).
+No push, hosted deployment or remote database change was performed.

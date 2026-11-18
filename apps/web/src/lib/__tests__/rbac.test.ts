@@ -20,6 +20,10 @@ const ROLES: Role[] = [
 ];
 
 describe("permission presets", () => {
+  it("ignores stale elevated permissions on intern accounts", () => {
+    expect(resolvePermissions("INTERN", PERMISSIONS)).toEqual([]);
+    expect(hasPermission("INTERN", "users:update", PERMISSIONS)).toBe(false);
+  });
   it("defines known, duplicate-free permissions for every role", () => {
     for (const role of ROLES) {
       const preset = ROLE_PERMISSION_PRESETS[role];

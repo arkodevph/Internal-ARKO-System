@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, Search, Send, ArrowUpRight } from "lucide-react";
-import type { RouterOutputs } from "../../../lib/trpc/types";
-import { api } from "../../../lib/trpc/client";
+import type { RouterOutputs } from "../../../../lib/trpc/types";
+import { api } from "../../../../lib/trpc/client";
 import {
   dateLabel,
   Empty,

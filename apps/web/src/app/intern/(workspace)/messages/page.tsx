@@ -1,6 +1,6 @@
 "use client";
 
-import { MessagesWorkspace } from "../../dashboard/messages/messages-workspace";
+import { MessagesWorkspace } from "../../../dashboard/messages/messages-workspace";
 import { PageHeading } from "../_components/common";
 
 export default function InternMessages() {

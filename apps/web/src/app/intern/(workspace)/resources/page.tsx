@@ -9,7 +9,7 @@ import {
   Paperclip,
   Search,
 } from "lucide-react";
-import { api } from "../../../lib/trpc/client";
+import { api } from "../../../../lib/trpc/client";
 import {
   Empty,
   PageHeading,

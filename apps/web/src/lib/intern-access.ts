@@ -1,6 +1,12 @@
 // Interns use a deliberately small API surface even if custom staff permissions
 // were accidentally retained when their role changed.
 const INTERN_PROCEDURES = new Set([
+  "interns.overview",
+  "interns.saveLog",
+  "interns.deleteLog",
+  "interns.saveProfile",
+  "interns.saveSubmission",
+  "interns.tasks",
   "messages.unreadCount",
   "messages.suggestions",
   "messages.listConversations",

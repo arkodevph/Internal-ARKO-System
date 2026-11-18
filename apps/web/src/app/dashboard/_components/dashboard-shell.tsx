@@ -146,6 +146,12 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Admin",
     items: [
       {
+        to: "/dashboard/interns",
+        icon: Book,
+        label: "Intern Management",
+        roles: ["ADMIN"],
+      },
+      {
         to: "/dashboard/client-portal",
         icon: BriefcaseBusiness,
         label: "Client Portal",
@@ -191,6 +197,14 @@ const INTERN_GROUPS: NavGroup[] = [
     items: [
       { to: "/intern/tasks", icon: CheckSquare, label: "My Tasks" },
       { to: "/intern/calendar", icon: CalendarDays, label: "Calendar" },
+    ],
+  },
+  {
+    label: "Learning",
+    items: [
+      { to: "/intern/log", icon: ClipboardList, label: "Learning Log" },
+      { to: "/intern/studies", icon: Book, label: "Exercises & Studies" },
+      { to: "/intern/profile", icon: Users, label: "Profile" },
     ],
   },
   {
@@ -567,7 +581,15 @@ export function DashboardShell({
           sessionUser?.permissions,
         );
   const bottomCategories = isInternPortal
-    ? categories.filter((item) => item.to !== "/intern/calendar")
+    ? categories.filter((item) =>
+        [
+          "/intern",
+          "/intern/tasks",
+          "/intern/documents",
+          "/intern/resources",
+          "/intern/messages",
+        ].includes(item.to),
+      )
     : isClient
       ? CLIENT_CATEGORIES
       : isDemo
@@ -930,11 +952,16 @@ export function DashboardShell({
                 )}
               </div>
             )}
-            {!isDemo && !isClient && !isInternPortal && (
-              <div className="flex min-h-14 shrink-0 items-center border-b border-border-subtle bg-bg-sidebar/70 px-3 md:px-6">
-                <WorkspaceScopeSwitcher allowCompany={companyContextAllowed} />
-              </div>
-            )}
+            {!isDemo &&
+              !isClient &&
+              !isInternPortal &&
+              !pathname.startsWith("/dashboard/interns") && (
+                <div className="flex min-h-14 shrink-0 items-center border-b border-border-subtle bg-bg-sidebar/70 px-3 md:px-6">
+                  <WorkspaceScopeSwitcher
+                    allowCompany={companyContextAllowed}
+                  />
+                </div>
+              )}
 
             <main
               className={[
@@ -987,7 +1014,8 @@ export function DashboardShell({
           (isDemo ? (
             <DemoNexTour key={pathname} />
           ) : (
-            pathname !== "/dashboard/assistant" && (
+            pathname !== "/dashboard/assistant" &&
+            !pathname.startsWith("/dashboard/interns") && (
               <FloatingNexChat
                 identity={assistantIdentity}
                 pathname={pathname}

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowUpRight } from "lucide-react";
-import { api } from "../../../lib/trpc/client";
+import { api } from "../../../../lib/trpc/client";
 import {
   dateLabel,
   Empty,

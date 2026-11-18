@@ -14,8 +14,8 @@ import {
   Send,
   Target,
 } from "lucide-react";
-import { api } from "../../lib/trpc/client";
-import { MetricCard } from "../dashboard/_components/dashboard-metric-card";
+import { api } from "../../../lib/trpc/client";
+import { MetricCard } from "../../dashboard/_components/dashboard-metric-card";
 import { dateLabel, Empty, QueryState, Status } from "./_components/common";
 
 export default function InternDashboard() {

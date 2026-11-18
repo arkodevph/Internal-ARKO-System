@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Download, FileText, Loader2, Search, Trash2, Upload, X } from "lucide-react";
-import { api } from "../../../lib/trpc/client";
-import { documentFileError, documentSize } from "../../../lib/intern-documents";
+import { api } from "../../../../lib/trpc/client";
+import { documentFileError, documentSize } from "../../../../lib/intern-documents";
 import { Empty, PageHeading, Pagination, QueryState } from "../_components/common";
 import s from "../_components/intern.module.css";
 import c from "./documents.module.css";
