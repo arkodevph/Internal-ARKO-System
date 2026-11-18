@@ -9,9 +9,13 @@ ARKO is a pnpm/Next.js monorepo. Vercel hosts the public landing page; one Rende
 | Finance | `https://app.arkodevph.com/dashboard/finance` |
 | Client portal | `https://app.arkodevph.com/dashboard/client-portal` |
 | PM board | `https://app.arkodevph.com/dashboard/pm` |
+| Intern workspace | `https://app.arkodevph.com/intern` (new; deployment pending) |
 | API | `https://app.arkodevph.com/api/*` |
 
 One Auth.js login at `https://app.arkodevph.com/auth/login` uses existing ARKO accounts and a same-origin session. Each dashboard area still enforces its role/permission checks. The Render Blueprint declares only `arko`; old Render services must be retired separately after cutover. See [Architecture](docs/ARCHITECTURE.md) and [deployment](docs/DEPLOY-INFRA.md).
+
+The [intern portal guide](docs/INTERN-PORTAL.md) covers account setup, task
+assignments, shared resources/calendar events and its local schema migration.
 
 ## Local development
 

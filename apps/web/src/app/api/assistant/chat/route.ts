@@ -113,6 +113,8 @@ async function saveExchange({
 
 export async function POST(request: Request) {
   const session = await auth();
+  if (session?.user?.role === "INTERN")
+    return Response.json({ error: "Use the intern portal." }, { status: 403 });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

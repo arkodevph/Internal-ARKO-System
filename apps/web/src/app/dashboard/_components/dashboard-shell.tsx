@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, type ComponentType } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type ComponentType,
+} from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useRequestSignOut } from "../../../components/sign-out-provider";
@@ -24,7 +31,6 @@ import {
   Bookmark,
   Menu,
   X,
-  PanelsTopLeft,
   BriefcaseBusiness,
   Palette,
   ClipboardList,
@@ -140,10 +146,22 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Admin",
     items: [
       {
+        to: "/dashboard/interns",
+        icon: Book,
+        label: "Intern Management",
+        roles: ["ADMIN"],
+      },
+      {
         to: "/dashboard/client-portal",
         icon: BriefcaseBusiness,
         label: "Client Portal",
         permission: "client-portal:manage",
+      },
+      {
+        to: "/intern",
+        icon: Book,
+        label: "Intern Portal",
+        roles: ["ADMIN"],
       },
       {
         to: "/dashboard/users",
@@ -163,6 +181,38 @@ const NAV_GROUPS: NavGroup[] = [
         label: "AI Activity",
         permission: "assistant-activity:read",
       },
+    ],
+  },
+];
+
+const INTERN_GROUPS: NavGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { to: "/intern", icon: LayoutDashboard, label: "Dashboard", end: true },
+    ],
+  },
+  {
+    label: "Plan & track",
+    items: [
+      { to: "/intern/tasks", icon: CheckSquare, label: "My Tasks" },
+      { to: "/intern/calendar", icon: CalendarDays, label: "Calendar" },
+    ],
+  },
+  {
+    label: "Learning",
+    items: [
+      { to: "/intern/log", icon: ClipboardList, label: "Learning Log" },
+      { to: "/intern/studies", icon: Book, label: "Exercises & Studies" },
+      { to: "/intern/profile", icon: Users, label: "Profile" },
+    ],
+  },
+  {
+    label: "Knowledge & communication",
+    items: [
+      { to: "/intern/documents", icon: FileText, label: "Documents" },
+      { to: "/intern/resources", icon: Bookmark, label: "Resources" },
+      { to: "/intern/messages", icon: MessageSquare, label: "Messages" },
     ],
   },
 ];
@@ -190,10 +240,10 @@ function isActivePath(pathname: string, item: NavCategory) {
 
 /* --- Unread badge sources --- */
 
-function useUnreadCounts(enabled = true) {
+function useUnreadCounts(enabled = true, notificationsEnabled = true) {
   const { data: notifications } = api.notifications.unreadCount.useQuery(
     undefined,
-    { enabled, refetchInterval: 60000 },
+    { enabled: enabled && notificationsEnabled, refetchInterval: 60000 },
   );
   const { data: messages } = api.messages.unreadCount.useQuery(undefined, {
     enabled,
@@ -224,6 +274,8 @@ function NavRow({
   return (
     <Link
       href={item.to}
+      aria-current={active ? "page" : undefined}
+      prefetch={item.to.startsWith("/intern") ? false : undefined}
       onClick={onClick}
       title={collapsed ? item.label : undefined}
       className={[
@@ -276,6 +328,7 @@ function MobileDrawer({
   isDemo,
   onSettings,
   onLogout,
+  hideSettings = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -285,8 +338,45 @@ function MobileDrawer({
   isDemo: boolean;
   onSettings: () => void;
   onLogout: () => void;
+  hideSettings?: boolean;
 }) {
   const pathname = usePathname();
+  const drawer = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const trigger = document.activeElement as HTMLElement | null;
+    const node = drawer.current;
+    const getTargets = () =>
+      Array.from(
+        node?.querySelectorAll<HTMLElement>(
+          "a[href], button:not([disabled]), input:not([disabled])",
+        ) ?? [],
+      );
+    getTargets()[0]?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+      if (event.key === "Tab") {
+        const targets = getTargets();
+        const first = targets[0];
+        const last = targets[targets.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    node?.addEventListener("keydown", onKeyDown);
+    return () => {
+      node?.removeEventListener("keydown", onKeyDown);
+      if (trigger?.isConnected) trigger.focus();
+    };
+  }, [open, onClose]);
 
   return (
     <>
@@ -298,6 +388,13 @@ function MobileDrawer({
       )}
 
       <div
+        ref={drawer}
+        id="workspace-navigation-drawer"
+        role="dialog"
+        aria-hidden={!open}
+        aria-modal={open ? true : undefined}
+        aria-label="Workspace navigation"
+        inert={!open}
         className={[
           "fixed left-0 top-0 z-50 flex h-full w-72 flex-col bg-bg-sidebar shadow-xl transition-transform duration-300 ease-out md:hidden",
           open ? "translate-x-0" : "-translate-x-full",
@@ -308,11 +405,18 @@ function MobileDrawer({
             className="flex items-center gap-2 text-lg font-bold text-text-primary"
             style={{ fontFamily: "'Oswald', sans-serif" }}
           >
-            <img src="/icon.png" alt="" className="h-5 w-auto" />
+            <Image
+              src="/brand/arko-logo-navbar.webp"
+              alt=""
+              width={24}
+              height={24}
+              className="h-6 w-6 shrink-0 object-contain"
+            />
             ARKO
           </span>
           <button
             onClick={onClose}
+            aria-label="Close navigation"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
@@ -325,9 +429,7 @@ function MobileDrawer({
               key={item.to}
               item={item}
               active={isActivePath(pathname, item)}
-              badge={
-                item.to === "/dashboard/messages" ? messageUnread : undefined
-              }
+              badge={item.to.endsWith("/messages") ? messageUnread : undefined}
               onClick={onClose}
             />
           ))}
@@ -346,7 +448,7 @@ function MobileDrawer({
             </div>
           </div>
           <div className="flex gap-1">
-            {!isDemo && (
+            {!isDemo && !hideSettings && (
               <button
                 onClick={() => {
                   onClose();
@@ -374,7 +476,14 @@ function MobileDrawer({
 
 /* --- Shell --- */
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({
+  children,
+  surface = "main",
+}: {
+  children: React.ReactNode;
+  surface?: "main" | "intern";
+}) {
+  const isInternPortal = surface === "intern";
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -388,11 +497,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const isClient = sessionUser?.role === "CLIENT";
   const [showSearch, setShowSearch] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const closeDrawer = useCallback(() => setShowDrawer(false), []);
   const [showNotifications, setShowNotifications] = useState(false);
   // Sidebar collapsed state — restored from localStorage on mount
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const unread = useUnreadCounts(!isDemo);
+  const unread = useUnreadCounts(!isDemo, !isInternPortal);
   const assistantIdentity = useAssistantIdentity();
 
   // Restore sidebar collapsed state from localStorage
@@ -438,26 +548,28 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const canUse = (item: NavCategory) =>
     !item.permission ||
     hasPermission(sessionUser?.role, item.permission, sessionUser?.permissions);
-  const navGroups: NavGroup[] = isClient
-    ? [{ label: "Portal", items: CLIENT_CATEGORIES }]
-    : isDemo
-      ? DEMO_GROUPS
-      : NAV_GROUPS.map((g) => ({
-          label: g.label,
-          items: g.items
-            .filter(canUse)
-            .filter(
-              (it) => !it.roles || it.roles.includes(sessionUser?.role ?? ""),
-            )
-            .map((item) =>
-              item.to === "/dashboard/assistant"
-                ? {
-                    ...item,
-                    label: `${assistantIdentity.assistantName} Assistant`,
-                  }
-                : item,
-            ),
-        })).filter((g) => g.items.length > 0);
+  const navGroups: NavGroup[] = isInternPortal
+    ? INTERN_GROUPS
+    : isClient
+      ? [{ label: "Portal", items: CLIENT_CATEGORIES }]
+      : isDemo
+        ? DEMO_GROUPS
+        : NAV_GROUPS.map((g) => ({
+            label: g.label,
+            items: g.items
+              .filter(canUse)
+              .filter(
+                (it) => !it.roles || it.roles.includes(sessionUser?.role ?? ""),
+              )
+              .map((item) =>
+                item.to === "/dashboard/assistant"
+                  ? {
+                      ...item,
+                      label: `${assistantIdentity.assistantName} Assistant`,
+                    }
+                  : item,
+              ),
+          })).filter((g) => g.items.length > 0);
   const categories = navGroups.flatMap((g) => g.items);
   const currentCategory = categories.find((c) => isActivePath(pathname, c));
   const companyContextAllowed =
@@ -468,366 +580,455 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           "transactions:manage-company",
           sessionUser?.permissions,
         );
-  const bottomCategories = isClient
-    ? CLIENT_CATEGORIES
-    : isDemo
-      ? DEMO_CATEGORIES
-      : BOTTOM_NAV.filter(canUse);
+  const bottomCategories = isInternPortal
+    ? categories.filter((item) =>
+        [
+          "/intern",
+          "/intern/tasks",
+          "/intern/documents",
+          "/intern/resources",
+          "/intern/messages",
+        ].includes(item.to),
+      )
+    : isClient
+      ? CLIENT_CATEGORIES
+      : isDemo
+        ? DEMO_CATEGORIES
+        : BOTTOM_NAV.filter(canUse);
 
   return (
     <WorkspaceScopeProvider>
-    <div className="dashboard-theme-root h-dvh bg-bg-app text-text-primary">
-      <MobileDrawer
-        open={showDrawer}
-        onClose={() => setShowDrawer(false)}
-        categories={categories}
-        user={user}
-        messageUnread={unread.messages}
-        isDemo={isDemo}
-        onSettings={() => router.push("/dashboard/settings")}
-        onLogout={handleLogout}
-      />
+      <div
+        data-workspace-surface={surface}
+        className="dashboard-theme-root h-dvh bg-bg-app text-text-primary"
+      >
+        <MobileDrawer
+          open={showDrawer}
+          onClose={closeDrawer}
+          categories={categories}
+          user={user}
+          messageUnread={unread.messages}
+          isDemo={isDemo}
+          hideSettings={isInternPortal}
+          onSettings={() => router.push("/dashboard/settings")}
+          onLogout={handleLogout}
+        />
 
-      <div className="flex h-full">
-        {/* === Sidebar === */}
-        <aside
-          style={{ width: sidebarCollapsed ? "60px" : "240px" }}
-          className="hidden md:flex h-full shrink-0 flex-col border-r border-border-subtle bg-bg-sidebar transition-[width] duration-300 ease-in-out overflow-hidden"
-        >
-          {/* Sidebar header */}
-          <div className="relative flex items-center gap-2 border-b border-border-subtle h-14 shrink-0 px-2">
-            {/* Title — fades out when collapsed */}
-            <div
-              className={[
-                "flex items-center gap-2 flex-1 min-w-0 overflow-hidden transition-opacity duration-200",
-                sidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100",
-              ].join(" ")}
-            >
-              <PanelsTopLeft className="h-4 w-4 text-text-tertiary shrink-0" />
-              <span className="text-sm font-semibold text-text-primary whitespace-nowrap">
-                ARKO Workspace
-              </span>
-            </div>
-
-            {/* Collapse / expand toggle button */}
-            <button
-              onClick={toggleSidebar}
-              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-tertiary hover:bg-card hover:text-text-primary transition-colors cursor-pointer ml-auto"
-            >
-              {sidebarCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-
-          {/* Scrollable nav — overflow-y-auto fixes lower items being cut off at small heights/high zoom */}
-          <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 px-2 custom-sidebar-scroll">
-            {sidebarCollapsed ? (
-              /* Icon-only mode */
-              <div className="space-y-0.5">
-                {categories.map((item) => (
-                  <NavRow
-                    key={item.to}
-                    item={item}
-                    active={isActivePath(pathname, item)}
-                    badge={
-                      item.to === "/dashboard/messages"
-                        ? unread.messages
-                        : undefined
-                    }
-                    collapsed={true}
-                  />
-                ))}
-              </div>
-            ) : (
-              /* Grouped mode */
-              navGroups.map((group) => (
-                <div key={group.label} className="mb-1.5">
-                  <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
-                    {group.label}
-                  </p>
-                  <div className="space-y-0.5">
-                    {group.items.map((item) => (
-                      <NavRow
-                        key={item.to}
-                        item={item}
-                        active={isActivePath(pathname, item)}
-                        badge={
-                          item.to === "/dashboard/messages"
-                            ? unread.messages
-                            : undefined
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </nav>
-
-          {/* User / status card — always visible at bottom */}
-          <div className="border-t border-border-subtle p-3 shrink-0">
-            {sidebarCollapsed ? (
-              /* Collapsed: stacked avatar + icon buttons */
-              <div className="flex flex-col items-center gap-2">
-                <div className="relative">
-                  <OpenPeepsAvatar
-                    userId={user?.id}
-                    avatarJson={
-                      profile?.avatar &&
-                      typeof profile.avatar === "object" &&
-                      Object.keys(profile.avatar).length > 0
-                        ? JSON.stringify(profile.avatar)
-                        : undefined
-                    }
-                    size={32}
-                  />
-                  {profile?.image && (
-                    <img
-                      src={profile.image}
-                      alt=""
-                      className="absolute inset-0 h-full w-full rounded-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  {!isDemo && (
-                    <button
-                      onClick={() => router.push("/dashboard/settings")}
-                      title="Settings"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    title="Sign out"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-neg-bg hover:text-neg transition-colors cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Expanded: full user card */
-              <div className="flex items-center gap-3 rounded-xl bg-card p-3">
-                <div className="relative shrink-0">
-                  <OpenPeepsAvatar
-                    userId={user?.id}
-                    avatarJson={
-                      profile?.avatar &&
-                      typeof profile.avatar === "object" &&
-                      Object.keys(profile.avatar).length > 0
-                        ? JSON.stringify(profile.avatar)
-                        : undefined
-                    }
-                    size={36}
-                  />
-                  {profile?.image && (
-                    <img
-                      src={profile.image}
-                      alt=""
-                      className="absolute inset-0 h-full w-full rounded-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-text-primary">
-                    {user?.name ?? "User"}
-                  </p>
-                  <span className="flex items-center gap-1.5 text-[11px] font-medium text-pos">
-                    <span
-                      className={[
-                        "h-1.5 w-1.5 rounded-full",
-                        status === "loading"
-                          ? "bg-text-tertiary animate-pulse"
-                          : "bg-pos",
-                      ].join(" ")}
-                    />
-                    {status === "loading" ? "Connecting\u2026" : "Active"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-0.5">
-                  {!isDemo && (
-                    <button
-                      onClick={() => router.push("/dashboard/settings")}
-                      title="Settings"
-                      className="rounded-lg p-1.5 text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    title="Sign out"
-                    className="rounded-lg p-1.5 text-text-tertiary hover:bg-neg-bg hover:text-neg transition-colors cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* === Main content === */}
-        <div className="flex flex-1 flex-col min-w-0">
-          <header className="sticky top-0 z-30 flex items-center justify-between shrink-0 border-b border-border-subtle bg-bg-app/80 px-3 md:px-6 h-14 backdrop-blur-md">
-            <div className="flex items-center gap-2 min-w-0">
-              <button
-                onClick={() => setShowDrawer(!showDrawer)}
-                className="flex md:hidden h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer shrink-0"
-                title="Menu"
+        <div className="flex h-full">
+          {/* === Sidebar === */}
+          <aside
+            style={{ width: sidebarCollapsed ? "60px" : "240px" }}
+            className="hidden md:flex h-full shrink-0 flex-col border-r border-border-subtle bg-bg-sidebar transition-[width] duration-300 ease-in-out overflow-hidden"
+          >
+            {/* Sidebar header */}
+            <div className="relative flex items-center gap-2 border-b border-border-subtle h-14 shrink-0 px-2">
+              {/* Title — fades out when collapsed */}
+              <div
+                className={[
+                  "flex items-center gap-2 flex-1 min-w-0 overflow-hidden transition-opacity duration-200",
+                  sidebarCollapsed
+                    ? "opacity-0 pointer-events-none"
+                    : "opacity-100",
+                ].join(" ")}
               >
-                {showDrawer ? (
-                  <X className="h-4 w-4" />
+                <Image
+                  src="/brand/arko-logo-navbar.webp"
+                  alt=""
+                  width={24}
+                  height={24}
+                  priority
+                  className="h-6 w-6 shrink-0 object-contain"
+                />
+                <span className="text-sm font-semibold text-text-primary whitespace-nowrap">
+                  ARKO Workspace
+                </span>
+              </div>
+
+              {/* Collapse / expand toggle button */}
+              <button
+                onClick={toggleSidebar}
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={
+                  sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                }
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-tertiary hover:bg-card hover:text-text-primary transition-colors cursor-pointer ml-auto"
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="h-4 w-4" />
                 ) : (
-                  <Menu className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" />
                 )}
               </button>
-              <span className="text-sm text-text-tertiary">Home</span>
-              <span className="text-text-tertiary/60">/</span>
-              <span className="truncate text-sm font-medium text-text-primary">
-                {currentCategory?.label ?? "Dashboard"}
-              </span>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              <DashboardThemeToggle />
-              {isDemo ? (
-                <span className="hidden rounded-full border border-primary-500/25 bg-primary-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-400 sm:inline-flex">
-                  Demo mode
-                </span>
-              ) : showSearch ? (
-                <div className="flex items-center rounded-lg border border-border-subtle bg-card px-2.5 py-1.5">
-                  <Search className="h-4 w-4 shrink-0 text-text-tertiary" />
-                  <input
-                    ref={searchRef}
-                    type="text"
-                    placeholder="Search..."
-                    className="ml-1.5 w-24 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-tertiary sm:w-36"
-                    onKeyDown={(e) =>
-                      e.key === "Escape" && setShowSearch(false)
-                    }
-                  />
+            {/* Scrollable nav — overflow-y-auto fixes lower items being cut off at small heights/high zoom */}
+            <nav
+              aria-label={
+                isInternPortal ? "Intern navigation" : "Workspace navigation"
+              }
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 px-2 custom-sidebar-scroll"
+            >
+              {sidebarCollapsed ? (
+                /* Icon-only mode */
+                <div className="space-y-0.5">
+                  {categories.map((item) => (
+                    <NavRow
+                      key={item.to}
+                      item={item}
+                      active={isActivePath(pathname, item)}
+                      badge={
+                        item.to.endsWith("/messages")
+                          ? unread.messages
+                          : undefined
+                      }
+                      collapsed={true}
+                    />
+                  ))}
                 </div>
               ) : (
-                <button
-                  onClick={() => setShowSearch(true)}
-                  title="Search"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
-                >
-                  <Search className="h-4 w-4" />
-                </button>
+                /* Grouped mode */
+                navGroups.map((group) => (
+                  <div key={group.label} className="mb-1.5">
+                    <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                      {group.label}
+                    </p>
+                    <div className="space-y-0.5">
+                      {group.items.map((item) => (
+                        <NavRow
+                          key={item.to}
+                          item={item}
+                          active={isActivePath(pathname, item)}
+                          badge={
+                            item.to.endsWith("/messages")
+                              ? unread.messages
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
               )}
-              {!isDemo && (
-                <Link
-                  href="/dashboard/messages"
-                  title={`${unread.messages} unread messages`}
-                  aria-label={`${unread.messages} unread messages`}
-                  className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  {unread.messages > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] font-bold text-white">
-                      {unread.messages > 99 ? "99+" : unread.messages}
+            </nav>
+
+            {/* User / status card — always visible at bottom */}
+            <div className="border-t border-border-subtle p-3 shrink-0">
+              {sidebarCollapsed ? (
+                /* Collapsed: stacked avatar + icon buttons */
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative">
+                    <OpenPeepsAvatar
+                      userId={user?.id}
+                      avatarJson={
+                        profile?.avatar &&
+                        typeof profile.avatar === "object" &&
+                        Object.keys(profile.avatar).length > 0
+                          ? JSON.stringify(profile.avatar)
+                          : undefined
+                      }
+                      size={32}
+                    />
+                    {profile?.image && (
+                      <img
+                        src={profile.image}
+                        alt=""
+                        className="absolute inset-0 h-full w-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    {!isDemo && !isInternPortal && (
+                      <button
+                        onClick={() => router.push("/dashboard/settings")}
+                        title="Settings"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      title="Sign out"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-neg-bg hover:text-neg transition-colors cursor-pointer"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Expanded: full user card */
+                <div className="flex items-center gap-3 rounded-xl bg-card p-3">
+                  <div className="relative shrink-0">
+                    <OpenPeepsAvatar
+                      userId={user?.id}
+                      avatarJson={
+                        profile?.avatar &&
+                        typeof profile.avatar === "object" &&
+                        Object.keys(profile.avatar).length > 0
+                          ? JSON.stringify(profile.avatar)
+                          : undefined
+                      }
+                      size={36}
+                    />
+                    {profile?.image && (
+                      <img
+                        src={profile.image}
+                        alt=""
+                        className="absolute inset-0 h-full w-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-text-primary">
+                      {user?.name ?? "User"}
+                    </p>
+                    <span className="flex items-center gap-1.5 text-[11px] font-medium text-pos">
+                      <span
+                        className={[
+                          "h-1.5 w-1.5 rounded-full",
+                          status === "loading"
+                            ? "bg-text-tertiary animate-pulse"
+                            : "bg-pos",
+                        ].join(" ")}
+                      />
+                      {status === "loading" ? "Connecting\u2026" : "Active"}
                     </span>
-                  )}
-                </Link>
-              )}
-              {!isDemo && (
-                <button
-                  type="button"
-                  onClick={() => setShowNotifications(true)}
-                  title="Notifications"
-                  className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
-                >
-                  <Bell className="h-4 w-4" />
-                  {unread.notifications > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neg px-1 text-[9px] font-bold text-white">
-                      {unread.notifications > 99
-                        ? "99+"
-                        : unread.notifications}
-                    </span>
-                  )}
-                </button>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    {!isDemo && !isInternPortal && (
+                      <button
+                        onClick={() => router.push("/dashboard/settings")}
+                        title="Settings"
+                        className="rounded-lg p-1.5 text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      title="Sign out"
+                      className="rounded-lg p-1.5 text-text-tertiary hover:bg-neg-bg hover:text-neg transition-colors cursor-pointer"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
-          </header>
+          </aside>
 
-          {!isDemo && !isClient && (
-            <div className="flex min-h-14 shrink-0 items-center border-b border-border-subtle bg-bg-sidebar/70 px-3 md:px-6">
-              <WorkspaceScopeSwitcher allowCompany={companyContextAllowed} />
-            </div>
-          )}
-
-          <main
-            className={[
-              "min-h-0 flex-1 px-3 py-4 md:px-6 custom-scrollbar",
-              pathname === "/dashboard" && !isDemo
-                ? "overflow-y-auto xl:overflow-hidden"
-                : "overflow-y-auto",
-            ].join(" ")}
-          >
-            {isDemo ? <DemoSystemPage pathname={pathname} /> : children}
-          </main>
-
-          {/* Mobile bottom nav */}
-          <nav className="flex md:hidden items-center justify-around border-t border-border-subtle bg-bg-sidebar px-2 py-1.5 shrink-0 z-30">
-            {bottomCategories.map((item) => {
-              const active = isActivePath(pathname, item);
-              return (
-                <Link
-                  key={item.to}
-                  href={item.to}
-                  className={[
-                    "flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-2 py-1 transition-colors cursor-pointer",
-                    active
-                      ? "text-text-primary"
-                      : "text-text-tertiary hover:text-text-secondary",
-                  ].join(" ")}
+          {/* === Main content === */}
+          <div className="flex flex-1 flex-col min-w-0">
+            <header className="sticky top-0 z-30 flex items-center justify-between shrink-0 border-b border-border-subtle bg-bg-app/80 px-3 md:px-6 h-14 backdrop-blur-md">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setShowDrawer(!showDrawer)}
+                  aria-expanded={showDrawer}
+                  aria-controls="workspace-navigation-drawer"
+                  className="flex md:hidden h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-card/[0.05] hover:text-text-primary transition-colors cursor-pointer shrink-0"
+                  title="Menu"
                 >
-                  <item.icon className="h-4 w-4" />
-                  <span
+                  {showDrawer ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    <Menu className="h-4 w-4" />
+                  )}
+                </button>
+                <span className="text-sm text-text-tertiary">Home</span>
+                <span className="text-text-tertiary/60">/</span>
+                <span className="truncate text-sm font-medium text-text-primary">
+                  {currentCategory?.label ?? "Dashboard"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <DashboardThemeToggle />
+                {isInternPortal ? (
+                  <Link
+                    href="/intern/resources"
+                    aria-label="Search resources"
+                    title="Search resources"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors"
+                  >
+                    <Search className="h-4 w-4" />
+                  </Link>
+                ) : isDemo ? (
+                  <span className="hidden rounded-full border border-primary-500/25 bg-primary-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-400 sm:inline-flex">
+                    Demo mode
+                  </span>
+                ) : showSearch ? (
+                  <div className="flex items-center rounded-lg border border-border-subtle bg-card px-2.5 py-1.5">
+                    <Search className="h-4 w-4 shrink-0 text-text-tertiary" />
+                    <input
+                      ref={searchRef}
+                      type="text"
+                      placeholder="Search..."
+                      className="ml-1.5 w-24 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-tertiary sm:w-36"
+                      onKeyDown={(e) =>
+                        e.key === "Escape" && setShowSearch(false)
+                      }
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowSearch(true)}
+                    title="Search"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
+                )}
+                {!isDemo && (
+                  <Link
+                    href={
+                      isInternPortal
+                        ? "/intern/messages"
+                        : "/dashboard/messages"
+                    }
+                    title={`${unread.messages} unread messages`}
+                    aria-label={`${unread.messages} unread messages`}
+                    className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    {unread.messages > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] font-bold text-white">
+                        {unread.messages > 99 ? "99+" : unread.messages}
+                      </span>
+                    )}
+                  </Link>
+                )}
+                {isInternPortal && (
+                  <Link
+                    href="/intern/calendar"
+                    aria-label="Open calendar"
+                    title="Calendar"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                  </Link>
+                )}
+                {!isDemo && !isInternPortal && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNotifications(true)}
+                    title="Notifications"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle text-text-tertiary hover:border-primary-500/40 hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unread.notifications > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neg px-1 text-[9px] font-bold text-white">
+                        {unread.notifications > 99
+                          ? "99+"
+                          : unread.notifications}
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
+            </header>
+
+            {isInternPortal && (
+              <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-3 border-b border-border-subtle bg-bg-sidebar/70 px-3 py-2 md:px-6">
+                <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-primary-500/25 bg-primary-500/10 px-3 text-xs font-medium text-primary-400">
+                  <Book className="h-3.5 w-3.5" />
+                  Intern workspace
+                </span>
+                <span className="text-xs text-text-secondary">
+                  Assigned work and shared resources
+                </span>
+                {sessionUser?.role === "ADMIN" && (
+                  <Link
+                    href="/dashboard"
+                    className="ml-auto text-xs text-text-secondary hover:text-text-primary"
+                  >
+                    Administrator preview · Main system ↗
+                  </Link>
+                )}
+              </div>
+            )}
+            {!isDemo &&
+              !isClient &&
+              !isInternPortal &&
+              !pathname.startsWith("/dashboard/interns") && (
+                <div className="flex min-h-14 shrink-0 items-center border-b border-border-subtle bg-bg-sidebar/70 px-3 md:px-6">
+                  <WorkspaceScopeSwitcher
+                    allowCompany={companyContextAllowed}
+                  />
+                </div>
+              )}
+
+            <main
+              className={[
+                "min-h-0 flex-1 px-3 py-4 md:px-6 custom-scrollbar",
+                pathname === "/dashboard" && !isDemo
+                  ? "overflow-y-auto xl:overflow-hidden"
+                  : "overflow-y-auto",
+              ].join(" ")}
+            >
+              {isDemo ? <DemoSystemPage pathname={pathname} /> : children}
+            </main>
+
+            {/* Mobile bottom nav */}
+            <nav
+              aria-label={
+                isInternPortal ? "Intern navigation" : "Mobile navigation"
+              }
+              className="flex md:hidden items-center justify-around border-t border-border-subtle bg-bg-sidebar px-2 py-1.5 shrink-0 z-30"
+            >
+              {bottomCategories.map((item) => {
+                const active = isActivePath(pathname, item);
+                return (
+                  <Link
+                    key={item.to}
+                    href={item.to}
                     className={[
-                      "text-[9px] leading-tight",
-                      active ? "font-semibold" : "font-medium",
+                      "flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-2 py-1 transition-colors cursor-pointer",
+                      active
+                        ? "text-text-primary"
+                        : "text-text-tertiary hover:text-text-secondary",
                     ].join(" ")}
                   >
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
+                    <item.icon className="h-4 w-4" />
+                    <span
+                      className={[
+                        "text-[9px] leading-tight",
+                        active ? "font-semibold" : "font-medium",
+                      ].join(" ")}
+                    >
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
         </div>
-      </div>
 
-      {isDemo ? (
-        <DemoNexTour key={pathname} />
-      ) : (
-        pathname !== "/dashboard/assistant" && (
-          <FloatingNexChat identity={assistantIdentity} pathname={pathname} />
-        )
-      )}
-      {!isDemo && (
-        <NotificationDrawer
-          open={showNotifications}
-          onClose={() => setShowNotifications(false)}
-        />
-      )}
-    </div>
+        {!isInternPortal &&
+          (isDemo ? (
+            <DemoNexTour key={pathname} />
+          ) : (
+            pathname !== "/dashboard/assistant" &&
+            !pathname.startsWith("/dashboard/interns") && (
+              <FloatingNexChat
+                identity={assistantIdentity}
+                pathname={pathname}
+              />
+            )
+          ))}
+        {!isDemo && !isInternPortal && (
+          <NotificationDrawer
+            open={showNotifications}
+            onClose={() => setShowNotifications(false)}
+          />
+        )}
+      </div>
     </WorkspaceScopeProvider>
   );
 }

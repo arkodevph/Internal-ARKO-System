@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { type TRPCContext } from "../../lib/trpc/context";
 import { hasPermission, hasRole, type Permission } from "../../lib/rbac";
+import { internProcedureAllowed } from "../../lib/intern-access";
 
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
@@ -10,20 +11,34 @@ const t = initTRPC.context<TRPCContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-const ALLOWED_APP_PROCEDURES: Partial<Record<NonNullable<TRPCContext['application']>, (path: string) => boolean>> = {
-  finance: (path) => path.startsWith('finance.') || path === 'users.getProfile',
-  portal: (path) => path.startsWith('clientPortal.') || path.startsWith('messages.') ||
-    path === 'users.getProfile' || path === 'users.search',
-  pm: (path) => path.startsWith('pmTasks.') || path === 'users.getProfile',
-}
+const ALLOWED_APP_PROCEDURES: Partial<
+  Record<NonNullable<TRPCContext["application"]>, (path: string) => boolean>
+> = {
+  finance: (path) => path.startsWith("finance.") || path === "users.getProfile",
+  portal: (path) =>
+    path.startsWith("clientPortal.") ||
+    path.startsWith("messages.") ||
+    path === "users.getProfile" ||
+    path === "users.search",
+  pm: (path) => path.startsWith("pmTasks.") || path === "users.getProfile",
+};
 
 const enforceAuth = t.middleware(({ ctx, next, path }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
-  const isAllowed = ctx.application && ALLOWED_APP_PROCEDURES[ctx.application]
+  if (ctx.userRole === "INTERN" && !internProcedureAllowed(path)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Use the intern portal for this account.",
+    });
+  }
+  const isAllowed = ctx.application && ALLOWED_APP_PROCEDURES[ctx.application];
   if (isAllowed && !isAllowed(path)) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'This app cannot access that feature.' })
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This app cannot access that feature.",
+    });
   }
   if (ctx.userRole === "DEMO") {
     throw new TRPCError({

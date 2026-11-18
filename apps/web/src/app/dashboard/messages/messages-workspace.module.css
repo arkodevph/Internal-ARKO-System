@@ -1,0 +1,28 @@
+.intern {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 20px;
+  height: max(600px, calc(100dvh - 280px));
+  min-width: 0;
+}
+.intern > div {
+  min-height: 0;
+}
+@media (max-width: 1050px) {
+  .intern {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .intern > div:first-child {
+    max-height: 340px;
+    overflow-y: auto;
+  }
+  .intern > div:last-child {
+    height: 600px;
+  }
+}
+@media (max-width: 600px) {
+  .intern > div:last-child {
+    height: 520px;
+  }
+}

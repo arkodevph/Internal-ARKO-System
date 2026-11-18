@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState } from 'react'
 import { signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { LogOut, Loader2 } from 'lucide-react'
 import { toast } from './toaster'
@@ -13,29 +12,24 @@ export function useRequestSignOut() {
   return useContext(SignOutContext)
 }
 
-// Provides a confirm-then-sign-out flow. Any descendant calls useRequestSignOut()
-// to open the dialog; confirming clears the session (without next-auth's hard
-// redirect), shows a toast, and client-navigates to the login page.
+// A new document at each account boundary discards cached routes and layouts.
+// Any descendant calls useRequestSignOut() to open the confirmation dialog.
 export function SignOutProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const confirm = async () => {
     setBusy(true)
-    await signOut({ redirect: false })
+    await signOut({ redirect: false, redirectTo: '/auth/login' })
     // Drop the previous user's cached queries so the next account that logs in
     // doesn't briefly render this user's data.
+    await queryClient.cancelQueries()
     queryClient.clear()
     toast('Signed out successfully')
-    // Close the dialog before navigating - this provider lives at the root and
-    // survives the route change, so it must reset its own state or the spinner
-    // stays stuck on top of the login page.
     setOpen(false)
     setBusy(false)
-    router.replace('/auth/login')
-    router.refresh()
+    window.location.replace('/auth/login')
   }
 
   return (

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
@@ -350,7 +349,6 @@ function QuotePanel({
 /* ─── Login form ─── */
 
 function LoginForm() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -372,6 +370,7 @@ function LoginForm() {
         email,
         password,
         redirect: false,
+        redirectTo: "/dashboard",
       });
 
       if (result?.error) {
@@ -385,9 +384,11 @@ function LoginForm() {
       sessionStorage.removeItem(CACHE_KEY);
       // Start this session with an empty cache so no prior user's data shows.
       queryClient.clear();
-      router.prefetch("/dashboard");
       setRedirecting(true);
-      router.push("/dashboard");
+      // Start a new document after switching accounts. Client navigation can
+      // reuse a previous session's cached /dashboard → /intern redirect.
+      // The server resolves /dashboard using the newly authenticated role.
+      window.location.replace("/dashboard");
     } catch (err: any) {
       console.error("signIn error:", err);
       setError(err?.message || "Sign in failed. Check console for details.");
@@ -587,6 +588,15 @@ function LoginForm() {
               )}
             </button>
 
+            <Link
+              href="/intern/login"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 text-sm font-medium text-white transition-colors hover:border-acid hover:text-acid focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid"
+            >
+              Intern sign in
+            </Link>
+            <p className="text-center text-xs leading-relaxed text-zinc-400">
+              Learning logs, exercises, and your assigned tasks.
+            </p>
             <Link
               href="/#contact"
               className="mono mt-3 flex w-full items-center justify-center border border-white/25 bg-ink/70 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors hover:border-acid hover:text-acid"

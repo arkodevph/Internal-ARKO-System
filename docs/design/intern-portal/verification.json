@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-11-16T14:23:36.234Z",
+  "checks": [
+    "intern login and redirect",
+    "direct API scope isolation",
+    "task progress and submission",
+    "resource search and files",
+    "calendar scope and navigation",
+    "staff messaging",
+    "390px and 320px layouts",
+    "keyboard focus"
+  ],
+  "pageErrors": [],
+  "fullyLoadedWidths": [
+    1440,
+    390,
+    320
+  ],
+  "fullyLoadedLayoutResult": "All five routes passed after awaiting their data; captures replaced the initial loading-state phone captures.",
+  "liveRevocationResult": "Removing resource sharing prevented fresh intern resource reads and company-attachment download URLs.",
+  "extraChecks": [
+    "theme switching",
+    "admin resource share form",
+    "live resource revocation",
+    "INTERN user creation with clamped permissions",
+    "empty assignments",
+    "query failure and retry",
+    "anonymous redirect"
+  ],
+  "finalCheckedAt": "2026-11-16T14:35:50.074Z",
+  "productionBuild": "passed",
+  "unitTests": {
+    "passed": 429,
+    "suites": 58
+  },
+  "activeMobileNavigation": "Messages and Calendar visible at 320px",
+  "sharedFileSignedUrl": "generated using existing storage configuration; fixture object was not uploaded",
+  "testFixturesRemoved": true,
+  "fixtureRecordsRemaining": 0
+}

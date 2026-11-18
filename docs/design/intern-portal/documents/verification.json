@@ -1,0 +1,48 @@
+{
+  "optimizedPreview": true,
+  "formats": [
+    "PDF",
+    "DOCX"
+  ],
+  "persistedAfterReload": true,
+  "persistedAfterSignIn": true,
+  "downloadsMatch": [
+    {
+      "format": "PDF",
+      "bytes": 599,
+      "sha256": "1c5e079d4a0cc33507065886a920080c0e9657fe895b9c72c4e3f3c9f06009bd"
+    },
+    {
+      "format": "DOCX",
+      "bytes": 847,
+      "sha256": "e7bbdaa8352222bbaaa334f644aea8ed8a13236a177d26230d389e05a3f7f967"
+    }
+  ],
+  "ownerIsolation": true,
+  "anonymousRejected": true,
+  "crossOriginRejected": true,
+  "invalidFilesRejected": true,
+  "retryAfterFailure": true,
+  "searchAndTypeFilter": true,
+  "deleteWithConfirmation": true,
+  "viewports": [
+    1440,
+    390,
+    320
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "pageErrors": [],
+  "storageBackend": "local-minio",
+  "metadataBackend": "localhost-postgresql",
+  "build": "passed",
+  "tests": {
+    "passed": 449,
+    "suites": 59
+  },
+  "verificationRowsRemaining": 0,
+  "storageObjectsRemainingAfterCleanup": 0,
+  "bucketAccess": "private; no public policy"
+}

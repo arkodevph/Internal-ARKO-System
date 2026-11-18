@@ -1,26 +1,30 @@
-import { router } from './trpc'
-import { financeRouter } from './routers/finance'
-import { tasksRouter } from './routers/tasks'
-import { workflowsRouter } from './routers/workflows'
-import { messagesRouter } from './routers/messages'
-import { remindersRouter } from './routers/reminders'
-import { notesRouter } from './routers/notes'
-import { usersRouter } from './routers/users'
-import { githubRouter } from './routers/github'
-import { notificationsRouter } from './routers/notifications'
-import { eventsRouter } from './routers/events'
-import { ideasRouter } from './routers/ideas'
-import { journalRouter } from './routers/journal'
-import { resourcesRouter } from './routers/resources'
-import { commentsRouter } from './routers/comments'
-import { storageRouter } from './routers/storage'
-import { clientPortalRouter } from './routers/client-portal'
-import { documentsRouter } from './routers/documents'
-import { landingRouter } from './routers/landing'
-import { emailMarketingRouter } from './routers/email-marketing'
-import { tasksRouter as pmTasksRouter } from '../../../../pm/src/server/api/routers/tasks'
+import { router } from "./trpc";
+import { internsRouter } from "./routers/interns";
+import { internRouter } from "./routers/intern";
+import { financeRouter } from "./routers/finance";
+import { tasksRouter } from "./routers/tasks";
+import { workflowsRouter } from "./routers/workflows";
+import { messagesRouter } from "./routers/messages";
+import { remindersRouter } from "./routers/reminders";
+import { notesRouter } from "./routers/notes";
+import { usersRouter } from "./routers/users";
+import { githubRouter } from "./routers/github";
+import { notificationsRouter } from "./routers/notifications";
+import { eventsRouter } from "./routers/events";
+import { ideasRouter } from "./routers/ideas";
+import { journalRouter } from "./routers/journal";
+import { resourcesRouter } from "./routers/resources";
+import { commentsRouter } from "./routers/comments";
+import { storageRouter } from "./routers/storage";
+import { clientPortalRouter } from "./routers/client-portal";
+import { documentsRouter } from "./routers/documents";
+import { landingRouter } from "./routers/landing";
+import { emailMarketingRouter } from "./routers/email-marketing";
+import { tasksRouter as pmTasksRouter } from "../../../../pm/src/server/api/routers/tasks";
 
 export const appRouter = router({
+  intern: internRouter,
+  interns: internsRouter,
   finance: financeRouter,
   tasks: tasksRouter,
   workflows: workflowsRouter,
@@ -41,6 +45,6 @@ export const appRouter = router({
   landing: landingRouter,
   emailMarketing: emailMarketingRouter,
   pmTasks: pmTasksRouter,
-})
+});
 
-export type AppRouter = typeof appRouter
+export type AppRouter = typeof appRouter;

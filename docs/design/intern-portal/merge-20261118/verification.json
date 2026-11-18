@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-18",
+  "source": "Completed optimized-browser run: execution session 69111, exit code 0. Summary restored from its returned results after an interrupted redundant run overwrote the report.",
+  "success": true,
+  "checks": [
+    "Anonymous learning page reaches public intern login",
+    "Dedicated intern form opens the shared dashboard",
+    "All nine intern destinations load inside one shared shell",
+    "Real learning-log save, reload persistence and CSV export pass",
+    "Shared theme control renders the learning log in both themes",
+    "Admin assigns exercise; intern saves/submits; admin review persists and reaches intern",
+    "New learning/admin pages and existing Documents fit 390px and 320px screens",
+    "Phone drawer exposes new learning links and closes with Escape",
+    "Retained local intern account still signs in and opens Documents",
+    "Learning read allowed; admin-only roster denied for retained intern",
+    "Same-browser intern to admin to intern form sign-ins choose the correct home",
+    "No browser exceptions or unexpected failed API reads"
+  ],
+  "pageErrors": [],
+  "failedReads": [],
+  "remainingFixtures": 0,
+  "cleanup": "A subsequent independent database check also confirmed zero synthetic users and activities.",
+  "viewports": [
+    1440,
+    390,
+    320
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "limits": "Synthetic local records only. Documents page access checked; real file byte/persistence checks are recorded separately in the 2026-11-17 Documents report. No deployment or user visual acceptance."
+}

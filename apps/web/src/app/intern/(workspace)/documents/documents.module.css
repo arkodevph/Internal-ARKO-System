@@ -1,0 +1,60 @@
+.uploadPanel { padding: 20px; margin-bottom: 20px; }
+.uploadIntro { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; }
+.uploadIcon { flex-shrink: 0; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--color-primary-500); color: #06130b; }
+.uploadIntro h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.uploadIntro p { margin: 6px 0 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.7; }
+.dropZone { border: 1px dashed var(--color-border-subtle); border-radius: 12px; padding: 24px 16px; display: flex; gap: 20px; align-items: center; justify-content: space-between; background: var(--color-bg-app); }
+.dropZone[data-drag-over="true"] { border-color: var(--color-primary-500); background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-bg-app)); }
+.dropZone p { color: var(--color-text-secondary); font-size: 14px; margin: 0; }
+.dropZone button { flex-shrink: 0; }
+.fileInput { display: none; }
+.queue { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; }
+.uploadItem { width: 100%; display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--color-border-subtle); font-size: 13px; }
+.uploadItem > svg { flex-shrink: 0; margin-top: 2px; }
+.uploadDetail { min-width: 0; flex: 1; }
+.uploadDetail > span { overflow-wrap: anywhere; }
+.uploadDetail p { margin: 4px 0 0; font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; }
+.uploadDetail progress { display: block; width: 100%; height: 5px; accent-color: var(--color-primary-500); margin-top: 8px; }
+.saved { color: var(--color-primary-500); }
+.failed, .uploadDetail .failed { color: var(--color-neg); }
+.notice, .error { margin: 0 0 20px; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.notice { color: var(--color-text-primary); }
+.error { color: var(--color-neg); }
+.filters { padding: 0 20px; }
+.filters select { display: inline-flex; align-items: center; justify-content: space-between; gap: 20px; min-width: 150px; }
+.columnHead, .fileRow { display: grid; grid-template-columns: minmax(0, 1fr) 60px 80px 110px 112px; gap: 18px; align-items: center; padding: 12px 20px; }
+.columnHead { border-block: 1px solid var(--color-border-subtle); font-size: 12px; color: var(--color-text-secondary); background: var(--color-bg-app); }
+.fileList { list-style: none; padding: 0; margin: 0; }
+.fileRow { min-height: 64px; border-bottom: 1px solid var(--color-border-subtle); font-size: 13px; }
+.fileRow:last-child { border-bottom: 0; }
+.fileRow:hover, .fileRow:focus-within { background: color-mix(in srgb, var(--color-text-primary) 3%, transparent); }
+.fileIdentity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.fileIdentity svg { flex-shrink: 0; color: var(--color-text-secondary); }
+.fileIdentity span { overflow-wrap: anywhere; }
+.fileType { color: var(--color-text-secondary); font-size: 12px; }
+.size { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fileRow time { color: var(--color-text-secondary); font-size: 12px; }
+.actions { display: flex; gap: 6px; justify-content: flex-end; }
+.actions button { padding: 8px 12px; min-width: 44px; }
+.mobileLabel { display: none; }
+.confirm { grid-column: 1 / -1; padding: 12px 0 4px; border-top: 1px solid var(--color-border-subtle); }
+.confirm p { margin: 0 0 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.confirm > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.deleteButton { color: var(--color-neg); border-color: var(--color-neg); }
+@media (max-width: 900px) {
+  .columnHead { display: none; }
+  .fileRow { grid-template-columns: auto 1fr auto; gap: 10px; padding: 16px 20px; }
+  .fileIdentity { grid-column: 1 / -1; }
+  .fileRow .size { text-align: left; }
+  .actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .mobileLabel { display: inline; }
+}
+@media (max-width: 480px) {
+  .uploadPanel { padding: 16px; }
+  .uploadIntro { align-items: flex-start; }
+  .dropZone { flex-direction: column; gap: 16px; text-align: center; }
+  .filters { padding: 0 16px; }
+  .filters > * { width: 100%; }
+  .filters select { width: 100%; }
+  .fileRow { padding: 16px; }
+}

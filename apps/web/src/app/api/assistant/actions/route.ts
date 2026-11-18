@@ -36,6 +36,8 @@ const DEFAULT_TRANSACTION_CATEGORIES = {
 
 export async function POST(request: Request) {
   const session = await auth();
+  if (session?.user?.role === "INTERN")
+    return Response.json({ error: "Use the intern portal." }, { status: 403 });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -433,16 +435,16 @@ export async function POST(request: Request) {
       orderBy: { position: "desc" },
       select: { position: true },
     });
-      const task = await prisma.task.create({
-        data: {
-          title: action.data.title,
-          description: action.data.description || undefined,
-          priority: action.data.priority,
-          dueDate: new Date(Date.now() + 6048e5),
-          assigneeId: session.user.id,
-          position: (maxPosition?.position ?? -1) + 1,
-          scope: "PERSONAL",
-        },
+    const task = await prisma.task.create({
+      data: {
+        title: action.data.title,
+        description: action.data.description || undefined,
+        priority: action.data.priority,
+        dueDate: new Date(Date.now() + 6048e5),
+        assigneeId: session.user.id,
+        position: (maxPosition?.position ?? -1) + 1,
+        scope: "PERSONAL",
+      },
       select: { id: true, title: true },
     });
 

@@ -38,6 +38,7 @@ import {
   BriefcaseBusiness,
   Calculator,
   Eye,
+  Book,
 } from "lucide-react";
 import { api } from "../../../lib/trpc/client";
 import { generateAvatarSeed, avatarConfigToJson } from "../../../lib/avatar";
@@ -68,6 +69,11 @@ const roleConfig = {
     label: "Client",
     color: "bg-blue-500/10 text-blue-400",
     icon: BriefcaseBusiness,
+  },
+  INTERN: {
+    label: "Intern",
+    color: "bg-primary-50 text-primary-700",
+    icon: Book,
   },
   DEMO: { label: "Demo", color: "bg-amber-500/10 text-amber-400", icon: Eye },
 };
@@ -775,10 +781,19 @@ export default function UsersPage() {
 function PermissionChecklist({
   permissions,
   onChange,
+  intern = false,
 }: {
   permissions: Permission[];
   onChange: (permissions: Permission[]) => void;
+  intern?: boolean;
 }) {
+  if (intern)
+    return (
+      <p className="rounded-xl border border-border-subtle p-4 text-sm text-text-secondary">
+        Intern accounts use the intern portal: assigned tasks, shared resources,
+        messages and calendar.
+      </p>
+    );
   const selected = new Set(permissions);
   const toggle = (permission: Permission) => {
     onChange(
@@ -944,6 +959,7 @@ function EditAccessModal({
           </label>
 
           <PermissionChecklist
+            intern={role === "INTERN"}
             permissions={permissions}
             onChange={setPermissions}
           />
@@ -1331,6 +1347,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
                   "USER",
                   "CLIENT",
                   "DEMO",
+                  "INTERN",
                 ] as const
               ).map((r) => (
                 <button
@@ -1346,17 +1363,19 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
                       : "bg-card text-text-tertiary hover:bg-card"
                   }`}
                 >
-                  {r === "ADMIN"
-                    ? "Admin"
-                    : r === "ACCOUNTANT"
-                      ? "Accountant"
-                      : r === "MEMBER"
-                        ? "Member"
-                        : r === "CLIENT"
-                          ? "Client"
-                          : r === "DEMO"
-                            ? "Demo"
-                            : "User"}
+                  {r === "INTERN"
+                    ? "Intern"
+                    : r === "ADMIN"
+                      ? "Admin"
+                      : r === "ACCOUNTANT"
+                        ? "Accountant"
+                        : r === "MEMBER"
+                          ? "Member"
+                          : r === "CLIENT"
+                            ? "Client"
+                            : r === "DEMO"
+                              ? "Demo"
+                              : "User"}
                 </button>
               ))}
             </div>
@@ -1383,6 +1402,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
           </label>
 
           <PermissionChecklist
+            intern={role === "INTERN"}
             permissions={permissions}
             onChange={setPermissions}
           />
